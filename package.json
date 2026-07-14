@@ -1,0 +1,23 @@
+{
+  "name": "vocalonix",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "app/api",
+    "app/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api dev\" \"bun run --cwd app/web dev\"",
+    "typecheck": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api typecheck\" \"bun run --cwd app/web typecheck\"",
+    "build": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api build\" \"bun run --cwd app/web build\"",
+    "docker:config": "docker compose config",
+    "docker:up": "./scripts/start.sh",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.0"
+  },
+  "engines": {
+    "bun": "1.1.45"
+  }
+}

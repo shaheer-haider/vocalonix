@@ -1,0 +1,92 @@
+services:
+  postgres:
+    extends:
+      file: ./dograh/docker-compose.yaml
+      service: postgres
+
+  redis:
+    extends:
+      file: ./dograh/docker-compose.yaml
+      service: redis
+
+  minio:
+    extends:
+      file: ./dograh/docker-compose.yaml
+      service: minio
+
+  api:
+    extends:
+      file: ./dograh/docker-compose.yaml
+      service: api
+    image: dograhai/dograh-api:${DOGRAH_VERSION:-1.41.0}
+    environment:
+      UI_APP_URL: "${DOGRAH_WIDGET_URL:-http://localhost:3010}"
+      CORS_ALLOWED_ORIGINS: "${APP_ORIGIN:-http://localhost:3000}"
+
+  ui:
+    extends:
+      file: ./dograh/docker-compose.yaml
+      service: ui
+    image: dograhai/dograh-ui:${DOGRAH_VERSION:-1.41.0}
+
+  vocalonix-api:
+    build:
+      context: .
+      dockerfile: app/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "3001"
+      APP_ORIGIN: "${APP_ORIGIN:-http://localhost:3000}"
+      DOGRAH_INTERNAL_URL: "http://api:8000"
+      DOGRAH_PUBLIC_API_URL: "${DOGRAH_PUBLIC_API_URL:-http://localhost:8000}"
+      DOGRAH_WIDGET_URL: "${DOGRAH_WIDGET_URL:-http://localhost:3010}"
+      DOGRAH_STORAGE_INTERNAL_URL: "http://minio:9000"
+      DOGRAH_API_KEY: "${DOGRAH_API_KEY:-}"
+      DOGRAH_SERVICE_EMAIL: "${DOGRAH_SERVICE_EMAIL:-vocalonix@localhost.test}"
+      DOGRAH_SERVICE_PASSWORD: "${DOGRAH_SERVICE_PASSWORD:-change-me-vocalonix}"
+      DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME:-Vocalonix}"
+      DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME:-Vocalonix Agent}"
+      DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS:-localhost,127.0.0.1}"
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3001/api/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - app-network
+
+  vocalonix-web:
+    build:
+      context: .
+      dockerfile: app/web/Dockerfile
+      args:
+        VITE_API_BASE_URL: "${VOCALONIX_API_PUBLIC_URL:-http://localhost:3001}"
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      vocalonix-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio-data:
+
+networks:
+  app-network:
+    driver: bridge
