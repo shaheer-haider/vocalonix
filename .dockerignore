@@ -1,7 +1,11 @@
 .git
 .github
 .env
-dograh
+dograh/**
+!dograh/ui/
+!dograh/ui/public/
+!dograh/ui/public/embed/
+!dograh/ui/public/embed/dograh-widget.js
 node_modules
 **/node_modules
 **/dist

@@ -7,6 +7,7 @@ COPY app/web/package.json app/web/package.json
 RUN bun install --frozen-lockfile
 
 COPY app/web app/web
+COPY dograh/ui/public/embed/dograh-widget.js dograh/ui/public/embed/dograh-widget.js
 ARG VITE_API_BASE_URL=http://localhost:3001
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN bun run --cwd app/web build

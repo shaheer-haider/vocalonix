@@ -17,12 +17,12 @@ export const env = {
     .filter(Boolean),
   dograhInternalUrl: trimUrl(read("DOGRAH_INTERNAL_URL", "http://localhost:8000")),
   dograhPublicApiUrl: trimUrl(read("DOGRAH_PUBLIC_API_URL", "http://localhost:8000")),
-  dograhWidgetUrl: trimUrl(read("DOGRAH_WIDGET_URL", "http://localhost:3010")),
+  dograhWidgetUrl: trimUrl(read("DOGRAH_WIDGET_URL", "http://localhost:3000")),
   dograhStorageInternalUrl: process.env.DOGRAH_STORAGE_INTERNAL_URL
     ? trimUrl(process.env.DOGRAH_STORAGE_INTERNAL_URL)
     : null,
   dograhApiKey: process.env.DOGRAH_API_KEY?.trim() || null,
-  dograhServiceEmail: read("DOGRAH_SERVICE_EMAIL", "vocalonix@localhost.test"),
+  dograhServiceEmail: read("DOGRAH_SERVICE_EMAIL", "vocalonix@vocalonix.ai"),
   dograhServicePassword: read("DOGRAH_SERVICE_PASSWORD", "change-me-vocalonix"),
   dograhServiceName: read("DOGRAH_SERVICE_NAME", "Vocalonix"),
   dograhWorkflowName: read("DOGRAH_WORKFLOW_NAME", "Vocalonix Agent"),
