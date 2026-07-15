@@ -12,4 +12,5 @@ source "$ROOT_DIR/.env"
 set +a
 
 cd "$ROOT_DIR"
+bun run db:migrate
 bun run dev

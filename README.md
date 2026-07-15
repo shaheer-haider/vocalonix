@@ -1,6 +1,6 @@
 # Vocalonix
 
-Vocalonix is a web-first voice-agent product powered by a self-hosted Dograh instance. This repository currently contains the core MVP: Dograh orchestration, a server-side integration layer, an embeddable browser-call widget, knowledge-base management, and basic agent settings.
+Vocalonix is a web-first voice-agent product powered by a self-hosted Dograh instance. This repository contains the core MVP plus real account authentication: Dograh orchestration, a server-side integration layer, an embeddable browser-call widget, knowledge-base management, agent settings, and database-backed user sessions.
 
 ## Repository layout
 
@@ -29,12 +29,17 @@ Open:
 - Test Agent: http://localhost:3000/secret/test-agent
 - Knowledge Base: http://localhost:3000/secret/knowledge-base
 - Agent Settings: http://localhost:3000/secret/agent-settings
+- Sign up: http://localhost:3000/signup
+- Log in: http://localhost:3000/login
+- Account: http://localhost:3000/account
 - Vocalonix API: http://localhost:3001/api/health
 - Dograh dashboard: http://localhost:3010
 
 The first request from Vocalonix creates a local Dograh service account and a managed workflow. Dograh may take a few minutes to pull images and become healthy on the first run.
 
-The `/secret/*` routes are an intentionally unprotected MVP workspace. The prefix organizes the current control UI while public landing and account flows are built; it is not an authentication boundary. Do not expose this deployment to untrusted users until authentication and tenant-scoped APIs are added.
+The `/secret/*` routes are an intentionally unprotected MVP workspace. The prefix organizes the current control UI; it is not an authentication boundary. Account routes use real cookie-backed sessions, but Dograh management remains single-workflow until tenant-scoped APIs arrive.
+
+Local magic-link requests return a preview link in the UI instead of pretending an email was sent. Production requires `RESEND_API_KEY`, `EMAIL_FROM`, secure cookies, and email verification.
 
 ### Configure AI providers
 
@@ -58,10 +63,11 @@ Use this mode when Dograh is already running locally or remotely.
 
 1. Install Bun 1.1.45.
 2. Copy `.env.example` to `.env`.
-3. Set `DOGRAH_INTERNAL_URL`, `DOGRAH_PUBLIC_API_URL`, `DOGRAH_WIDGET_URL`, and either:
+3. Set `DATABASE_URL`, a strong `AUTH_SECRET`, `DOGRAH_INTERNAL_URL`, `DOGRAH_PUBLIC_API_URL`, `DOGRAH_WIDGET_URL`, and either:
    - `DOGRAH_API_KEY`; or
    - `DOGRAH_SERVICE_EMAIL` and `DOGRAH_SERVICE_PASSWORD`.
-4. Run:
+4. For production, also set `NODE_ENV=production`, `API_PUBLIC_URL`, `APP_ORIGIN`, `RESEND_API_KEY`, `EMAIL_FROM`, and `REQUIRE_EMAIL_VERIFICATION=true`.
+5. Run:
 
 ```bash
 bun install
@@ -72,6 +78,8 @@ The backend is the only component that calls authenticated Dograh APIs. The brow
 
 ## MVP capabilities
 
+- **Accounts** (`/signup`, `/login`, `/magic`): password and magic-link authentication with HTTP-only cookie sessions.
+- **Session security** (`/account`): restore, refresh, logout, and logout-everywhere against the Vocalonix database.
 - **Test Agent** (`/secret/test-agent`): place a WebRTC call from the browser.
 - **Knowledge Base** (`/secret/knowledge-base`): upload, process, list, and delete documents.
 - **Agent Settings** (`/secret/agent-settings`): change the agent identity, prompts, greeting, closing, interruption behavior, and widget appearance.
@@ -79,4 +87,4 @@ The backend is the only component that calls authenticated Dograh APIs. The brow
 
 The widget asset remains public at `/embed/dograh-widget.js` so generated snippets can run on allowed third-party websites. Dograh management credentials remain server-only.
 
-Authentication, businesses, teams, invitations, billing, and public landing pages are planned next. The `/secret/*` workspace does not add password protection.
+Businesses, teams, invitations, tenant-scoped Dograh workflows, and billing are planned next. The `/secret/*` workspace remains intentionally unguarded.

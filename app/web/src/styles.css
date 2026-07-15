@@ -293,11 +293,82 @@ p {
   font-size: 19px;
 }
 
+.auth-card-copy {
+  margin: 0 0 18px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.auth-secondary-link {
+  display: block;
+  margin-top: 14px;
+  color: var(--ink-3);
+  font-size: 12px;
+  text-align: center;
+}
+
 .auth-switch {
   margin: 14px 0 0;
   color: var(--ink-3);
   font-size: 13px;
   text-align: center;
+}
+
+.account-title {
+  margin: 12px 0 6px;
+  font-size: 26px;
+}
+
+.account-heading,
+.account-section__heading,
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.account-section {
+  margin: 24px 0;
+  padding: 20px 0;
+  border-top: 1.5px dashed var(--line);
+  border-bottom: 1.5px dashed var(--line);
+}
+
+.account-section h2 {
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+
+.account-section p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.session-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.session-item {
+  padding: 12px;
+  background: var(--paper-2);
+  border: 1.5px solid var(--line);
+  border-radius: 6px;
+}
+
+.session-item strong,
+.session-item span {
+  display: block;
+}
+
+.session-item span,
+.session-item time {
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 9px;
 }
 
 .ui-button,
