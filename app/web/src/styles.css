@@ -116,6 +116,7 @@ button {
   border: 0;
   border-radius: 11px;
   text-align: left;
+  text-decoration: none;
   transition: 160ms ease;
 }
 
@@ -167,6 +168,10 @@ main {
   width: 100%;
   max-width: 1320px;
   padding: 52px clamp(28px, 5vw, 76px) 80px;
+}
+
+.route-message .button {
+  margin-top: 24px;
 }
 
 .page-heading {

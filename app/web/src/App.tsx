@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, Outlet } from "@tanstack/react-router";
 
 import { api } from "./api";
 import {
@@ -13,18 +14,17 @@ import {
 import type {
   AgentSettings,
   DocumentItem,
-  View,
   WidgetResponse,
 } from "./types";
 
 const NAV_ITEMS: Array<{
-  id: View;
+  to: "/secret/test-agent" | "/secret/knowledge-base" | "/secret/agent-settings";
   label: string;
   icon: typeof PhoneIcon;
 }> = [
-  { id: "test", label: "Test Agent", icon: PhoneIcon },
-  { id: "knowledge", label: "Knowledge Base", icon: BookIcon },
-  { id: "settings", label: "Agent Settings", icon: SettingsIcon },
+  { to: "/secret/test-agent", label: "Test Agent", icon: PhoneIcon },
+  { to: "/secret/knowledge-base", label: "Knowledge Base", icon: BookIcon },
+  { to: "/secret/agent-settings", label: "Agent Settings", icon: SettingsIcon },
 ];
 
 function formatBytes(bytes: number): string {
@@ -43,7 +43,7 @@ function StatusBadge({ connected }: { connected: boolean | null }) {
   );
 }
 
-function TestAgent() {
+export function TestAgent() {
   const [widget, setWidget] = useState<WidgetResponse | null>(null);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState<string | null>(null);
@@ -145,7 +145,7 @@ function TestAgent() {
   );
 }
 
-function KnowledgeBase() {
+export function KnowledgeBase() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -309,7 +309,7 @@ function KnowledgeBase() {
   );
 }
 
-function AgentSettingsView() {
+export function AgentSettingsView() {
   const [settings, setSettings] = useState<AgentSettings | null>(null);
   const [widget, setWidget] = useState<WidgetResponse | null>(null);
   const [saving, setSaving] = useState(false);
@@ -500,7 +500,6 @@ function AgentSettingsView() {
 }
 
 export default function App() {
-  const [view, setView] = useState<View>("test");
   const [connected, setConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -541,28 +540,27 @@ export default function App() {
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
-              <button
-                key={item.id}
-                className={view === item.id ? "nav-item nav-item--active" : "nav-item"}
-                onClick={() => setView(item.id)}
+              <Link
+                key={item.to}
+                to={item.to}
+                className="nav-item"
+                activeProps={{ className: "nav-item nav-item--active" }}
               >
                 <Icon size={19} />
                 {item.label}
-              </button>
+              </Link>
             );
           })}
         </nav>
 
         <div className="sidebar-footer">
           <StatusBadge connected={connected} />
-          <p>Core MVP · Dograh {connected ? "online" : "starting"}</p>
+          <p>Unprotected MVP lab · Dograh {connected ? "online" : "starting"}</p>
         </div>
       </aside>
 
       <main>
-        {view === "test" ? <TestAgent /> : null}
-        {view === "knowledge" ? <KnowledgeBase /> : null}
-        {view === "settings" ? <AgentSettingsView /> : null}
+        <Outlet />
       </main>
     </div>
   );
