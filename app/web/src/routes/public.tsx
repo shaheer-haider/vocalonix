@@ -49,6 +49,9 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export function LandingPage() {
+  const auth = useAuth();
+  const isAuthenticated = auth.status === "authenticated";
+
   return (
     <AuthShell width={760}>
       <section className="landing">
@@ -64,9 +67,15 @@ export function LandingPage() {
           browser-based voice call without a phone provider.
         </p>
         <div className="landing__actions">
-          <Link to="/signup" className="ui-button ui-button--primary">
-            Start setup →
-          </Link>
+          {isAuthenticated ? (
+            <Link to="/app" className="ui-button ui-button--primary">
+              Open app →
+            </Link>
+          ) : (
+            <Link to="/signup" className="ui-button ui-button--primary">
+              Start setup →
+            </Link>
+          )}
           <Link to="/secret/test-agent" className="ui-button">
             MVP lab
           </Link>
@@ -112,6 +121,12 @@ export function LoginPage() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  useEffect(() => {
+    if (auth.status === "authenticated") {
+      window.location.replace(intendedRoute());
+    }
+  }, [auth.status]);
 
   return (
     <AuthShell width={420}>
@@ -174,6 +189,13 @@ export function LoginPage() {
 
 export function SignupPage() {
   const auth = useAuth();
+
+  useEffect(() => {
+    if (auth.status === "authenticated") {
+      window.location.replace(intendedRoute());
+    }
+  }, [auth.status]);
+
   const [notice, setNotice] = useState<{
     message: string;
     previewUrl?: string | null;

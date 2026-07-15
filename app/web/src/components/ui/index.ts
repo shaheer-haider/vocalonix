@@ -1,6 +1,7 @@
 export { Alert } from "./Alert";
 export { Box } from "./Box";
 export { Button } from "./Button";
+export { ColorField } from "./ColorField";
 export { Dropdown } from "./Dropdown";
 export { EmptyState } from "./EmptyState";
 export { Field } from "./Field";
