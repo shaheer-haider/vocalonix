@@ -11,6 +11,8 @@ import App, {
   KnowledgeBase,
   TestAgent,
 } from "./App";
+import { DesignSystemPage } from "./routes/DesignSystem";
+import { LandingPage, LoginPage, SignupPage } from "./routes/public";
 
 const rootRoute = createRootRoute({
   component: Outlet,
@@ -28,9 +30,25 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  beforeLoad: () => {
-    throw redirect({ to: "/secret/test-agent" });
-  },
+  component: LandingPage,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: LoginPage,
+});
+
+const signupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/signup",
+  component: SignupPage,
+});
+
+const designSystemRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/design-system",
+  component: DesignSystemPage,
 });
 
 const secretRoute = createRoute({
@@ -76,6 +94,9 @@ const agentSettingsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  loginRoute,
+  signupRoute,
+  designSystemRoute,
   secretRoute.addChildren([
     secretIndexRoute,
     testAgentRoute,
