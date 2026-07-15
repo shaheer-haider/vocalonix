@@ -120,8 +120,9 @@ function TestAgent() {
             greeting and tone feel right.
           </p>
           {error ? <div className="alert alert--error">{error}</div> : null}
-          <div id="dograh-inline-container" className="dograh-slot">
+          <div className="dograh-slot">
             {!widget && !error ? <div className="loading-line">Preparing secure call…</div> : null}
+            <div id="dograh-inline-container" />
           </div>
         </div>
 
