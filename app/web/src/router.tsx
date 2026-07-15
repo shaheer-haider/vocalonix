@@ -37,6 +37,15 @@ const secretRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/secret",
   component: App,
+  notFoundComponent: () => (
+    <section className="route-message">
+      <p className="eyebrow">Not found</p>
+      <h1>This page does not exist</h1>
+      <a className="button button--primary" href="/secret/test-agent">
+        Open Test Agent
+      </a>
+    </section>
+  ),
 });
 
 const secretIndexRoute = createRoute({
