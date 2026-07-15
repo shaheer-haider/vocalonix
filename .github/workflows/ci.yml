@@ -8,6 +8,24 @@ on:
 jobs:
   app:
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://vocalonix:vocalonix@localhost:5433/vocalonix
+      AUTH_SECRET: ci-only-vocalonix-auth-secret-000000000000
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vocalonix
+          POSTGRES_PASSWORD: vocalonix
+          POSTGRES_DB: vocalonix
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U vocalonix -d vocalonix"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -16,6 +34,8 @@ jobs:
         with:
           bun-version: 1.1.45
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck
-      - run: bun run build
       - run: ./scripts/setup.sh
+      - run: bun run db:migrate
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build

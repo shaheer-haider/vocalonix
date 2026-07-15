@@ -139,6 +139,95 @@ export interface InvitationLookup {
   };
 }
 
+export interface BusinessHoursDay {
+  enabled: boolean;
+  open: string;
+  close: string;
+}
+
+export interface TenantSettings {
+  agentName: string;
+  greeting: string;
+  prompt: string;
+  closing: string;
+  tone: string;
+  voice: string;
+  allowInterrupt: boolean;
+  escalationGuidance: string;
+  businessHours: Record<string, BusinessHoursDay>;
+  widgetButtonText: string;
+  widgetColor: string;
+  allowedDomains: string[];
+}
+
+export interface TenantSettingsResponse {
+  business: {
+    id: string;
+    slug: string;
+    name: string;
+    city: string | null;
+    country: string;
+    timezone: string;
+    contactEmail: string | null;
+    vertical: string | null;
+    role: Role;
+  };
+  settings: TenantSettings;
+  onboarding: {
+    completedSteps: string[];
+    currentStep: string;
+    publishedAt: string | Date | null;
+  };
+  dograh: {
+    workflowId: string | null;
+    workflowUuid: string | null;
+    configVersion: number;
+    configHash: string | null;
+    syncedConfigHash: string | null;
+    syncState:
+      | "pending"
+      | "syncing"
+      | "synced"
+      | "rejected"
+      | "failed"
+      | "offboarding"
+      | "offboarded";
+    errorCategory: string | null;
+    lastError: string | null;
+    lastAttemptAt: string | Date | null;
+    lastSuccessAt: string | Date | null;
+  };
+}
+
+export interface TenantKnowledgeItem {
+  id: string;
+  kind: "document" | "text" | "website_reference";
+  title: string;
+  filename: string;
+  mimeType: string;
+  retrievalMode: string;
+  remoteDocumentUuid: string | null;
+  state:
+    | "pending"
+    | "uploading"
+    | "processing"
+    | "active"
+    | "failed"
+    | "delete_pending";
+  active: boolean;
+  replacesKnowledgeId: string | null;
+  lastError: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface TenantWidget {
+  workflowId: number;
+  scriptUrl: string;
+  snippet: string;
+  settings: Record<string, unknown> | null;
+}
+
 export const api = {
   status: async () =>
     unwrap(await client.api.dograh.status.get()),
@@ -217,6 +306,96 @@ export const api = {
       const result = unwrap(await client.api.b[slug].get());
       return result.business;
     },
+    settings: async (slug: string): Promise<TenantSettingsResponse> =>
+      unwrap(await client.api.b[slug].settings.get()) as TenantSettingsResponse,
+    updateProfile: async (
+      slug: string,
+      input: {
+        name: string;
+        city?: string;
+        country: string;
+        timezone: string;
+        contactEmail?: string;
+        vertical?: string;
+      },
+    ) => unwrap(await client.api.b[slug].settings.profile.put(input)),
+    updateAgentSettings: async (
+      slug: string,
+      input: Pick<
+        TenantSettings,
+        | "agentName"
+        | "greeting"
+        | "prompt"
+        | "closing"
+        | "tone"
+        | "voice"
+        | "allowInterrupt"
+        | "escalationGuidance"
+      >,
+    ) => unwrap(await client.api.b[slug].settings.agent.put(input)),
+    updateHours: async (
+      slug: string,
+      businessHours: Record<string, BusinessHoursDay>,
+    ) =>
+      unwrap(
+        await client.api.b[slug].settings.hours.put({ businessHours }),
+      ),
+    updateWidget: async (
+      slug: string,
+      input: Pick<
+        TenantSettings,
+        "widgetButtonText" | "widgetColor" | "allowedDomains"
+      >,
+    ) => unwrap(await client.api.b[slug].settings.widget.put(input)),
+    completeKnowledgeOnboarding: async (slug: string) =>
+      unwrap(
+        await client.api.b[slug].onboarding.knowledge.complete.post(),
+      ),
+    dograhStatus: async (slug: string) =>
+      unwrap(await client.api.b[slug].dograh.get()),
+    retryDograh: async (slug: string) =>
+      unwrap(await client.api.b[slug].dograh.retry.post()),
+    publish: async (slug: string): Promise<{ widget: TenantWidget }> =>
+      unwrap(await client.api.b[slug].publish.post()) as {
+        widget: TenantWidget;
+      },
+    widget: async (slug: string): Promise<TenantWidget> =>
+      unwrap(await client.api.b[slug].widget.get()) as TenantWidget,
+    knowledge: async (slug: string): Promise<TenantKnowledgeItem[]> => {
+      const result = unwrap(await client.api.b[slug].knowledge.get());
+      return result.knowledge as TenantKnowledgeItem[];
+    },
+    createKnowledge: async (
+      slug: string,
+      input: {
+        kind: "document" | "text" | "website_reference";
+        title: string;
+        text?: string;
+        websiteUrl?: string;
+        file?: File;
+        retrievalMode: "chunked" | "full_document";
+        replacementId?: string;
+      },
+    ) =>
+      unwrap(
+        await client.api.b[slug].knowledge.post({
+          kind: input.kind,
+          title: input.title,
+          retrievalMode: input.retrievalMode,
+          ...(input.text !== undefined ? { text: input.text } : {}),
+          ...(input.websiteUrl !== undefined
+            ? { websiteUrl: input.websiteUrl }
+            : {}),
+          ...(input.file !== undefined ? { file: input.file } : {}),
+          ...(input.replacementId !== undefined
+            ? { replacementId: input.replacementId }
+            : {}),
+        }),
+      ),
+    deleteKnowledge: async (slug: string, knowledgeId: string) =>
+      unwrap(await client.api.b[slug].knowledge[knowledgeId].delete()),
+    delete: async (slug: string) =>
+      unwrap(await client.api.b[slug].delete()),
     team: async (
       slug: string,
     ): Promise<{

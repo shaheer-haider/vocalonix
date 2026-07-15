@@ -1,0 +1,1 @@
+ALTER TABLE "business_knowledge" ADD COLUMN "remote_storage_key" text;

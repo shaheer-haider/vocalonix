@@ -7,7 +7,7 @@
     "app/web"
   ],
   "scripts": {
-    "dev": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api dev\" \"bun run --cwd app/web dev\"",
+    "dev": "concurrently -n api,worker,web -c cyan,yellow,magenta \"bun run --cwd app/api dev\" \"bun run --cwd app/api worker\" \"bun run --cwd app/web dev\"",
     "typecheck": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api typecheck\" \"bun run --cwd app/web typecheck\"",
     "build": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api build\" \"bun run --cwd app/web build\"",
     "test": "bun run --cwd app/api test",
