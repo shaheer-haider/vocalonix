@@ -22,6 +22,7 @@ import {
   CreateBusinessPage,
   InvitationPage,
   TeamPage,
+  WorkspaceAccountPage,
   WorkspaceDashboardPage,
 } from "./routes/business";
 import {
@@ -151,6 +152,12 @@ const workspaceTeamRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/team",
   component: TeamPage,
+});
+
+const workspaceAccountRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/account",
+  component: WorkspaceAccountPage,
 });
 
 const workspaceOnboardingRoute = createRoute({
@@ -285,6 +292,7 @@ const routeTree = rootRoute.addChildren([
     workspaceIndexRoute,
     workspaceDashboardRoute,
     workspaceTeamRoute,
+    workspaceAccountRoute,
     workspaceOnboardingRoute,
     workspaceSettingsRoute,
     workspaceProfileSettingsRoute,

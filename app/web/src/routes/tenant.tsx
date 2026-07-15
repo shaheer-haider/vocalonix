@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "@tanstack/react-router";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -16,6 +16,7 @@ import {
   Alert,
   Box,
   Button,
+  ColorField,
   EmptyState,
   LoadingState,
   Pill,
@@ -24,7 +25,7 @@ import {
   TextField,
 } from "../components/ui";
 import { can } from "../permissions";
-import { useBusinessSlug, WorkspaceShell } from "./business";
+import { COUNTRY_OPTIONS, useBusinessSlug, WorkspaceShell } from "./business";
 
 const onboardingSteps = [
   { label: "Business profile", slug: "business-profile" },
@@ -181,10 +182,11 @@ function ProfileForm({
             error={form.formState.errors.city?.message}
             {...form.register("city")}
           />
-          <TextField
-            label="Country code"
+          <SelectField
+            label="Country"
             required
             error={form.formState.errors.country?.message}
+            options={COUNTRY_OPTIONS}
             {...form.register("country")}
           />
           <TextField
@@ -386,11 +388,12 @@ function WidgetForm({
             error={form.formState.errors.widgetButtonText?.message}
             {...form.register("widgetButtonText")}
           />
-          <TextField
+          <ColorField
             label="Button color"
             required
             error={form.formState.errors.widgetColor?.message}
-            {...form.register("widgetColor")}
+            value={form.watch("widgetColor")}
+            onChange={(value) => form.setValue("widgetColor", value, { shouldValidate: true })}
           />
         </div>
         <TextArea
@@ -532,6 +535,20 @@ function HoursForm({
   );
 }
 
+function parseWebsiteUrl(sourceText: string | null): string | null {
+  if (!sourceText) return null;
+  const match = sourceText.match(/^Website reference: (.*)$/m);
+  const url = match?.[1]?.trim();
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return url;
+  } catch {
+    // ignore malformed URLs
+  }
+  return null;
+}
+
 function KnowledgeManager({
   onboardingNextHref,
   slug,
@@ -551,6 +568,7 @@ function KnowledgeManager({
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [file, setFile] = useState<File | undefined>();
   const [replacementId, setReplacementId] = useState<string | undefined>();
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -569,6 +587,20 @@ function KnowledgeManager({
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const processing = useMemo(
+    () =>
+      items.some((item) =>
+        ["pending", "uploading", "processing"].includes(item.state),
+      ),
+    [items],
+  );
+
+  useEffect(() => {
+    if (!processing) return;
+    const interval = window.setInterval(() => void refresh(), 4_000);
+    return () => window.clearInterval(interval);
+  }, [processing, refresh]);
 
   async function saveKnowledge() {
     if (!title.trim()) {
@@ -667,6 +699,9 @@ function KnowledgeManager({
               onClick={() => {
                 setReplacementId(undefined);
                 setTitle("");
+                setText("");
+                setWebsiteUrl("");
+                setFile(undefined);
               }}
             >
               Cancel replacement
@@ -697,49 +732,101 @@ function KnowledgeManager({
           </EmptyState>
         ) : (
           <div className="knowledge-list">
-            {items.map((item) => (
-              <div className="knowledge-row" key={item.id}>
-                <div>
-                  <strong>{item.title}</strong>
-                  <span>
-                    {item.kind.replaceAll("_", " ")} · {item.state.replaceAll("_", " ")}
-                  </span>
-                  {item.lastError ? <small>{item.lastError}</small> : null}
-                </div>
-                <div className="stack-row">
-                  {item.active ? (
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setReplacementId(item.id);
-                        setTitle(`${item.title} replacement`);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                    >
-                      Replace
-                    </Button>
+            {items.map((item) => {
+              const expanded = previewId === item.id;
+              const websiteUrl =
+                item.kind === "website_reference"
+                  ? parseWebsiteUrl(item.sourceText)
+                  : null;
+              return (
+                <div className="knowledge-item" key={item.id}>
+                  <div className="knowledge-row">
+                    <div>
+                      <strong>{item.title}</strong>
+                      <span>
+                        {item.kind.replaceAll("_", " ")} · {item.state.replaceAll("_", " ")}
+                      </span>
+                      {item.lastError ? <small>{item.lastError}</small> : null}
+                    </div>
+                    <div className="stack-row">
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          setPreviewId(expanded ? null : item.id)
+                        }
+                      >
+                        {expanded ? "Hide preview" : "Preview"}
+                      </Button>
+                      {item.active && item.kind === "text" ? (
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setKind("text");
+                            setReplacementId(item.id);
+                            setTitle(item.title);
+                            setText(item.sourceText ?? "");
+                            setWebsiteUrl("");
+                            setFile(undefined);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                        >
+                          Replace
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          setError(null);
+                          void api.businesses
+                            .deleteKnowledge(slug, item.id)
+                            .then(refresh)
+                            .catch((caught: unknown) =>
+                              setError(
+                                caught instanceof Error
+                                  ? caught.message
+                                  : "Unable to delete knowledge.",
+                              ),
+                            );
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                  {expanded ? (
+                    <div className="knowledge-preview">
+                      {item.kind === "document" ? (
+                        <>
+                          <p className="knowledge-preview__label">Document</p>
+                          <p>{item.filename}</p>
+                          <p className="knowledge-preview__meta">{item.mimeType}</p>
+                        </>
+                      ) : item.kind === "website_reference" && websiteUrl ? (
+                        (() => {
+                          const notes = item.sourceText
+                            ? item.sourceText.split("\n").slice(2).join("\n").trim()
+                            : "";
+                          return (
+                            <>
+                              <p className="knowledge-preview__label">Website reference</p>
+                              <a href={websiteUrl} rel="noreferrer" target="_blank">
+                                {websiteUrl}
+                              </a>
+                              {notes ? <pre>{notes}</pre> : null}
+                            </>
+                          );
+                        })()
+                      ) : (
+                        <>
+                          <p className="knowledge-preview__label">Knowledge text</p>
+                          <pre>{item.sourceText ?? "No content available."}</pre>
+                        </>
+                      )}
+                    </div>
                   ) : null}
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      setError(null);
-                      void api.businesses
-                        .deleteKnowledge(slug, item.id)
-                        .then(refresh)
-                        .catch((caught: unknown) =>
-                          setError(
-                            caught instanceof Error
-                              ? caught.message
-                              : "Unable to delete knowledge.",
-                          ),
-                        );
-                    }}
-                  >
-                    Delete
-                  </Button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Box>

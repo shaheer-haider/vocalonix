@@ -557,6 +557,7 @@ export const tenantRoutes = new Elysia()
         mimeType: businessKnowledge.mimeType,
         retrievalMode: businessKnowledge.retrievalMode,
         remoteDocumentUuid: businessKnowledge.remoteDocumentUuid,
+        sourceText: businessKnowledge.sourceText,
         state: businessKnowledge.state,
         active: businessKnowledge.active,
         replacesKnowledgeId: businessKnowledge.replacesKnowledgeId,

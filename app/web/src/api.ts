@@ -207,6 +207,7 @@ export interface TenantKnowledgeItem {
   mimeType: string;
   retrievalMode: string;
   remoteDocumentUuid: string | null;
+  sourceText: string | null;
   state:
     | "pending"
     | "uploading"

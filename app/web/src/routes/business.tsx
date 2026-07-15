@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useLocation, useParams } from "@tanstack/react-router";
 import {
   useCallback,
   useEffect,
@@ -31,6 +31,7 @@ import {
   TextField,
 } from "../components/ui";
 import { can, permissionRows, roles } from "../permissions";
+import { AccountContent } from "./account";
 
 const createBusinessSchema = z.object({
   name: z.string().min(2, "Enter a business name."),
@@ -49,6 +50,74 @@ const inviteSchema = z.object({
 
 type CreateBusinessValues = z.infer<typeof createBusinessSchema>;
 type InviteValues = z.infer<typeof inviteSchema>;
+
+export const COUNTRY_OPTIONS = [
+  { label: "Afghanistan", value: "AF" },
+  { label: "Albania", value: "AL" },
+  { label: "Algeria", value: "DZ" },
+  { label: "Argentina", value: "AR" },
+  { label: "Australia", value: "AU" },
+  { label: "Austria", value: "AT" },
+  { label: "Bangladesh", value: "BD" },
+  { label: "Belgium", value: "BE" },
+  { label: "Brazil", value: "BR" },
+  { label: "Bulgaria", value: "BG" },
+  { label: "Canada", value: "CA" },
+  { label: "Chile", value: "CL" },
+  { label: "China", value: "CN" },
+  { label: "Colombia", value: "CO" },
+  { label: "Croatia", value: "HR" },
+  { label: "Czech Republic", value: "CZ" },
+  { label: "Denmark", value: "DK" },
+  { label: "Egypt", value: "EG" },
+  { label: "Estonia", value: "EE" },
+  { label: "Finland", value: "FI" },
+  { label: "France", value: "FR" },
+  { label: "Germany", value: "DE" },
+  { label: "Greece", value: "GR" },
+  { label: "Hong Kong", value: "HK" },
+  { label: "Hungary", value: "HU" },
+  { label: "Iceland", value: "IS" },
+  { label: "India", value: "IN" },
+  { label: "Indonesia", value: "ID" },
+  { label: "Ireland", value: "IE" },
+  { label: "Israel", value: "IL" },
+  { label: "Italy", value: "IT" },
+  { label: "Japan", value: "JP" },
+  { label: "Kenya", value: "KE" },
+  { label: "Latvia", value: "LV" },
+  { label: "Lithuania", value: "LT" },
+  { label: "Malaysia", value: "MY" },
+  { label: "Mexico", value: "MX" },
+  { label: "Netherlands", value: "NL" },
+  { label: "New Zealand", value: "NZ" },
+  { label: "Nigeria", value: "NG" },
+  { label: "Norway", value: "NO" },
+  { label: "Pakistan", value: "PK" },
+  { label: "Philippines", value: "PH" },
+  { label: "Poland", value: "PL" },
+  { label: "Portugal", value: "PT" },
+  { label: "Romania", value: "RO" },
+  { label: "Russia", value: "RU" },
+  { label: "Saudi Arabia", value: "SA" },
+  { label: "Serbia", value: "RS" },
+  { label: "Singapore", value: "SG" },
+  { label: "Slovakia", value: "SK" },
+  { label: "Slovenia", value: "SI" },
+  { label: "South Africa", value: "ZA" },
+  { label: "South Korea", value: "KR" },
+  { label: "Spain", value: "ES" },
+  { label: "Sweden", value: "SE" },
+  { label: "Switzerland", value: "CH" },
+  { label: "Taiwan", value: "TW" },
+  { label: "Thailand", value: "TH" },
+  { label: "Turkey", value: "TR" },
+  { label: "Ukraine", value: "UA" },
+  { label: "United Arab Emirates", value: "AE" },
+  { label: "United Kingdom", value: "GB" },
+  { label: "United States", value: "US" },
+  { label: "Vietnam", value: "VN" },
+];
 
 function slugify(value: string): string {
   return value
@@ -105,7 +174,9 @@ function useBusinesses() {
 function workspaceTarget(pathname: string, targetSlug: string): string {
   const remainder = pathname.replace(/^\/app\/[^/]+/, "");
   const isWorkspaceSection =
-    /^\/(dashboard|team|settings|onboarding|billing)(?:\/|$)/.test(remainder);
+    /^\/(dashboard|team|settings|onboarding|billing|account)(?:\/|$)/.test(
+      remainder,
+    );
   return `/app/${targetSlug}${isWorkspaceSection ? remainder : "/dashboard"}`;
 }
 
@@ -170,6 +241,10 @@ export function WorkspaceShell({
   );
 }
 
+function navActiveClass(active: boolean): string {
+  return `nav-item ${active ? "nav-item--active" : ""}`.trim();
+}
+
 function WorkspaceFrame({
   business,
   businesses,
@@ -179,6 +254,22 @@ function WorkspaceFrame({
   businesses: BusinessSummary[];
   children: ReactNode;
 }) {
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  const dashboardHref = `/app/${business.slug}/dashboard`;
+  const settingsHref = `/app/${business.slug}/settings`;
+  const knowledgeHref = `${settingsHref}/knowledge`;
+  const teamHref = `/app/${business.slug}/team`;
+  const accountHref = `/app/${business.slug}/account`;
+
+  const isDashboard = pathname === dashboardHref;
+  const isSettings =
+    pathname.startsWith(settingsHref) && !pathname.startsWith(knowledgeHref);
+  const isKnowledge = pathname.startsWith(knowledgeHref);
+  const isTeam = pathname.startsWith(teamHref);
+  const isAccount = pathname.startsWith(accountHref);
+
   return (
     <div className="workspace-shell">
       <aside className="workspace-sidebar">
@@ -203,26 +294,43 @@ function WorkspaceFrame({
           </select>
         </label>
         <nav aria-label="Workspace">
-          <a className="nav-item" href={`/app/${business.slug}/dashboard`}>
+          <a
+            className={navActiveClass(isDashboard)}
+            aria-current={isDashboard ? "page" : undefined}
+            href={dashboardHref}
+          >
             Dashboard
           </a>
-          <a className="nav-item" href={`/app/${business.slug}/settings`}>
+          <a
+            className={navActiveClass(isSettings)}
+            aria-current={isSettings ? "page" : undefined}
+            href={settingsHref}
+          >
             Settings
           </a>
           {can(business.role, "knowledge.manage") ? (
             <a
-              className="nav-item"
-              href={`/app/${business.slug}/settings/knowledge`}
+              className={navActiveClass(isKnowledge)}
+              aria-current={isKnowledge ? "page" : undefined}
+              href={knowledgeHref}
             >
               Knowledge
             </a>
           ) : null}
           {can(business.role, "team.manage") ? (
-            <a className="nav-item" href={`/app/${business.slug}/team`}>
+            <a
+              className={navActiveClass(isTeam)}
+              aria-current={isTeam ? "page" : undefined}
+              href={teamHref}
+            >
               Team
             </a>
           ) : null}
-          <a className="nav-item" href="/account">
+          <a
+            className={navActiveClass(isAccount)}
+            aria-current={isAccount ? "page" : undefined}
+            href={accountHref}
+          >
             Account
           </a>
           <a className="nav-item" href="/secret/test-agent">
@@ -328,10 +436,11 @@ export function CreateBusinessPage() {
               error={form.formState.errors.city?.message}
               {...form.register("city")}
             />
-            <TextField
+            <SelectField
               label="Country"
               error={form.formState.errors.country?.message}
               required
+              options={COUNTRY_OPTIONS}
               {...form.register("country")}
             />
             <SelectField
@@ -429,6 +538,14 @@ export function WorkspaceDashboardPage() {
           </Box>
         </div>
       )}
+    </WorkspaceShell>
+  );
+}
+
+export function WorkspaceAccountPage() {
+  return (
+    <WorkspaceShell>
+      {() => <AccountContent />}
     </WorkspaceShell>
   );
 }

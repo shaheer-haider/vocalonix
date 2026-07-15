@@ -103,7 +103,7 @@ export function AppHomePage() {
   );
 }
 
-export function AccountPage() {
+export function AccountContent() {
   const auth = useAuth();
   const [sessions, setSessions] = useState<AccountSession[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -153,72 +153,78 @@ export function AccountPage() {
   }
 
   return (
+    <Box style={{ padding: 24 }}>
+      <div className="account-heading">
+        <div>
+          <p className="eyebrow">Account</p>
+          <h1 className="account-title">{auth.session?.user.name}</h1>
+          <p className="auth-card-copy">{auth.session?.user.email}</p>
+        </div>
+        <Link className="ui-button" to="/app">
+          Back to app
+        </Link>
+      </div>
+
+      {error ? <Alert variant="error">{error}</Alert> : null}
+
+      <section className="account-section">
+        <div className="account-section__heading">
+          <div>
+            <h2>Active sessions</h2>
+            <p>Sessions are stored server-side and backed by HTTP-only cookies.</p>
+          </div>
+          <Pill>{sessions.length}</Pill>
+        </div>
+        {loading ? (
+          <LoadingState label="Loading sessions…" />
+        ) : (
+          <div className="session-list">
+            {sessions.map((session) => (
+              <div className="session-item" key={session.id}>
+                <div>
+                  <strong>
+                    {session.current ? "This browser" : "Another session"}
+                  </strong>
+                  <span>{session.userAgent || "Unknown browser"}</span>
+                </div>
+                <time dateTime={new Date(session.updatedAt).toISOString()}>
+                  {formatDate(session.updatedAt)}
+                </time>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="stack-row">
+        <Button
+          variant="ghost"
+          loading={working === "logout"}
+          onClick={() => void signOut(false)}
+        >
+          Log out
+        </Button>
+        <Button
+          variant="destructive"
+          loading={working === "logout-all"}
+          onClick={() => void signOut(true)}
+        >
+          Log out everywhere
+        </Button>
+      </div>
+    </Box>
+  );
+}
+
+export function AccountPage() {
+  return (
     <AuthShell width={680}>
       <div className="auth-header">
         <Link to="/" className="wordmark">
           vocalonix
         </Link>
       </div>
-      <Box style={{ padding: 24 }}>
-        <div className="account-heading">
-          <div>
-            <p className="eyebrow">Account</p>
-            <h1 className="account-title">{auth.session?.user.name}</h1>
-            <p className="auth-card-copy">{auth.session?.user.email}</p>
-          </div>
-          <Link className="ui-button" to="/app">
-            Back to app
-          </Link>
-        </div>
-
-        {error ? <Alert variant="error">{error}</Alert> : null}
-
-        <section className="account-section">
-          <div className="account-section__heading">
-            <div>
-              <h2>Active sessions</h2>
-              <p>Sessions are stored server-side and backed by HTTP-only cookies.</p>
-            </div>
-            <Pill>{sessions.length}</Pill>
-          </div>
-          {loading ? (
-            <LoadingState label="Loading sessions…" />
-          ) : (
-            <div className="session-list">
-              {sessions.map((session) => (
-                <div className="session-item" key={session.id}>
-                  <div>
-                    <strong>
-                      {session.current ? "This browser" : "Another session"}
-                    </strong>
-                    <span>{session.userAgent || "Unknown browser"}</span>
-                  </div>
-                  <time dateTime={new Date(session.updatedAt).toISOString()}>
-                    {formatDate(session.updatedAt)}
-                  </time>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <div className="stack-row">
-          <Button
-            variant="ghost"
-            loading={working === "logout"}
-            onClick={() => void signOut(false)}
-          >
-            Log out
-          </Button>
-          <Button
-            variant="destructive"
-            loading={working === "logout-all"}
-            onClick={() => void signOut(true)}
-          >
-            Log out everywhere
-          </Button>
-        </div>
-      </Box>
+      <AccountContent />
     </AuthShell>
   );
 }
