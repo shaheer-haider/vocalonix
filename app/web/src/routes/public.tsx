@@ -97,8 +97,8 @@ export function LandingPage() {
         <div className="landing__note">
           <strong>Widget-first MVP:</strong> browser calls work in the{" "}
           <Link to="/secret/test-agent">unprotected lab</Link>. Accounts and
-          cookie-backed sessions are now available; business workspaces arrive
-          in the next phase.
+          cookie-backed sessions now support real multi-business workspaces,
+          roles, and invitations.
         </div>
       </section>
     </AuthShell>
@@ -154,13 +154,19 @@ export function LoginPage() {
           >
             Log in →
           </Button>
-          <Link className="auth-secondary-link" to="/magic">
+          <a
+            className="auth-secondary-link"
+            href={`/magic?redirect=${encodeURIComponent(intendedRoute())}`}
+          >
             Email me a sign-in link
-          </Link>
+          </a>
         </Box>
       </form>
       <p className="auth-switch">
-        New here? <Link to="/signup">Create an account</Link>
+        New here?{" "}
+        <a href={`/signup?redirect=${encodeURIComponent(intendedRoute())}`}>
+          Create an account
+        </a>
       </p>
     </AuthShell>
   );
@@ -185,7 +191,10 @@ export function SignupPage() {
         onSubmit={form.handleSubmit(async (values) => {
           setNotice(null);
           try {
-            const result = await api.auth.signup(values);
+            const result = await api.auth.signup({
+              ...values,
+              returnTo: intendedRoute(),
+            });
             if (result.requiresVerification) {
               setNotice({
                 message: result.verificationPreviewUrl
@@ -197,7 +206,7 @@ export function SignupPage() {
               return;
             }
             await auth.refresh();
-            window.location.replace("/app");
+            window.location.replace(intendedRoute());
           } catch (error) {
             setNotice({
               message: errorMessage(error, "Unable to create the account."),
@@ -254,7 +263,10 @@ export function SignupPage() {
         </Box>
       </form>
       <p className="auth-switch">
-        Already have an account? <Link to="/login">Log in</Link>
+        Already have an account?{" "}
+        <a href={`/login?redirect=${encodeURIComponent(intendedRoute())}`}>
+          Log in
+        </a>
       </p>
     </AuthShell>
   );
@@ -283,7 +295,10 @@ function MagicLinkRequest() {
         onSubmit={form.handleSubmit(async ({ email }) => {
           setResult(null);
           try {
-            const response = await api.auth.requestMagicLink(email);
+            const response = await api.auth.requestMagicLink(
+              email,
+              intendedRoute(),
+            );
             setResult({
               message: response.previewUrl
                 ? "Email delivery is disabled locally. Use the preview link below."
@@ -399,7 +414,10 @@ function MagicLinkCallback({ token }: { token: string }) {
         <h1 className="auth-card-title">{state.title}</h1>
         <Alert variant={state.variant}>{state.message}</Alert>
         {state.success ? (
-          <a className="ui-button ui-button--primary full-width" href="/app">
+          <a
+            className="ui-button ui-button--primary full-width"
+            href={intendedRoute()}
+          >
             Continue to Vocalonix →
           </a>
         ) : (
@@ -456,7 +474,7 @@ export function VerifyEmailPage() {
         </Alert>
         <a
           className="ui-button ui-button--primary full-width"
-          href={state.success ? "/app" : "/login"}
+          href={state.success ? intendedRoute() : "/login"}
         >
           {state.success ? "Continue to Vocalonix →" : "Return to login"}
         </a>

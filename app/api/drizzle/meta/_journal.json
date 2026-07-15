@@ -8,6 +8,20 @@
       "when": 1784106595975,
       "tag": "0000_crazy_meggan",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784113132429,
+      "tag": "0001_small_corsair",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784113454983,
+      "tag": "0002_normal_monster_badoon",
+      "breakpoints": true
     }
   ]
 }

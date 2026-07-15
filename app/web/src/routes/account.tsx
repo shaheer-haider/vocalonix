@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { api, type AccountSession } from "../api";
+import { api, type AccountSession, type BusinessSummary } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
 import { Alert, Box, Button, LoadingState, Pill } from "../components/ui";
@@ -15,6 +15,33 @@ function formatDate(value: string | Date): string {
 
 export function AppHomePage() {
   const auth = useAuth();
+  const [businesses, setBusinesses] = useState<BusinessSummary[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loadingBusinesses, setLoadingBusinesses] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void api.businesses
+      .list()
+      .then((items) => {
+        if (!cancelled) setBusinesses(items);
+      })
+      .catch((caught: unknown) => {
+        if (!cancelled) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "Unable to load workspaces.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingBusinesses(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (auth.status === "loading") {
     return <LoadingState label="Restoring your account…" />;
@@ -33,11 +60,38 @@ export function AppHomePage() {
           Welcome{auth.session?.user.name ? `, ${auth.session.user.name}` : ""}
         </h1>
         <p className="auth-card-copy">
-          Your account is ready. Business workspaces, memberships, and
-          invitations arrive in the next phase.
+          Your account is ready. Create or open a business workspace to manage
+          members and invitations.
         </p>
+        {error ? <Alert variant="error">{error}</Alert> : null}
+        {loadingBusinesses ? (
+          <LoadingState label="Loading workspaces…" />
+        ) : businesses.length > 0 ? (
+          <div className="session-list">
+            {businesses.map((business) => (
+              <a
+                className="session-item"
+                href={`/app/${business.slug}/dashboard`}
+                key={business.id}
+              >
+                <div>
+                  <strong>{business.name}</strong>
+                  <span>{business.role}</span>
+                </div>
+                <Pill>{business.initial}</Pill>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <Alert variant="warn">
+            No business workspaces yet. Create the first one to continue.
+          </Alert>
+        )}
         <div className="stack-row">
-          <Link className="ui-button ui-button--primary" to="/account">
+          <Link className="ui-button ui-button--primary" to="/app/onboarding/create">
+            Create workspace
+          </Link>
+          <Link className="ui-button" to="/account">
             Account settings
           </Link>
           <Link className="ui-button" to="/secret/test-agent">
