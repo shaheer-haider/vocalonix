@@ -9,6 +9,27 @@ export interface AgentSettings {
   widgetColor: string;
 }
 
+export interface BusinessHoursDay {
+  enabled: boolean;
+  open: string;
+  close: string;
+}
+
+export interface TenantAgentSettings {
+  agentName: string;
+  greeting: string;
+  prompt: string;
+  closing: string;
+  tone: string;
+  voice: string;
+  allowInterrupt: boolean;
+  escalationGuidance: string;
+  businessHours: Record<string, BusinessHoursDay>;
+  widgetButtonText: string;
+  widgetColor: string;
+  allowedDomains: string[];
+}
+
 export interface DograhWorkflowSummary {
   id: number;
   name: string;
@@ -17,6 +38,7 @@ export interface DograhWorkflowSummary {
 
 export interface DograhWorkflow extends DograhWorkflowSummary {
   workflow_definition: Record<string, unknown>;
+  workflow_configurations?: Record<string, unknown> | null;
   workflow_uuid?: string | null;
 }
 
@@ -47,5 +69,6 @@ export interface DograhUpload {
 export interface DograhEmbedToken {
   token: string;
   is_active: boolean;
+  allowed_domains?: string[] | null;
   settings: Record<string, unknown> | null;
 }

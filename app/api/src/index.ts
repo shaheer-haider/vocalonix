@@ -14,6 +14,7 @@ import {
 import { env } from "./env";
 import { ApiError } from "./errors";
 import { workspaceRoutes } from "./workspace/routes";
+import { tenantRoutes } from "./tenant/routes";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx", "txt", "json"]);
@@ -105,6 +106,7 @@ export const app = new Elysia()
     return { error: "Unexpected server error" };
   })
   .use(authRoutes)
+  .use(tenantRoutes)
   .use(workspaceRoutes)
   .get("/api/health", () => ({
     status: "ok",

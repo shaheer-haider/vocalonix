@@ -31,6 +31,10 @@ import {
   SignupPage,
   VerifyEmailPage,
 } from "./routes/public";
+import {
+  TenantOnboardingPage,
+  TenantSettingsPage,
+} from "./routes/tenant";
 
 const rootRoute = createRootRoute({
   component: Outlet,
@@ -149,6 +153,48 @@ const workspaceTeamRoute = createRoute({
   component: TeamPage,
 });
 
+const workspaceOnboardingRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/onboarding/$step",
+  component: TenantOnboardingPage,
+});
+
+const workspaceSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings",
+  component: TenantSettingsPage,
+});
+
+const workspaceProfileSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/profile",
+  component: () => <TenantSettingsPage section="profile" />,
+});
+
+const workspaceAgentSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/agent",
+  component: () => <TenantSettingsPage section="agent" />,
+});
+
+const workspaceKnowledgeSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/knowledge",
+  component: () => <TenantSettingsPage section="knowledge" />,
+});
+
+const workspaceHoursSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/hours",
+  component: () => <TenantSettingsPage section="hours" />,
+});
+
+const workspaceWidgetSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/widget",
+  component: () => <TenantSettingsPage section="widget" />,
+});
+
 const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account",
@@ -239,6 +285,13 @@ const routeTree = rootRoute.addChildren([
     workspaceIndexRoute,
     workspaceDashboardRoute,
     workspaceTeamRoute,
+    workspaceOnboardingRoute,
+    workspaceSettingsRoute,
+    workspaceProfileSettingsRoute,
+    workspaceAgentSettingsRoute,
+    workspaceKnowledgeSettingsRoute,
+    workspaceHoursSettingsRoute,
+    workspaceWidgetSettingsRoute,
   ]),
   accountRoute,
   securityRoute,

@@ -1,7 +1,9 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  customType,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -150,7 +152,31 @@ export const dograhSyncStateEnum = pgEnum("dograh_sync_state", [
   "synced",
   "rejected",
   "failed",
+  "offboarding",
+  "offboarded",
 ]);
+
+export const knowledgeKindEnum = pgEnum("knowledge_kind", [
+  "document",
+  "text",
+  "website_reference",
+]);
+
+export const knowledgeStateEnum = pgEnum("knowledge_state", [
+  "pending",
+  "uploading",
+  "processing",
+  "active",
+  "failed",
+  "delete_pending",
+  "deleted",
+]);
+
+const bytea = customType<{ data: Uint8Array }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 export const businesses = pgTable(
   "businesses",
@@ -274,6 +300,14 @@ export const outboxEvents = pgTable(
     eventType: text("event_type").notNull(),
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
     status: outboxStatusEnum("status").notNull().default("pending"),
+    dedupeKey: text("dedupe_key"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(8),
+    availableAt: timestamp("available_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    lastError: text("last_error"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -284,7 +318,11 @@ export const outboxEvents = pgTable(
   },
   (table) => [
     index("outbox_events_status_created_idx").on(table.status, table.createdAt),
+    index("outbox_events_available_idx").on(table.status, table.availableAt),
     index("outbox_events_business_idx").on(table.businessId),
+    uniqueIndex("outbox_events_dedupe_key_active_unique")
+      .on(table.dedupeKey)
+      .where(sql`${table.status} in ('pending', 'processing')`),
   ],
 );
 
@@ -296,11 +334,18 @@ export const businessDograhMappings = pgTable(
       .references(() => businesses.id, { onDelete: "cascade" }),
     workflowId: text("workflow_id"),
     workflowUuid: text("workflow_uuid"),
+    configVersion: integer("config_version").notNull().default(1),
     configHash: text("config_hash"),
+    syncedConfigHash: text("synced_config_hash"),
     syncState: dograhSyncStateEnum("sync_state").notNull().default("pending"),
+    errorCategory: text("error_category"),
     lastError: text("last_error"),
+    syncLeaseId: text("sync_lease_id"),
+    syncLeaseExpiresAt: timestamp("sync_lease_expires_at", { withTimezone: true }),
+    retryRequestedAt: timestamp("retry_requested_at", { withTimezone: true }),
     lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
     lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+    offboardedAt: timestamp("offboarded_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -311,6 +356,92 @@ export const businessDograhMappings = pgTable(
   (table) => [
     index("business_dograh_sync_state_idx").on(table.syncState),
     uniqueIndex("business_dograh_workflow_id_unique").on(table.workflowId),
+  ],
+);
+
+export const businessAgentSettings = pgTable("business_agent_settings", {
+  businessId: text("business_id")
+    .primaryKey()
+    .references(() => businesses.id, { onDelete: "cascade" }),
+  agentName: text("agent_name").notNull().default("Nova"),
+  greeting: text("greeting")
+    .notNull()
+    .default("Hi, thanks for visiting. I am Nova. How can I help you today?"),
+  prompt: text("prompt")
+    .notNull()
+    .default(
+      "Answer clearly from saved business context and attached knowledge. If the answer is unknown, say a team member can follow up instead of guessing.",
+    ),
+  closing: text("closing").notNull().default("Thanks for visiting. Have a great day."),
+  tone: text("tone").notNull().default("warm"),
+  voice: text("voice").notNull().default("natural"),
+  allowInterrupt: boolean("allow_interrupt").notNull().default(true),
+  escalationGuidance: text("escalation_guidance")
+    .notNull()
+    .default("Offer to have a team member follow up when a request needs human help."),
+  businessHours: jsonb("business_hours")
+    .$type<Record<string, { enabled: boolean; open: string; close: string }>>()
+    .notNull()
+    .default({}),
+  widgetButtonText: text("widget_button_text").notNull().default("Talk to us"),
+  widgetColor: text("widget_color").notNull().default("#5b5bd6"),
+  allowedDomains: jsonb("allowed_domains").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const businessOnboarding = pgTable("business_onboarding", {
+  businessId: text("business_id")
+    .primaryKey()
+    .references(() => businesses.id, { onDelete: "cascade" }),
+  completedSteps: jsonb("completed_steps").$type<string[]>().notNull().default([]),
+  currentStep: text("current_step").notNull().default("business-profile"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const businessKnowledge = pgTable(
+  "business_knowledge",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    kind: knowledgeKindEnum("kind").notNull(),
+    title: text("title").notNull(),
+    sourceText: text("source_text"),
+    sourceBytes: bytea("source_bytes"),
+    filename: text("filename").notNull(),
+    mimeType: text("mime_type").notNull(),
+    retrievalMode: text("retrieval_mode").notNull().default("chunked"),
+    remoteDocumentUuid: text("remote_document_uuid"),
+    remoteStorageKey: text("remote_storage_key"),
+    state: knowledgeStateEnum("state").notNull().default("pending"),
+    active: boolean("active").notNull().default(false),
+    replacesKnowledgeId: text("replaces_knowledge_id"),
+    lastError: text("last_error"),
+    nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("business_knowledge_business_idx").on(table.businessId),
+    index("business_knowledge_state_idx").on(table.state),
+    uniqueIndex("business_knowledge_remote_uuid_unique").on(table.remoteDocumentUuid),
   ],
 );
 

@@ -66,7 +66,7 @@ function formatDate(value: string | Date): string {
   }).format(new Date(value));
 }
 
-function useBusinessSlug(): string {
+export function useBusinessSlug(): string {
   const params = useParams({ strict: false }) as { businessSlug?: string };
   return params.businessSlug ?? "";
 }
@@ -105,11 +105,11 @@ function useBusinesses() {
 function workspaceTarget(pathname: string, targetSlug: string): string {
   const remainder = pathname.replace(/^\/app\/[^/]+/, "");
   const isWorkspaceSection =
-    /^\/(dashboard|team|settings|billing)(?:\/|$)/.test(remainder);
+    /^\/(dashboard|team|settings|onboarding|billing)(?:\/|$)/.test(remainder);
   return `/app/${targetSlug}${isWorkspaceSection ? remainder : "/dashboard"}`;
 }
 
-function WorkspaceShell({
+export function WorkspaceShell({
   children,
   requiredPermission,
 }: {
@@ -206,6 +206,17 @@ function WorkspaceFrame({
           <a className="nav-item" href={`/app/${business.slug}/dashboard`}>
             Dashboard
           </a>
+          <a className="nav-item" href={`/app/${business.slug}/settings`}>
+            Settings
+          </a>
+          {can(business.role, "knowledge.manage") ? (
+            <a
+              className="nav-item"
+              href={`/app/${business.slug}/settings/knowledge`}
+            >
+              Knowledge
+            </a>
+          ) : null}
           {can(business.role, "team.manage") ? (
             <a className="nav-item" href={`/app/${business.slug}/team`}>
               Team
@@ -270,7 +281,9 @@ export function CreateBusinessPage() {
                 city: values.city || undefined,
                 slug,
               });
-              window.location.replace(`/app/${business.slug}/dashboard`);
+              window.location.replace(
+                `/app/${business.slug}/onboarding/business-profile`,
+              );
               return;
             } catch (caught) {
               if (
@@ -379,19 +392,25 @@ export function WorkspaceDashboardPage() {
             <Pill variant="good">Workspace active</Pill>
             <h2>Business control plane</h2>
             <p>
-              {business.name} is ready for tenant-scoped onboarding and Dograh
-              synchronization in the next phase.
+              Manage {business.name}&apos;s agent, knowledge, widget, and
+              tenant-scoped Dograh workflow.
             </p>
+            <a className="ui-button" href={`/app/${business.slug}/settings`}>
+              Open settings
+            </a>
           </Box>
           <Box style={{ padding: 20 }}>
-            <h2>Next setup step</h2>
+            <h2>Onboarding</h2>
             <p>
-              Configure agent settings and knowledge from the existing MVP lab
-              while tenant-scoped Dograh sync is being added.
+              Resume the persisted setup flow. Each step advances only after its
+              real tenant mutation succeeds.
             </p>
             {can(business.role, "agent.edit") ? (
-              <a className="ui-button" href="/secret/agent-settings">
-                Open agent settings
+              <a
+                className="ui-button"
+                href={`/app/${business.slug}/onboarding/business-profile`}
+              >
+                Open onboarding
               </a>
             ) : (
               <p>Your role has read-only workspace access.</p>

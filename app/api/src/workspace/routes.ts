@@ -7,7 +7,9 @@ import { hashAuthToken, normalizeEmail, sendEmail } from "../auth/email";
 import { db } from "../db/client";
 import {
   auditLogs,
+  businessAgentSettings,
   businessDograhMappings,
+  businessOnboarding,
   businesses,
   invitations,
   memberships,
@@ -221,6 +223,16 @@ export const workspaceRoutes = new Elysia()
             createdAt: now,
             updatedAt: now,
           });
+          await tx.insert(businessAgentSettings).values({
+            businessId,
+            createdAt: now,
+            updatedAt: now,
+          });
+          await tx.insert(businessOnboarding).values({
+            businessId,
+            createdAt: now,
+            updatedAt: now,
+          });
           await tx.insert(auditLogs).values({
             id: randomUUID(),
             businessId,
@@ -237,6 +249,8 @@ export const workspaceRoutes = new Elysia()
             eventType: "dograh.workflow.ensure",
             payload: { businessId },
             status: "pending",
+            dedupeKey: `dograh.workflow.ensure:${businessId}`,
+            availableAt: now,
             createdAt: now,
             updatedAt: now,
           });

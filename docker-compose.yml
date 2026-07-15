@@ -93,6 +93,38 @@ services:
     networks:
       - app-network
 
+  vocalonix-worker:
+    build:
+      context: .
+      dockerfile: app/api/Dockerfile
+    restart: unless-stopped
+    command: ["bun", "src/worker.ts"]
+    environment:
+      PORT: "3001"
+      APP_ORIGIN: "${APP_ORIGIN:-http://localhost:3000}"
+      API_PUBLIC_URL: "${VOCALONIX_API_PUBLIC_URL:-http://localhost:3001}"
+      NODE_ENV: "${NODE_ENV:-development}"
+      DATABASE_URL: "postgres://${VOCALONIX_POSTGRES_USER:-vocalonix}:${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${VOCALONIX_POSTGRES_DB:-vocalonix}"
+      AUTH_SECRET: "${AUTH_SECRET:-dev-only-vocalonix-auth-secret-change-before-production}"
+      REQUIRE_EMAIL_VERIFICATION: "${REQUIRE_EMAIL_VERIFICATION:-false}"
+      RESEND_API_KEY: "${RESEND_API_KEY:-}"
+      EMAIL_FROM: "${EMAIL_FROM:-Vocalonix <hello@vocalonix.ai>}"
+      DOGRAH_INTERNAL_URL: "http://api:8000"
+      DOGRAH_PUBLIC_API_URL: "${DOGRAH_PUBLIC_API_URL:-http://localhost:8000}"
+      DOGRAH_WIDGET_URL: "${DOGRAH_WIDGET_URL:-http://localhost:3000}"
+      DOGRAH_STORAGE_INTERNAL_URL: "http://minio:9000"
+      DOGRAH_API_KEY: "${DOGRAH_API_KEY:-}"
+      DOGRAH_SERVICE_EMAIL: "${DOGRAH_SERVICE_EMAIL:-vocalonix@vocalonix.ai}"
+      DOGRAH_SERVICE_PASSWORD: "${DOGRAH_SERVICE_PASSWORD:-change-me-vocalonix}"
+      DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME:-Vocalonix}"
+      DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME:-Vocalonix Agent}"
+      DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS:-localhost,127.0.0.1}"
+    depends_on:
+      vocalonix-api:
+        condition: service_healthy
+    networks:
+      - app-network
+
   vocalonix-web:
     build:
       context: .

@@ -1,6 +1,7 @@
 import { env } from "../env";
 import type {
   DograhDocumentList,
+  DograhDocument,
   DograhEmbedToken,
   DograhUpload,
   DograhWorkflow,
@@ -39,7 +40,43 @@ function errorDetail(value: unknown): string {
   return "Dograh request failed";
 }
 
-class DograhClient {
+export interface DograhManagementClient {
+  getWorkflow(id: number): Promise<DograhWorkflow>;
+  createWorkflow(
+    name: string,
+    workflowDefinition: Record<string, unknown>,
+  ): Promise<DograhWorkflow>;
+  updateWorkflow(
+    id: number,
+    name: string,
+    workflowDefinition: Record<string, unknown>,
+    workflowConfigurations?: Record<string, unknown>,
+  ): Promise<DograhWorkflow>;
+  publishWorkflow(id: number): Promise<Record<string, unknown>>;
+  archiveWorkflow(id: number): Promise<Record<string, unknown>>;
+  requestUpload(
+    filename: string,
+    mimeType: string,
+    businessId?: string,
+  ): Promise<DograhUpload>;
+  uploadBytes(uploadUrl: string, bytes: Uint8Array, mimeType: string): Promise<void>;
+  processDocument(
+    documentUuid: string,
+    s3Key: string,
+    retrievalMode: string,
+  ): Promise<Record<string, unknown>>;
+  getDocument(documentUuid: string): Promise<DograhDocument>;
+  deleteDocument(documentUuid: string): Promise<Record<string, unknown>>;
+  getEmbedToken(workflowId: number): Promise<DograhEmbedToken | null>;
+  createEmbedToken(
+    workflowId: number,
+    settings: Record<string, unknown>,
+    allowedDomains?: string[],
+  ): Promise<DograhEmbedToken>;
+  deactivateEmbedToken(workflowId: number): Promise<Record<string, unknown>>;
+}
+
+export class DograhClient implements DograhManagementClient {
   private sessionToken: string | null = null;
   private authentication: Promise<string> | null = null;
 
@@ -167,10 +204,21 @@ class DograhClient {
     });
   }
 
-  updateWorkflow(id: number, name: string, workflowDefinition: Record<string, unknown>): Promise<DograhWorkflow> {
+  updateWorkflow(
+    id: number,
+    name: string,
+    workflowDefinition: Record<string, unknown>,
+    workflowConfigurations?: Record<string, unknown>,
+  ): Promise<DograhWorkflow> {
     return this.rawRequest(`/workflow/${id}`, {
       method: "PUT",
-      body: { name, workflow_definition: workflowDefinition },
+      body: {
+        name,
+        workflow_definition: workflowDefinition,
+        ...(workflowConfigurations
+          ? { workflow_configurations: workflowConfigurations }
+          : {}),
+      },
     });
   }
 
@@ -178,17 +226,31 @@ class DograhClient {
     return this.rawRequest(`/workflow/${id}/publish`, { method: "POST" });
   }
 
+  archiveWorkflow(id: number): Promise<Record<string, unknown>> {
+    return this.rawRequest(`/workflow/${id}/status`, {
+      method: "PUT",
+      body: { status: "archived" },
+    });
+  }
+
   listDocuments(): Promise<DograhDocumentList> {
     return this.rawRequest("/knowledge-base/documents?limit=100&offset=0");
   }
 
-  requestUpload(filename: string, mimeType: string): Promise<DograhUpload> {
+  requestUpload(
+    filename: string,
+    mimeType: string,
+    businessId?: string,
+  ): Promise<DograhUpload> {
     return this.rawRequest("/knowledge-base/upload-url", {
       method: "POST",
       body: {
         filename,
         mime_type: mimeType,
-        custom_metadata: { source: "vocalonix" },
+        custom_metadata: {
+          source: "vocalonix",
+          ...(businessId ? { business_id: businessId } : {}),
+        },
       },
     });
   }
@@ -208,18 +270,28 @@ class DograhClient {
     return this.rawRequest(`/knowledge-base/documents/${documentUuid}`, { method: "DELETE" });
   }
 
+  getDocument(documentUuid: string): Promise<DograhDocument> {
+    return this.rawRequest(`/knowledge-base/documents/${documentUuid}`);
+  }
+
   getEmbedToken(workflowId: number): Promise<DograhEmbedToken | null> {
-    return this.rawRequest(`/workflow/${workflowId}/embed-token`);
+    return this.rawRequest<DograhEmbedToken>(
+      `/workflow/${workflowId}/embed-token`,
+    ).catch((error: unknown) => {
+      if (error instanceof DograhError && error.status === 404) return null;
+      throw error;
+    });
   }
 
   createEmbedToken(
     workflowId: number,
     settings: Record<string, unknown>,
+    allowedDomains = env.dograhWidgetAllowedDomains,
   ): Promise<DograhEmbedToken> {
     return this.rawRequest(`/workflow/${workflowId}/embed-token`, {
       method: "POST",
       body: {
-        allowed_domains: env.dograhWidgetAllowedDomains,
+        allowed_domains: allowedDomains,
         settings,
         usage_limit: null,
         expires_in_days: null,
@@ -227,15 +299,34 @@ class DograhClient {
     });
   }
 
-  async uploadFile(uploadUrl: string, file: File): Promise<void> {
-    const destination = new URL(uploadUrl);
-    if (env.dograhStorageInternalUrl) {
-      const internal = new URL(env.dograhStorageInternalUrl);
-      destination.protocol = internal.protocol;
-      destination.hostname = internal.hostname;
-      destination.port = internal.port;
-    }
+  deactivateEmbedToken(workflowId: number): Promise<Record<string, unknown>> {
+    return this.rawRequest(`/workflow/${workflowId}/embed-token`, {
+      method: "DELETE",
+    });
+  }
 
+  async uploadBytes(
+    uploadUrl: string,
+    bytes: Uint8Array,
+    mimeType: string,
+  ): Promise<void> {
+    const destination = this.storageDestination(uploadUrl);
+    const response = await fetch(destination, {
+      method: "PUT",
+      headers: { "Content-Type": mimeType || "application/octet-stream" },
+      body: bytes,
+    });
+
+    if (!response.ok) {
+      throw new DograhError(
+        "Failed to upload the document to Dograh storage",
+        response.status,
+      );
+    }
+  }
+
+  async uploadFile(uploadUrl: string, file: File): Promise<void> {
+    const destination = this.storageDestination(uploadUrl);
     const response = await fetch(destination, {
       method: "PUT",
       headers: { "Content-Type": file.type || "application/octet-stream" },
@@ -243,8 +334,22 @@ class DograhClient {
     });
 
     if (!response.ok) {
-      throw new DograhError("Failed to upload the document to Dograh storage", response.status);
+      throw new DograhError(
+        "Failed to upload the document to Dograh storage",
+        response.status,
+      );
     }
+  }
+
+  private storageDestination(uploadUrl: string): URL {
+    const destination = new URL(uploadUrl);
+    if (env.dograhStorageInternalUrl) {
+      const internal = new URL(env.dograhStorageInternalUrl);
+      destination.protocol = internal.protocol;
+      destination.hostname = internal.hostname;
+      destination.port = internal.port;
+    }
+    return destination;
   }
 }
 
