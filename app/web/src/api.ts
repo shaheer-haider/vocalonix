@@ -376,7 +376,22 @@ export const api = {
         retrievalMode: "chunked" | "full_document";
         replacementId?: string;
       },
-    ) => unwrap(await client.api.b[slug].knowledge.post(input)),
+    ) =>
+      unwrap(
+        await client.api.b[slug].knowledge.post({
+          kind: input.kind,
+          title: input.title,
+          retrievalMode: input.retrievalMode,
+          ...(input.text !== undefined ? { text: input.text } : {}),
+          ...(input.websiteUrl !== undefined
+            ? { websiteUrl: input.websiteUrl }
+            : {}),
+          ...(input.file !== undefined ? { file: input.file } : {}),
+          ...(input.replacementId !== undefined
+            ? { replacementId: input.replacementId }
+            : {}),
+        }),
+      ),
     deleteKnowledge: async (slug: string, knowledgeId: string) =>
       unwrap(await client.api.b[slug].knowledge[knowledgeId].delete()),
     delete: async (slug: string) =>
