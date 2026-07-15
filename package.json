@@ -10,6 +10,9 @@
     "dev": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api dev\" \"bun run --cwd app/web dev\"",
     "typecheck": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api typecheck\" \"bun run --cwd app/web typecheck\"",
     "build": "concurrently -n api,web -c cyan,magenta \"bun run --cwd app/api build\" \"bun run --cwd app/web build\"",
+    "db:generate": "bun run --cwd app/api db:generate",
+    "db:migrate": "bun run --cwd app/api db:migrate",
+    "db:studio": "bun run --cwd app/api db:studio",
     "docker:config": "docker compose config",
     "docker:up": "./scripts/start.sh",
     "docker:down": "docker compose down"

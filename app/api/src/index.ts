@@ -1,6 +1,7 @@
 import { cors } from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
 
+import { authRoutes } from "./auth/routes";
 import { dograh, DograhError } from "./dograh/client";
 import type { AgentSettings } from "./dograh/types";
 import {
@@ -11,6 +12,7 @@ import {
   syncCompletedDocuments,
 } from "./dograh/workflow";
 import { env } from "./env";
+import { ApiError } from "./errors";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx", "txt", "json"]);
@@ -79,15 +81,20 @@ async function widgetPayload() {
   };
 }
 
-const app = new Elysia()
+export const app = new Elysia()
   .use(
     cors({
       origin: env.appOrigins,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["content-type"],
+      credentials: true,
     }),
   )
   .onError(({ error, set }) => {
+    if (error instanceof ApiError) {
+      set.status = error.status;
+      return { error: error.message, code: error.code };
+    }
     if (error instanceof DograhError) {
       set.status = error.status >= 500 ? 502 : error.status;
       return { error: error.message };
@@ -96,6 +103,7 @@ const app = new Elysia()
     set.status = 500;
     return { error: "Unexpected server error" };
   })
+  .use(authRoutes)
   .get("/api/health", () => ({
     status: "ok",
     service: "vocalonix-api",
@@ -197,7 +205,11 @@ const app = new Elysia()
     const documents = await dograh.listDocuments();
     await syncCompletedDocuments(documents.documents);
     return { ok: true };
-  })
-  .listen(env.port);
+  });
 
-console.log(`Vocalonix API listening on http://localhost:${app.server?.port}`);
+export type App = typeof app;
+
+if (import.meta.main) {
+  app.listen(env.port);
+  console.log(`Vocalonix API listening on http://localhost:${app.server?.port}`);
+}

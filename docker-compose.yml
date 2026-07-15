@@ -4,6 +4,29 @@ services:
       file: ./dograh/docker-compose.yaml
       service: postgres
 
+  vocalonix-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${VOCALONIX_POSTGRES_USER:-vocalonix}"
+      POSTGRES_PASSWORD: "${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}"
+      POSTGRES_DB: "${VOCALONIX_POSTGRES_DB:-vocalonix}"
+    ports:
+      - "${VOCALONIX_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - vocalonix_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${VOCALONIX_POSTGRES_USER:-vocalonix} -d ${VOCALONIX_POSTGRES_DB:-vocalonix}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
   redis:
     extends:
       file: ./dograh/docker-compose.yaml
@@ -37,6 +60,13 @@ services:
     environment:
       PORT: "3001"
       APP_ORIGIN: "${APP_ORIGIN:-http://localhost:3000}"
+      API_PUBLIC_URL: "${VOCALONIX_API_PUBLIC_URL:-http://localhost:3001}"
+      NODE_ENV: "${NODE_ENV:-development}"
+      DATABASE_URL: "postgres://${VOCALONIX_POSTGRES_USER:-vocalonix}:${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${VOCALONIX_POSTGRES_DB:-vocalonix}"
+      AUTH_SECRET: "${AUTH_SECRET:-dev-only-vocalonix-auth-secret-change-before-production}"
+      REQUIRE_EMAIL_VERIFICATION: "${REQUIRE_EMAIL_VERIFICATION:-false}"
+      RESEND_API_KEY: "${RESEND_API_KEY:-}"
+      EMAIL_FROM: "${EMAIL_FROM:-Vocalonix <hello@vocalonix.ai>}"
       DOGRAH_INTERNAL_URL: "http://api:8000"
       DOGRAH_PUBLIC_API_URL: "${DOGRAH_PUBLIC_API_URL:-http://localhost:8000}"
       DOGRAH_WIDGET_URL: "${DOGRAH_WIDGET_URL:-http://localhost:3000}"
@@ -50,6 +80,8 @@ services:
     ports:
       - "3001:3001"
     depends_on:
+      vocalonix-db:
+        condition: service_healthy
       api:
         condition: service_healthy
     healthcheck:
@@ -84,6 +116,7 @@ services:
 
 volumes:
   postgres_data:
+  vocalonix_postgres_data:
   redis_data:
   minio-data:
 

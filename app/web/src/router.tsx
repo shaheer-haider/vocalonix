@@ -11,8 +11,20 @@ import App, {
   KnowledgeBase,
   TestAgent,
 } from "./App";
+import { api } from "./api";
 import { DesignSystemPage } from "./routes/DesignSystem";
-import { LandingPage, LoginPage, SignupPage } from "./routes/public";
+import {
+  AccountPage,
+  AppHomePage,
+  SecurityPage,
+} from "./routes/account";
+import {
+  LandingPage,
+  LoginPage,
+  MagicLinkPage,
+  SignupPage,
+  VerifyEmailPage,
+} from "./routes/public";
 
 const rootRoute = createRootRoute({
   component: Outlet,
@@ -43,6 +55,63 @@ const signupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/signup",
   component: SignupPage,
+});
+
+const magicLinkRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/magic",
+  component: MagicLinkPage,
+});
+
+const verifyEmailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/verify-email",
+  component: VerifyEmailPage,
+});
+
+const appRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/app",
+  beforeLoad: async ({ location }) => {
+    const session = await api.auth.session();
+    if (!session) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+  },
+  component: AppHomePage,
+});
+
+const accountRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account",
+  beforeLoad: async ({ location }) => {
+    const session = await api.auth.session();
+    if (!session) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+  },
+  component: AccountPage,
+});
+
+const securityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account/security",
+  beforeLoad: async ({ location }) => {
+    const session = await api.auth.session();
+    if (!session) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+  },
+  component: SecurityPage,
 });
 
 const designSystemRoute = createRoute({
@@ -96,6 +165,11 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   signupRoute,
+  magicLinkRoute,
+  verifyEmailRoute,
+  appRoute,
+  accountRoute,
+  securityRoute,
   designSystemRoute,
   secretRoute.addChildren([
     secretIndexRoute,

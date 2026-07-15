@@ -147,7 +147,9 @@ export function KnowledgeBase() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [retrievalMode, setRetrievalMode] = useState("full_document");
+  const [retrievalMode, setRetrievalMode] = useState<
+    "full_document" | "chunked"
+  >("full_document");
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -226,7 +228,11 @@ export function KnowledgeBase() {
         <div className="upload-actions">
           <SelectField
             value={retrievalMode}
-            onChange={(event) => setRetrievalMode(event.target.value)}
+            onChange={(event) =>
+              setRetrievalMode(
+                event.target.value === "chunked" ? "chunked" : "full_document",
+              )
+            }
             aria-label="Retrieval mode"
             options={[
               { label: "Full document", value: "full_document" },

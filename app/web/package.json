@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@elysiajs/eden": "1.1.3",
     "@hookform/resolvers": "5.2.2",
     "@tanstack/react-query": "5.100.8",
     "@tanstack/react-router": "1.121.0",
