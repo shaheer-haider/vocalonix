@@ -12,16 +12,15 @@ import {
   syncCompletedDocuments,
 } from "./dograh/workflow";
 import { env } from "./env";
+import {
+  ALLOWED_DOCUMENT_TYPES_LABEL,
+  isAllowedDocumentFilename,
+} from "./uploads";
 import { ApiError } from "./errors";
 import { workspaceRoutes } from "./workspace/routes";
 import { tenantRoutes } from "./tenant/routes";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx", "txt", "json"]);
-
-function fileExtension(filename: string): string {
-  return filename.split(".").pop()?.toLowerCase() ?? "";
-}
 
 function validateSettings(settings: AgentSettings): void {
   const required: Array<[keyof AgentSettings, number]> = [
@@ -179,8 +178,11 @@ export const app = new Elysia()
       if (file.size > MAX_UPLOAD_BYTES) {
         throw new DograhError("File size must be 5MB or less", 400);
       }
-      if (!ALLOWED_EXTENSIONS.has(fileExtension(file.name))) {
-        throw new DograhError("Supported file types: PDF, DOC, DOCX, TXT, JSON", 400);
+      if (!isAllowedDocumentFilename(file.name)) {
+        throw new DograhError(
+          `Supported file types: ${ALLOWED_DOCUMENT_TYPES_LABEL}`,
+          400,
+        );
       }
 
       const upload = await dograh.requestUpload(

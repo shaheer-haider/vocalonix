@@ -179,6 +179,59 @@ function retryDelayMs(attemptCount: number): number {
   return Math.min(5 * 60_000, 2 ** Math.max(0, attemptCount - 1) * 5_000);
 }
 
+export interface OutboxRescheduleUpdate {
+  status: "pending";
+  lockedAt: null;
+  attemptCount: number;
+  lastError: null;
+  availableAt: Date;
+  updatedAt: Date;
+}
+
+export interface OutboxFailureUpdate {
+  status: "pending" | "failed";
+  lockedAt: null;
+  lastError: string;
+  availableAt: Date;
+  updatedAt: Date;
+}
+
+// A successful processing poll (e.g. remote document still processing) is not a
+// failure: reset the attempt budget so slow-but-healthy work never exhausts the
+// retry allowance reserved for genuine failures.
+export function pollRescheduleUpdate(
+  retryAfterMs: number,
+  now: Date = new Date(),
+): OutboxRescheduleUpdate {
+  return {
+    status: "pending",
+    lockedAt: null,
+    attemptCount: 0,
+    lastError: null,
+    availableAt: new Date(now.getTime() + retryAfterMs),
+    updatedAt: now,
+  };
+}
+
+export function failureUpdate(
+  event: Pick<
+    typeof outboxEvents.$inferSelect,
+    "attemptCount" | "maxAttempts"
+  >,
+  retryable: boolean,
+  message: string,
+  now: Date = new Date(),
+): OutboxFailureUpdate {
+  const exhausted = event.attemptCount >= event.maxAttempts;
+  return {
+    status: retryable && !exhausted ? "pending" : "failed",
+    lockedAt: null,
+    lastError: message,
+    availableAt: new Date(now.getTime() + retryDelayMs(event.attemptCount)),
+    updatedAt: now,
+  };
+}
+
 export async function recoverStuckOutboxEvents(): Promise<number> {
   const recovered = await db
     .update(outboxEvents)
@@ -207,12 +260,7 @@ export async function processNextOutboxEvent(): Promise<boolean> {
     if (result.retryAfterMs) {
       await db
         .update(outboxEvents)
-        .set({
-          status: "pending",
-          lockedAt: null,
-          availableAt: new Date(Date.now() + result.retryAfterMs),
-          updatedAt: new Date(),
-        })
+        .set(pollRescheduleUpdate(result.retryAfterMs))
         .where(eq(outboxEvents.id, event.id));
       return true;
     }
@@ -229,20 +277,13 @@ export async function processNextOutboxEvent(): Promise<boolean> {
   } catch (error) {
     const retryable =
       error instanceof DograhSyncError ? error.failure.retryable : true;
-    const exhausted = event.attemptCount >= event.maxAttempts;
     const message =
       error instanceof DograhSyncError
         ? error.message
         : "Outbox processing failed unexpectedly.";
     await db
       .update(outboxEvents)
-      .set({
-        status: retryable && !exhausted ? "pending" : "failed",
-        lockedAt: null,
-        lastError: message,
-        availableAt: new Date(Date.now() + retryDelayMs(event.attemptCount)),
-        updatedAt: new Date(),
-      })
+      .set(failureUpdate(event, retryable, message))
       .where(eq(outboxEvents.id, event.id));
   }
   return true;

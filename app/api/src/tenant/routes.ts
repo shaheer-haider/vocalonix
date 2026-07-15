@@ -22,6 +22,10 @@ import {
 } from "../dograh/tenant";
 import { dograh } from "../dograh/client";
 import { ApiError } from "../errors";
+import {
+  ALLOWED_DOCUMENT_TYPES_LABEL,
+  isAllowedDocumentFilename,
+} from "../uploads";
 import { requirePermission, requireWorkspace } from "../workspace/context";
 
 export const onboardingSteps = [
@@ -596,6 +600,13 @@ export const tenantRoutes = new Elysia()
             413,
             "KNOWLEDGE_FILE_TOO_LARGE",
             "Knowledge documents must be 10 MB or smaller.",
+          );
+        }
+        if (!isAllowedDocumentFilename(body.file.name)) {
+          throw new ApiError(
+            400,
+            "KNOWLEDGE_FILE_TYPE_UNSUPPORTED",
+            `Supported document types: ${ALLOWED_DOCUMENT_TYPES_LABEL}.`,
           );
         }
         filename = body.file.name;
