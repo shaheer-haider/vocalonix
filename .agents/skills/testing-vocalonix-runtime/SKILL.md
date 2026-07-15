@@ -10,8 +10,11 @@ settings, knowledge, and public-widget verification.
 
 ## Devin Secrets Needed
 
-- None for route navigation, client-side auth validation, component behavior,
-  settings reads, knowledge-list reads, or public widget checks.
+- None for local account, session, magic-link preview, route navigation,
+  component behavior, settings reads, knowledge-list reads, or public widget
+  checks. `scripts/setup.sh` generates local database and auth secrets.
+- `RESEND_API_KEY` is only required to verify real production email delivery;
+  local verification and magic-link flows intentionally return preview links.
 - `VOCALONIX_GEMINI_API_KEY` for a real Gemini Live spoken call.
 - `VOCALONIX_OPENAI_API_KEY` only when the tested knowledge/embedding
   configuration requires OpenAI.
@@ -24,20 +27,28 @@ Never print provider values or write them into tracked files.
    ```bash
    git submodule update --init --recursive
    ```
-2. Build and start the full supported runtime:
+2. Generate the local `.env` values:
    ```bash
-   docker compose up -d --build
+   ./scripts/setup.sh
    ```
-3. Confirm every Compose service is running and healthy:
+3. Build and start the full supported runtime:
+   ```bash
+   docker compose up -d --build --wait
+   ```
+   To exercise verification callbacks through local preview links:
+   ```bash
+   REQUIRE_EMAIL_VERIFICATION=true docker compose up -d --build --wait
+   ```
+4. Confirm every Compose service is running and healthy:
    ```bash
    docker compose ps
    ```
-4. Confirm the Vocalonix API and Dograh integration:
+5. Confirm the Vocalonix API and Dograh integration:
    ```bash
    curl -fsS http://localhost:3001/api/health
    curl -fsS http://localhost:3001/api/dograh/status
    ```
-5. Test the browser at `http://localhost:3000`.
+6. Test the browser at `http://localhost:3000`.
 
 The API defaults `APP_ORIGIN` to `http://localhost:3000`. An ad hoc frontend
 preview on another port might produce browser `Failed to fetch` errors even
@@ -45,19 +56,42 @@ while `/api/health` is healthy. Prefer the Compose web service. If another
 origin is necessary, configure `APP_ORIGIN` deliberately and rebuild the
 affected services.
 
-## Public and component flow
+## Account and session flow
+
+1. Start signed out and open `/account`. Verify the login URL preserves
+   `redirect=/account`.
+2. Create a unique account. With verification enabled, use the local preview
+   and verify the callback before continuing.
+3. Open `/app` in a fresh tab and verify the user restores from the HTTP-only
+   cookie rather than browser storage.
+4. Open `/account` and verify the active-session count and `This browser`
+   label.
+5. Log out, reopen `/account`, and verify password login returns to the
+   preserved route.
+6. To create a second database session without another browser profile, open
+   `/login` while authenticated and log in again. `/account` should show one
+   current and one other session.
+7. Use `Log out everywhere`, sign in once more, and verify only one active
+   session remains.
+8. Request a local magic-link preview for the existing account. Consume it
+   once, reload the callback to verify `Link already used`, and use an unknown
+   token to verify `Invalid link`.
+9. For an expired-link check, prepare a local preview token and move its
+   matching `magic_link_requests.expires_at` into the past in
+   `vocalonix-db`; the callback should show `Link expired`.
+
+When entering long callback URLs through computer use, focus the address bar,
+type the full URL in a separate action, then press Enter. Combining focus and
+typing can occasionally drop the leading character.
+
+## Public and component regression
 
 1. Open `/` and verify it remains the public landing page rather than
    redirecting to `/secret`.
-2. Navigate to `/signup` and `/login`.
-3. Verify invalid values render inline client-side validation.
-4. Verify valid submissions remain on the same route and clearly state that
-   authentication/account sessions are deferred. Do not treat these forms as a
-   successful login or signup.
-5. Open `/design-system`.
-6. Verify the dropdown supports keyboard selection, Escape, and outside-click
+2. Open `/design-system`.
+3. Verify the dropdown supports keyboard selection, Escape, and outside-click
    close.
-7. Verify the modal focuses its first control, traps Tab/Shift+Tab, closes with
+4. Verify the modal focuses its first control, traps Tab/Shift+Tab, closes with
    Escape and backdrop clicks, and restores focus to its trigger.
 
 ## Dograh route flow
