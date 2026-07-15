@@ -26,11 +26,15 @@ cd vocalonix
 
 Open:
 
-- Vocalonix: http://localhost:3000
+- Test Agent: http://localhost:3000/secret/test-agent
+- Knowledge Base: http://localhost:3000/secret/knowledge-base
+- Agent Settings: http://localhost:3000/secret/agent-settings
 - Vocalonix API: http://localhost:3001/api/health
 - Dograh dashboard: http://localhost:3010
 
 The first request from Vocalonix creates a local Dograh service account and a managed workflow. Dograh may take a few minutes to pull images and become healthy on the first run.
+
+The `/secret/*` routes are an intentionally unprotected MVP workspace. The prefix organizes the current control UI while public landing and account flows are built; it is not an authentication boundary. Do not expose this deployment to untrusted users until authentication and tenant-scoped APIs are added.
 
 ### Configure AI providers
 
@@ -68,9 +72,11 @@ The backend is the only component that calls authenticated Dograh APIs. The brow
 
 ## MVP capabilities
 
-- **Test Agent**: place a WebRTC call from the browser.
-- **Knowledge Base**: upload, process, list, and delete documents.
-- **Agent Settings**: change the agent identity, prompts, greeting, closing, interruption behavior, and widget appearance.
+- **Test Agent** (`/secret/test-agent`): place a WebRTC call from the browser.
+- **Knowledge Base** (`/secret/knowledge-base`): upload, process, list, and delete documents.
+- **Agent Settings** (`/secret/agent-settings`): change the agent identity, prompts, greeting, closing, interruption behavior, and widget appearance.
 - **Website snippet**: copy the generated inline widget snippet into another website.
 
-Authentication, businesses, teams, invitations, billing, and public landing pages are intentionally deferred until the core voice workflow is approved.
+The widget asset remains public at `/embed/dograh-widget.js` so generated snippets can run on allowed third-party websites. Dograh management credentials remain server-only.
+
+Authentication, businesses, teams, invitations, billing, and public landing pages are planned next. The `/secret/*` workspace does not add password protection.

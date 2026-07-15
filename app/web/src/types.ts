@@ -1,5 +1,3 @@
-export type View = "test" | "knowledge" | "settings";
-
 export interface AgentSettings {
   agentName: string;
   businessName: string;
