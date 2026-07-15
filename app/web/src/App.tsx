@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, Outlet } from "@tanstack/react-router";
+import { Outlet } from "@tanstack/react-router";
 
 import { api } from "./api";
+import { SideNav, type SideNavItem } from "./components/shell";
+import { LoadingState, SelectField, TextArea, TextField } from "./components/ui";
 import {
   BookIcon,
   CopyIcon,
@@ -17,14 +19,10 @@ import type {
   WidgetResponse,
 } from "./types";
 
-const NAV_ITEMS: Array<{
-  to: "/secret/test-agent" | "/secret/knowledge-base" | "/secret/agent-settings";
-  label: string;
-  icon: typeof PhoneIcon;
-}> = [
-  { to: "/secret/test-agent", label: "Test Agent", icon: PhoneIcon },
-  { to: "/secret/knowledge-base", label: "Knowledge Base", icon: BookIcon },
-  { to: "/secret/agent-settings", label: "Agent Settings", icon: SettingsIcon },
+const NAV_ITEMS: SideNavItem[] = [
+  { to: "/secret/test-agent", label: "Test Agent", icon: <PhoneIcon size={19} /> },
+  { to: "/secret/knowledge-base", label: "Knowledge Base", icon: <BookIcon size={19} /> },
+  { to: "/secret/agent-settings", label: "Agent Settings", icon: <SettingsIcon size={19} /> },
 ];
 
 function formatBytes(bytes: number): string {
@@ -121,7 +119,7 @@ export function TestAgent() {
           </p>
           {error ? <div className="alert alert--error">{error}</div> : null}
           <div className="dograh-slot">
-            {!widget && !error ? <div className="loading-line">Preparing secure call…</div> : null}
+            {!widget && !error ? <LoadingState label="Preparing secure call…" /> : null}
             <div id="dograh-inline-container" />
           </div>
         </div>
@@ -226,14 +224,15 @@ export function KnowledgeBase() {
           </div>
         </div>
         <div className="upload-actions">
-          <select
+          <SelectField
             value={retrievalMode}
             onChange={(event) => setRetrievalMode(event.target.value)}
             aria-label="Retrieval mode"
-          >
-            <option value="full_document">Full document</option>
-            <option value="chunked">Chunked search</option>
-          </select>
+            options={[
+              { label: "Full document", value: "full_document" },
+              { label: "Chunked search", value: "chunked" },
+            ]}
+          />
           <label className={`button button--primary ${uploading ? "button--disabled" : ""}`}>
             <input
               type="file"
@@ -383,49 +382,39 @@ export function AgentSettingsView() {
           </div>
 
           <div className="form-grid form-grid--two">
-            <label>
-              <span>Agent name</span>
-              <input
-                value={settings.agentName}
-                onChange={(event) => update("agentName", event.target.value)}
-              />
-            </label>
-            <label>
-              <span>Business name</span>
-              <input
-                value={settings.businessName}
-                onChange={(event) => update("businessName", event.target.value)}
-              />
-            </label>
+            <TextField
+              label="Agent name"
+              value={settings.agentName}
+              onChange={(event) => update("agentName", event.target.value)}
+            />
+            <TextField
+              label="Business name"
+              value={settings.businessName}
+              onChange={(event) => update("businessName", event.target.value)}
+            />
           </div>
 
-          <label>
-            <span>Greeting</span>
-            <textarea
-              rows={3}
-              value={settings.greeting}
-              onChange={(event) => update("greeting", event.target.value)}
-            />
-          </label>
+          <TextArea
+            label="Greeting"
+            rows={3}
+            value={settings.greeting}
+            onChange={(event) => update("greeting", event.target.value)}
+          />
 
-          <label>
-            <span>Main instructions</span>
-            <textarea
-              rows={8}
-              value={settings.prompt}
-              onChange={(event) => update("prompt", event.target.value)}
-            />
-            <small>Uploaded documents are attached automatically after processing.</small>
-          </label>
+          <TextArea
+            label="Main instructions"
+            rows={8}
+            value={settings.prompt}
+            helper="Uploaded documents are attached automatically after processing."
+            onChange={(event) => update("prompt", event.target.value)}
+          />
 
-          <label>
-            <span>Closing</span>
-            <textarea
-              rows={3}
-              value={settings.closing}
-              onChange={(event) => update("closing", event.target.value)}
-            />
-          </label>
+          <TextArea
+            label="Closing"
+            rows={3}
+            value={settings.closing}
+            onChange={(event) => update("closing", event.target.value)}
+          />
 
           <label className="toggle-row">
             <div>
@@ -448,17 +437,18 @@ export function AgentSettingsView() {
                 <p>Inline website call experience</p>
               </div>
             </div>
-            <label>
-              <span>Button text</span>
-              <input
-                value={settings.widgetButtonText}
-                onChange={(event) => update("widgetButtonText", event.target.value)}
-              />
-            </label>
-            <label>
-              <span>Accent color</span>
+            <TextField
+              label="Button text"
+              value={settings.widgetButtonText}
+              onChange={(event) => update("widgetButtonText", event.target.value)}
+            />
+            <div className="ui-field">
+              <label className="ui-label" htmlFor="widget-color">
+                Accent color
+              </label>
               <div className="color-field">
                 <input
+                  id="widget-color"
                   type="color"
                   value={settings.widgetColor}
                   onChange={(event) => update("widgetColor", event.target.value)}
@@ -468,7 +458,7 @@ export function AgentSettingsView() {
                   onChange={(event) => update("widgetColor", event.target.value)}
                 />
               </div>
-            </label>
+            </div>
           </div>
 
           <div className="settings-card">
@@ -535,23 +525,7 @@ export default function App() {
           </div>
         </div>
 
-        <nav>
-          <p className="nav-label">Agent workspace</p>
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="nav-item"
-                activeProps={{ className: "nav-item nav-item--active" }}
-              >
-                <Icon size={19} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <SideNav items={NAV_ITEMS} label="Agent workspace" />
 
         <div className="sidebar-footer">
           <StatusBadge connected={connected} />
@@ -559,7 +533,7 @@ export default function App() {
         </div>
       </aside>
 
-      <main>
+      <main className="secret-main">
         <Outlet />
       </main>
     </div>
