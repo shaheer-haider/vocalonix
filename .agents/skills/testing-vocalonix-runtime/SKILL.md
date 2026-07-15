@@ -113,6 +113,43 @@ If Chrome autocompletes a previously visited nested route while entering `/`,
 open `http://localhost:3000/?route-check`, then click the Vocalonix wordmark to
 normalize the URL before asserting the root route.
 
+## Workspace and invitation flow
+
+1. Create two unique accounts and use one as the workspace Owner.
+2. Create two businesses through `/app/onboarding/create`. On a nested
+   `/app/:slug/team` route, switch workspaces and verify the `/team` tail is
+   preserved.
+3. Verify the sole active Owner cannot be revoked or downgraded.
+4. Invite the second account as Admin. Verify one pending row, duplicate
+   rejection, resend, and the local preview URL.
+5. Open the preview as the Owner and verify the explicit email-mismatch state.
+   Log out, reopen the same URL, log in as the Invitee, and accept it.
+6. Verify the Invitee can access only the invited business and the used token
+   renders `accepted` without an acceptance action.
+7. Before browser role mutations, verify the API preflight includes `PATCH`:
+   ```bash
+   curl -isS -X OPTIONS \
+     http://localhost:3001/api/b/example/team/example \
+     -H 'Origin: http://localhost:3000' \
+     -H 'Access-Control-Request-Method: PATCH' \
+     -H 'Access-Control-Request-Headers: content-type'
+   ```
+8. Change Admin to Viewer in the browser. Verify Team is absent from navigation,
+   agent/team dashboard actions are absent, and direct `/team` access is denied.
+9. Revoke the Viewer, reinvite the same email as Staff, and accept again. Verify
+   the existing revoked membership is reactivated as active Staff.
+10. Verify revoked, expired, and invalid public invitation states. Expired
+    local fixtures should store only a SHA-256 token hash, matching production
+    lookup behavior.
+11. Confirm persistence after the UI flow:
+    ```bash
+    docker compose exec -T vocalonix-db \
+      psql -U vocalonix -d vocalonix
+    ```
+    Check active memberships, invitation lifecycle timestamps, one Dograh
+    mapping and pending outbox event per business, and audit actions for every
+    mutation.
+
 ## Scope
 
 Do not claim a successful voice call unless microphone access, audible agent
