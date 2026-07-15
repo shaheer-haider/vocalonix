@@ -32,6 +32,16 @@ Open:
 
 The first request from Vocalonix creates a local Dograh service account and a managed workflow. Dograh may take a few minutes to pull images and become healthy on the first run.
 
+### Configure AI providers
+
+Before placing a browser call, open the Dograh dashboard at http://localhost:3010 and sign in with the local service-account email and password from `.env`. In Dograh's AI model configuration, select BYOK realtime mode and configure:
+
+- Realtime: Google AI Studio, `gemini-3.1-flash-live-preview`
+- Conversation LLM: Google, `gemini-2.5-flash`
+- Embeddings: OpenAI, `text-embedding-3-small`
+
+Keep provider keys in Dograh's server-side configuration. Do not add them to the Vocalonix frontend or commit them to this repository.
+
 Stop the stack:
 
 ```bash
