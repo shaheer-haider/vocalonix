@@ -36,6 +36,20 @@ function clearSessionCookie(): string {
   return `vocalonix_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
 
+function safeReturnTo(value: string | undefined): string | undefined {
+  if (
+    !value?.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\")
+  ) {
+    return undefined;
+  }
+  const resolved = new URL(value, env.appOrigin);
+  return resolved.origin === new URL(env.appOrigin).origin
+    ? `${resolved.pathname}${resolved.search}${resolved.hash}`
+    : undefined;
+}
+
 function sessionPayload(result: Awaited<ReturnType<typeof auth.api.getSession>>) {
   if (!result) return null;
 
@@ -68,16 +82,18 @@ export const authRoutes = new Elysia({ prefix: "/api/auth" })
     "/signup",
     async ({ body, request, set }) => {
       try {
-        const captured = await captureAuthLinks(() =>
-          auth.api.signUpEmail({
-            headers: request.headers,
-            returnHeaders: true,
-            body: {
-              name: body.name.trim(),
-              email: normalizeEmail(body.email),
-              password: body.password,
-            },
-          }),
+        const captured = await captureAuthLinks(
+          () =>
+            auth.api.signUpEmail({
+              headers: request.headers,
+              returnHeaders: true,
+              body: {
+                name: body.name.trim(),
+                email: normalizeEmail(body.email),
+                password: body.password,
+              },
+            }),
+          safeReturnTo(body.returnTo),
         );
         const cookie = captured.result.headers.get("set-cookie");
         if (cookie) set.headers["set-cookie"] = cookie;
@@ -112,6 +128,7 @@ export const authRoutes = new Elysia({ prefix: "/api/auth" })
         name: t.String({ minLength: 1, maxLength: 120 }),
         email: t.String({ format: "email" }),
         password: t.String({ minLength: 8, maxLength: 128 }),
+        returnTo: t.Optional(t.String({ maxLength: 2048 })),
       }),
     },
   )
@@ -232,13 +249,15 @@ export const authRoutes = new Elysia({ prefix: "/api/auth" })
     "/magic/request",
     async ({ body, request }) => {
       try {
-        const captured = await captureAuthLinks(() =>
-          auth.api.signInMagicLink({
-            headers: request.headers,
-            body: {
-              email: normalizeEmail(body.email),
-            },
-          }),
+        const captured = await captureAuthLinks(
+          () =>
+            auth.api.signInMagicLink({
+              headers: request.headers,
+              body: {
+                email: normalizeEmail(body.email),
+              },
+            }),
+          safeReturnTo(body.returnTo),
         );
 
         return {
@@ -254,6 +273,7 @@ export const authRoutes = new Elysia({ prefix: "/api/auth" })
     {
       body: t.Object({
         email: t.String({ format: "email" }),
+        returnTo: t.Optional(t.String({ maxLength: 2048 })),
       }),
     },
   )

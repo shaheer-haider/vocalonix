@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "invitations_pending_email_unique" ON "invitations" USING btree ("business_id","email") WHERE "invitations"."accepted_at" is null and "invitations"."revoked_at" is null;

@@ -19,6 +19,12 @@ import {
   SecurityPage,
 } from "./routes/account";
 import {
+  CreateBusinessPage,
+  InvitationPage,
+  TeamPage,
+  WorkspaceDashboardPage,
+} from "./routes/business";
+import {
   LandingPage,
   LoginPage,
   MagicLinkPage,
@@ -69,6 +75,12 @@ const verifyEmailRoute = createRoute({
   component: VerifyEmailPage,
 });
 
+const inviteRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/invite/$token",
+  component: InvitationPage,
+});
+
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/app",
@@ -82,6 +94,59 @@ const appRoute = createRoute({
     }
   },
   component: AppHomePage,
+});
+
+const createBusinessRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/app/onboarding/create",
+  beforeLoad: async ({ location }) => {
+    const session = await api.auth.session();
+    if (!session) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+  },
+  component: CreateBusinessPage,
+});
+
+const workspaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/app/$businessSlug",
+  beforeLoad: async ({ location }) => {
+    const session = await api.auth.session();
+    if (!session) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+  },
+  component: Outlet,
+});
+
+const workspaceIndexRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/",
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/app/$businessSlug/dashboard",
+      params: { businessSlug: params.businessSlug },
+    });
+  },
+});
+
+const workspaceDashboardRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/dashboard",
+  component: WorkspaceDashboardPage,
+});
+
+const workspaceTeamRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/team",
+  component: TeamPage,
 });
 
 const accountRoute = createRoute({
@@ -167,7 +232,14 @@ const routeTree = rootRoute.addChildren([
   signupRoute,
   magicLinkRoute,
   verifyEmailRoute,
+  inviteRoute,
   appRoute,
+  createBusinessRoute,
+  workspaceRoute.addChildren([
+    workspaceIndexRoute,
+    workspaceDashboardRoute,
+    workspaceTeamRoute,
+  ]),
   accountRoute,
   securityRoute,
   designSystemRoute,

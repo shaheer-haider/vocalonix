@@ -7,6 +7,7 @@ import { env } from "../env";
 
 interface AuthLinkCapture {
   magicLink?: string;
+  returnTo?: string;
   verificationLink?: string;
 }
 
@@ -22,13 +23,14 @@ export function hashAuthToken(token: string): string {
 
 export async function captureAuthLinks<T>(
   operation: () => Promise<T>,
+  returnTo?: string,
 ): Promise<{ result: T; links: AuthLinkCapture }> {
-  const links: AuthLinkCapture = {};
+  const links: AuthLinkCapture = { returnTo };
   const result = await authLinkCapture.run(links, operation);
   return { result, links };
 }
 
-async function sendEmail(input: {
+export async function sendEmail(input: {
   to: string;
   subject: string;
   text: string;
@@ -63,6 +65,8 @@ export async function deliverMagicLink(input: {
   const email = normalizeEmail(input.email);
   const url = new URL("/magic", env.appOrigin);
   url.searchParams.set("token", input.token);
+  const capture = authLinkCapture.getStore();
+  if (capture?.returnTo) url.searchParams.set("redirect", capture.returnTo);
 
   await db.insert(magicLinkRequests).values({
     id: randomUUID(),
@@ -72,7 +76,6 @@ export async function deliverMagicLink(input: {
   });
 
   const link = url.toString();
-  const capture = authLinkCapture.getStore();
   if (capture) capture.magicLink = link;
 
   await sendEmail({
@@ -90,9 +93,10 @@ export async function deliverVerificationLink(input: {
   const email = normalizeEmail(input.email);
   const url = new URL("/verify-email", env.appOrigin);
   url.searchParams.set("token", input.token);
+  const capture = authLinkCapture.getStore();
+  if (capture?.returnTo) url.searchParams.set("redirect", capture.returnTo);
 
   const link = url.toString();
-  const capture = authLinkCapture.getStore();
   if (capture) capture.verificationLink = link;
 
   await sendEmail({

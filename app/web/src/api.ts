@@ -84,6 +84,61 @@ export interface AccountSession {
   current: boolean;
 }
 
+export type Role = "Owner" | "Admin" | "Manager" | "Staff" | "Viewer";
+
+export interface BusinessSummary {
+  id: string;
+  slug: string;
+  name: string;
+  initial: string;
+  city: string | null;
+  country: string;
+  timezone: string;
+  role: Role;
+  joinedAt: string | Date;
+}
+
+export interface BusinessDetail {
+  id: string;
+  slug: string;
+  name: string;
+  initial: string;
+  city: string | null;
+  country: string;
+  timezone: string;
+  role: Role;
+}
+
+export interface TeamMember {
+  userId: string;
+  name: string;
+  email: string;
+  role: Role;
+  joinedAt: string | Date;
+}
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: Role;
+  expiresAt: string | Date;
+  createdAt: string | Date;
+  lastSentAt: string | Date;
+}
+
+export interface InvitationLookup {
+  state: "invalid" | "valid" | "expired" | "revoked" | "accepted";
+  invitation?: {
+    id: string;
+    businessName: string;
+    businessSlug: string;
+    email: string;
+    expiresAt: string | Date;
+    inviterName: string;
+    role: Role;
+  };
+}
+
 export const api = {
   status: async () =>
     unwrap(await client.api.dograh.status.get()),
@@ -112,6 +167,7 @@ export const api = {
       name: string;
       email: string;
       password: string;
+      returnTo?: string;
     }) => unwrap(await client.api.auth.signup.post(input)),
     login: async (input: {
       email: string;
@@ -132,11 +188,84 @@ export const api = {
       const result = unwrap(await client.api.auth.sessions.get());
       return result.sessions;
     },
-    requestMagicLink: async (email: string) =>
-      unwrap(await client.api.auth.magic.request.post({ email })),
+    requestMagicLink: async (email: string, returnTo?: string) =>
+      unwrap(await client.api.auth.magic.request.post({ email, returnTo })),
     consumeMagicLink: async (token: string) =>
       unwrap(await client.api.auth.magic.consume.post({ token })),
     verifyEmail: async (token: string) =>
       unwrap(await client.api.auth.email.verify.post({ token })),
+  },
+  businesses: {
+    list: async (): Promise<BusinessSummary[]> => {
+      const result = unwrap(await client.api.businesses.get());
+      return result.businesses;
+    },
+    create: async (input: {
+      name: string;
+      slug: string;
+      country?: string;
+      timezone?: string;
+      city?: string;
+      contactEmail?: string;
+      vertical?: string;
+      locations?: string;
+    }): Promise<BusinessDetail> => {
+      const result = unwrap(await client.api.businesses.post(input));
+      return result.business;
+    },
+    get: async (slug: string): Promise<BusinessDetail> => {
+      const result = unwrap(await client.api.b[slug].get());
+      return result.business;
+    },
+    team: async (
+      slug: string,
+    ): Promise<{
+      members: TeamMember[];
+      invitations: PendingInvitation[];
+    }> => unwrap(await client.api.b[slug].team.get()),
+    invite: async (
+      slug: string,
+      input: { email: string; role: Role },
+    ): Promise<{
+      invitation: {
+        id: string;
+        email: string;
+        role: Role;
+        previewUrl: string | null;
+      };
+    }> => unwrap(await client.api.b[slug].invitations.post(input)),
+    resendInvitation: async (
+      slug: string,
+      invitationId: string,
+    ): Promise<{ success: boolean; previewUrl: string | null }> =>
+      unwrap(
+        await client.api.b[slug].invitations[invitationId].resend.post(),
+      ),
+    revokeInvitation: async (
+      slug: string,
+      invitationId: string,
+    ): Promise<{ success: boolean }> =>
+      unwrap(
+        await client.api.b[slug].invitations[invitationId].revoke.post(),
+      ),
+    updateMemberRole: async (
+      slug: string,
+      userId: string,
+      role: Role,
+    ): Promise<{ success: boolean }> =>
+      unwrap(await client.api.b[slug].team[userId].patch({ role })),
+    removeMember: async (
+      slug: string,
+      userId: string,
+    ): Promise<{ success: boolean }> =>
+      unwrap(await client.api.b[slug].team[userId].delete()),
+  },
+  invitations: {
+    get: async (token: string): Promise<InvitationLookup> =>
+      unwrap(await client.api.invitations[token].get()),
+    accept: async (
+      token: string,
+    ): Promise<{ success: boolean; businessSlug: string }> =>
+      unwrap(await client.api.invitations[token].accept.post()),
   },
 };
