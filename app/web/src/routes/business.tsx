@@ -389,16 +389,24 @@ export function WorkspaceDashboardPage() {
               Configure agent settings and knowledge from the existing MVP lab
               while tenant-scoped Dograh sync is being added.
             </p>
-            <a className="ui-button" href="/secret/agent-settings">
-              Open agent settings
-            </a>
+            {can(business.role, "agent.edit") ? (
+              <a className="ui-button" href="/secret/agent-settings">
+                Open agent settings
+              </a>
+            ) : (
+              <p>Your role has read-only workspace access.</p>
+            )}
           </Box>
           <Box style={{ padding: 20 }}>
             <h2>Permissions</h2>
             <p>Your role is {business.role}.</p>
-            <a className="ui-button" href={`/app/${business.slug}/team`}>
-              Manage team
-            </a>
+            {can(business.role, "team.manage") ? (
+              <a className="ui-button" href={`/app/${business.slug}/team`}>
+                Manage team
+              </a>
+            ) : (
+              <p>Only Owners and Admins can manage workspace access.</p>
+            )}
           </Box>
         </div>
       )}
