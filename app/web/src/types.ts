@@ -41,6 +41,10 @@ export interface DograhWidget {
   onStatusChange(
     callback: (status: string, text?: string, subtext?: string) => void,
   ): void;
+  onCallStart(callback: () => void): void;
+  onCallConnected(callback: (info?: unknown) => void): void;
+  onCallDisconnected(callback: (info?: unknown) => void): void;
+  onCallEnd(callback: () => void): void;
   onError(callback: (error: unknown) => void): void;
 }
 

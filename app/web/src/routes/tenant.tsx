@@ -914,6 +914,15 @@ function BrowserTestCall({ widget }: { widget: TenantWidget }) {
             window.DograhWidget?.onStatusChange((state, text, subtext) => {
               setStatus([text ?? state, subtext].filter(Boolean).join(" — "));
             });
+            window.DograhWidget?.onCallStart(() =>
+              setStatus("Connecting the call…"),
+            );
+            window.DograhWidget?.onCallConnected(() =>
+              setStatus("Call connected. Speak with the agent, then hang up when done."),
+            );
+            window.DograhWidget?.onCallEnd(() =>
+              setStatus("Call ended. Start another test call anytime."),
+            );
             window.DograhWidget?.onError((value) => {
               setError(
                 value instanceof Error
