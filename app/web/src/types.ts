@@ -38,7 +38,9 @@ export interface WidgetResponse {
 export interface DograhWidget {
   start(): void;
   end(): void;
-  onStatusChange(callback: (status: string) => void): void;
+  onStatusChange(
+    callback: (status: string, text?: string, subtext?: string) => void,
+  ): void;
   onError(callback: (error: unknown) => void): void;
 }
 

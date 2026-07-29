@@ -150,6 +150,44 @@ normalize the URL before asserting the root route.
     mapping and pending outbox event per business, and audit actions for every
     mutation.
 
+## Real spoken-call testing in a headless VM
+
+The published widget requires a real microphone; without one it fails with a
+console error `No microphone found` and only a small floating Retry button
+(the in-page "Browser test call" status text does not surface the failure).
+To make a real call in a VM with no audio hardware:
+
+1. Configure Dograh model providers first at `http://localhost:3010`
+   (login with `DOGRAH_SERVICE_EMAIL`/`DOGRAH_SERVICE_PASSWORD` from `.env`).
+   Configure the Speech-to-Speech realtime model before the LLM/embedding
+   entries, otherwise saving fails with `tts configuration is required`.
+2. Create a virtual mic (install `pulseaudio pulseaudio-utils espeak-ng` if
+   missing):
+   ```bash
+   pulseaudio --start --exit-idle-time=-1
+   pactl load-module module-null-sink sink_name=vspk      # browser output
+   pactl load-module module-null-sink sink_name=micfeed   # mic feed
+   pactl load-module module-virtual-source source_name=vmic2 master=micfeed.monitor
+   pactl set-default-source vmic2
+   pactl set-default-sink vspk
+   ```
+   IMPORTANT: the mic source must NOT be fed from the browser's output sink
+   monitor — echo cancellation silently discards such input and the agent
+   hears nothing ("are you still there?"). Use a separate `micfeed` sink.
+3. Restart Chrome if it was started before PulseAudio existed, or it will
+   keep reporting "No microphone found".
+4. Speak to the agent with TTS:
+   ```bash
+   espeak-ng -w /tmp/q.wav "What services do you offer?"
+   paplay -d micfeed /tmp/q.wav
+   ```
+5. Capture agent audio with `parec -d vspk.monitor --file-format=wav out.wav`
+   (the WAV header is only finalized when parec exits).
+6. Verify the conversation in Dograh UI → Agent Runs (`/usage`): each run
+   shows duration, disposition (`user_hangup`), audio playback, and a full
+   transcript. Runs are named `[Vocalonix:<business_id>] <agent> for <business>`.
+   Failed mic attempts still create 0-second ghost runs.
+
 ## Scope
 
 Do not claim a successful voice call unless microphone access, audible agent
