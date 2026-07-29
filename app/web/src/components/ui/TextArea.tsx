@@ -16,7 +16,7 @@ interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextArea(
-  { autoResize = true, error, helper, id, label, onInput, required, value, ...rest },
+  { autoResize = true, className, error, helper, id, label, onInput, required, value, ...rest },
   forwardedRef,
 ) {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
@@ -40,7 +40,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function 
             }
           }}
           id={fieldId}
-          className="ui-input ui-textarea"
+          className={["ui-input ui-textarea", className].filter(Boolean).join(" ")}
           value={value}
           required={required}
           aria-describedby={descriptionId}
