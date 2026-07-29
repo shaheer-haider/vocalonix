@@ -893,13 +893,16 @@ function SyncStatus({ data }: { data: TenantSettingsResponse }) {
 
 function BrowserTestCall({ widget }: { widget: TenantWidget }) {
   const [status, setStatus] = useState("Ready to load the published web-call widget.");
+  const [error, setError] = useState<string | null>(null);
   return (
     <Box style={{ padding: 20 }}>
       <h2>Browser test call</h2>
       <p className="auth-card-copy">{status}</p>
+      {error ? <Alert variant="error">{error}</Alert> : null}
       <Button
         variant="accent"
         onClick={() => {
+          setError(null);
           document.getElementById("vocalonix-tenant-widget-script")?.remove();
           window.DograhWidget?.end();
           const script = document.createElement("script");
@@ -908,6 +911,25 @@ function BrowserTestCall({ widget }: { widget: TenantWidget }) {
           script.async = true;
           script.onload = () => {
             setStatus("Widget loaded. Requesting microphone access for a web call…");
+            window.DograhWidget?.onStatusChange((state, text, subtext) => {
+              setStatus([text ?? state, subtext].filter(Boolean).join(" — "));
+            });
+            window.DograhWidget?.onCallStart(() =>
+              setStatus("Connecting the call…"),
+            );
+            window.DograhWidget?.onCallConnected(() =>
+              setStatus("Call connected. Speak with the agent, then hang up when done."),
+            );
+            window.DograhWidget?.onCallEnd(() =>
+              setStatus("Call ended. Start another test call anytime."),
+            );
+            window.DograhWidget?.onError((value) => {
+              setError(
+                value instanceof Error
+                  ? value.message
+                  : "The call could not be started. Check microphone access and try again.",
+              );
+            });
             window.setTimeout(() => window.DograhWidget?.start(), 1000);
           };
           script.onerror = () => setStatus("The published widget could not be loaded.");

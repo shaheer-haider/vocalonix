@@ -16,18 +16,21 @@ This document captures things that were not verified, ambiguous, or should be re
 | `curl http://localhost:3000` | Returned `index.html` and built assets. |
 | `docker compose ps` | All seven services healthy. |
 
+## Verified in later passes
+
+- **Multi-business workflow isolation** — Two businesses received distinct workflows with matching `metadata.vocalonix.business_id`, each workflow references only its own knowledge documents, cross-tenant API access is denied, a `business_dograh_workflow_id_unique` constraint prevents shared mappings, and offboarding one business archives only its workflow and documents.
+- **Widget call in a real browser** — A published widget completed a real WebRTC browser call (microphone capture, audible agent output answering from the correct business's knowledge, clean `user_hangup` disconnect). Mid-speech interruption was not conclusively exercised.
+
 ## Unverified / ambiguous
 
-1. **Multi-business workflow isolation** — The tenant sync code uses `[Vocalonix:<businessId>]` workflow names and `metadata.vocalonix.business_id` ownership checks. This was not exercised by creating a second business and publishing a second widget.
-2. **Widget call in a real browser** — The `BrowserTestCall` component in `tenant.tsx` injects the widget script, but an actual WebRTC call was not made.
-3. **Email delivery in production** — Only preview URLs were verified in local dev. `RESEND_API_KEY` and real domain verification are not tested.
-4. **Magic link and verification flows** — The endpoints return and consume tokens, but an actual full email cycle was not performed.
-5. **Document processing through Dograh** — The knowledge upload and worker poll cycle was verified by code inspection, but a real PDF upload and processing was not run end-to-end.
-6. **Role enforcement edge cases** — Changing the last Owner's role to Staff or revoking an Owner was tested by unit tests, but not via the API or UI.
-7. **Invite acceptance email mismatch** — The `INVITATION_EMAIL_MISMATCH` code path was not manually triggered.
-8. **Dogra API key vs. service account** — The code supports both, but only the service-account path (`DOGRAH_SERVICE_EMAIL` + `DOGRAH_SERVICE_PASSWORD`) is configured by default.
-9. **Production environment checks** — `env.ts` has a `production` refinement block that was not run with `NODE_ENV=production`.
-10. **`bun.lockb` validity** — The local machine ran `bun install` with Bun 1.3.0. The lockfile is for Bun 1.1.45; a 1.1.45 run should be re-confirmed.
+1. **Email delivery in production** — Only preview URLs were verified in local dev. `RESEND_API_KEY` and real domain verification are not tested.
+2. **Magic link and verification flows** — The endpoints return and consume tokens, but an actual full email cycle was not performed.
+3. **Document processing through Dograh** — The knowledge upload and worker poll cycle was verified by code inspection, but a real PDF upload and processing was not run end-to-end.
+4. **Role enforcement edge cases** — Changing the last Owner's role to Staff or revoking an Owner was tested by unit tests, but not via the API or UI.
+5. **Invite acceptance email mismatch** — The `INVITATION_EMAIL_MISMATCH` code path was not manually triggered.
+6. **Dogra API key vs. service account** — The code supports both, but only the service-account path (`DOGRAH_SERVICE_EMAIL` + `DOGRAH_SERVICE_PASSWORD`) is configured by default.
+7. **Production environment checks** — `env.ts` has a `production` refinement block that was not run with `NODE_ENV=production`.
+8. **`bun.lockb` validity** — The local machine ran `bun install` with Bun 1.3.0. The lockfile is for Bun 1.1.45; a 1.1.45 run should be re-confirmed.
 
 ## Known gaps in the documentation
 
