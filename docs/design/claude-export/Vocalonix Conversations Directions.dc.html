@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#EDE9E0;font-family:system-ui,sans-serif}
+  a{color:#B2544E}
+  a:hover{color:#8E3E39}
+  button{font:inherit}
+  .dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+  .dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+  .dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+  .dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+  .dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+  .dv-fcap{font:400 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(0,0,0,.4);margin:2px 0 0}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Conversations &amp; transcripts &mdash; three directions</span></div>
+<div class="dv-opts">
+
+  <div class="dv-opt" id="1a">
+    <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>The inbox &middot; list left, transcript right &middot; familiar, dense, built for triage</div>
+    <div class="dv-card" style="width:1240px">
+      <div style="background:#F7F3EB;display:grid;grid-template-columns:206px 372px minmax(0,1fr);height:860px">
+
+        <div style="background:#FDF8E9;border-right:1px solid #CFC5AB;padding:18px 14px;display:flex;flex-direction:column;gap:18px">
+          <div style="font-family:'Gochi Hand',cursive;font-size:21px;color:#1D1A16">vocalonix</div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;background:#FCFAF4;border:1px solid #CFC5AB"><span style="width:6px;height:6px;border-radius:50%;background:#B2544E;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Conversations</span><span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;color:#B2544E">2</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px"><span style="width:6px;height:6px;border-radius:50%;background:transparent;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Today</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px"><span style="width:6px;height:6px;border-radius:50%;background:transparent;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Diary</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px"><span style="width:6px;height:6px;border-radius:50%;background:transparent;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">The brief</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px"><span style="width:6px;height:6px;border-radius:50%;background:transparent;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Numbers &amp; widget</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px"><span style="width:6px;height:6px;border-radius:50%;background:transparent;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Settings</span></div>
+          </div>
+          <div style="margin-top:auto;background:#FCFAF4;border:1px solid #A9C79F;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:7px">
+              <span style="width:7px;height:7px;border-radius:50%;background:#4E7A48;display:block"></span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#4E7A48">Live &middot; answering</span>
+            </div>
+            <span style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.3;color:#8A8271">0113 496 2288 &middot; website button on</span>
+          </div>
+        </div>
+
+        <div style="border-right:1px solid #CFC5AB;display:flex;flex-direction:column;background:#F7F3EB">
+          <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:11px;border-bottom:1px solid #CFC5AB">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font-family:'Gochi Hand',cursive;font-size:26px;color:#1D1A16">Conversations</div>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#8A8271">23 TODAY</span>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap">
+              <span style="background:#1D1A16;border:1px solid #1D1A16;border-radius:8px;padding:5px 10px;font-family:'Gaegu',cursive;font-size:15px;color:#FCFAF4">All</span>
+              <span style="background:#FBE7E4;border:1px solid #E0A9A3;border-radius:8px;padding:5px 10px;font-family:'Gaegu',cursive;font-size:15px;color:#B2544E">Needs you 2</span>
+              <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:5px 10px;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Booked 14</span>
+              <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:5px 10px;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">No booking</span>
+            </div>
+          </div>
+
+          <div style="flex:1;overflow:hidden">
+            <div style="padding:8px 16px;background:#FDF8E9;border-bottom:1px solid #DCD4BF;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Needs you</div>
+
+            <div style="padding:13px 16px;border-bottom:1px solid #DCD4BF;background:#FDF7F5;border-left:3px solid #B2544E;display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">+44 7900 812 004</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">18:30</span>
+              </div>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">Unhappy about a crown fitted last month</span>
+              <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#B2544E;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:20px;padding:3px 8px">HANDED OVER &middot; NOT CALLED BACK</span>
+            </div>
+
+            <div style="padding:13px 16px;border-bottom:1px solid #DCD4BF;background:#FDF7F5;border-left:3px solid #B2544E;display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Website visitor</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">17:55</span>
+              </div>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">Asked what Invisalign costs &mdash; over your quote limit</span>
+              <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#B2544E;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:20px;padding:3px 8px">CALLBACK PROMISED</span>
+            </div>
+
+            <div style="padding:8px 16px;background:#FDF8E9;border-bottom:1px solid #DCD4BF;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Earlier tonight</div>
+
+            <div style="padding:13px 16px;border-bottom:1px solid #DCD4BF;background:#FCFAF4;border-left:3px solid #1D1A16;display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">+44 7700 900 482</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">21:14</span>
+              </div>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">Cracked filling, wanted Saturday</span>
+              <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#4E7A48;background:#E8F0E0;border:1px solid #A9C79F;border-radius:20px;padding:3px 8px">BOOKED SAT 9:20</span>
+            </div>
+
+            <div style="padding:13px 16px;border-bottom:1px solid #DCD4BF;display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Website visitor</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">20:02</span>
+              </div>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#8A8271">Denplan &amp; the price of a clean</span>
+              <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#8A8271;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:20px;padding:3px 8px">ANSWERED &middot; NO BOOKING</span>
+            </div>
+
+            <div style="padding:13px 16px;border-bottom:1px solid #DCD4BF;display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">+44 113 496 2210</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">19:47</span>
+              </div>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#8A8271">Rebooking a missed hygiene appointment</span>
+              <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#4E7A48;background:#E8F0E0;border:1px solid #A9C79F;border-radius:20px;padding:3px 8px">BOOKED FRI 4:30</span>
+            </div>
+
+            <div style="padding:13px 16px;border-bottom:1px solid #DCD4BF;display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">Unknown caller</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">16:20</span>
+              </div>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#A79E8B">Silence, then hung up after 4 seconds</span>
+              <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#8A8271;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:20px;padding:3px 8px">IGNORED &middot; NOT BILLED</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;background:#F7F3EB;overflow:hidden">
+          <div style="padding:18px 24px;border-bottom:1px solid #CFC5AB;display:flex;flex-direction:column;gap:13px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="font-family:'Gochi Hand',cursive;font-size:28px;color:#1D1A16">+44 7700 900 482</div>
+                <div style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">Last night, 21:14 &middot; 1 min 48 &middot; came in on the website button</div>
+              </div>
+              <div style="display:flex;gap:7px">
+                <button style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Call back</button>
+                <button style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Share</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:12px;padding:10px 14px">
+              <span style="width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:50%;background:#1D1A16;color:#FCFAF4"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">0:34</span>
+              <span style="flex:1;height:4px;border-radius:3px;background:#EFEBDE;display:block;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:31%;background:#B2544E;border-radius:3px;display:block"></span><span style="position:absolute;left:31%;top:-4px;width:11px;height:11px;border-radius:50%;background:#B2544E;display:block"></span></span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">1:48</span>
+            </div>
+          </div>
+
+          <div style="flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:16px;overflow:hidden">
+            <div style="background:#FCFAF4;border:1px solid #A9C79F;border-radius:13px;padding:15px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:#E8F0E0;border:1px solid #A9C79F;color:#4E7A48"><svg viewBox="0 0 32 32" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17.4c2 1.8 3.4 3.2 4.9 5.1 2.9-5.8 6.7-10.1 11.8-13.7"/></svg></span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#4E7A48">What it did</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Booked</span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Sat 9:20am &middot; Dr. Reyes</span></div>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Written to</span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Dentrix &middot; new patient</span></div>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Sent</span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">SMS confirmation</span></div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:flex-start;gap:11px">
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B;padding-top:9px;width:34px;flex:none">0:02</span>
+                <span style="max-width:78%;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:13px 13px 13px 4px;padding:10px 13px;font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#4A453C">Thanks for calling Acme Dental, this is Robin. What can I help you with?</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:11px;justify-content:flex-end">
+                <span style="max-width:78%;background:#F9F5EC;border:1px solid #DCD4BF;border-radius:13px 13px 4px 13px;padding:10px 13px;font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#4A453C">Hi &mdash; my filling cracked at dinner. Are you open Saturday?</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B;padding-top:9px;width:34px;flex:none">0:09</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:11px">
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B;padding-top:9px;width:34px;flex:none">0:14</span>
+                <span style="max-width:78%;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:13px 13px 13px 4px;padding:10px 13px;font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#4A453C">Sorry to hear that. We keep two emergency slots on Saturday morning &mdash; I can hold 9:20 with Dr. Reyes. Any pain right now?</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:11px;justify-content:flex-end">
+                <span style="max-width:78%;background:#F9F5EC;border:1px solid #DCD4BF;border-radius:13px 13px 4px 13px;padding:10px 13px;font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#4A453C">A bit sharp when I drink something cold.</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B;padding-top:9px;width:34px;flex:none">0:26</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:11px">
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B;padding-top:9px;width:34px;flex:none">0:31</span>
+                <span style="max-width:78%;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:13px 13px 13px 4px;padding:10px 13px;font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#4A453C">That&rsquo;s worth seeing but it isn&rsquo;t an emergency tonight. Avoid cold drinks and I&rsquo;ll put you down for 9:20. Can I take your name?</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:14px 24px;border-top:1px solid #CFC5AB;background:#FDF8E9;display:flex;align-items:center;justify-content:space-between;gap:14px">
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Did it get this right?</span>
+            <div style="display:flex;gap:8px">
+              <button style="background:#FCFAF4;border:1px solid #A9C79F;border-radius:10px;padding:9px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#4E7A48">Yes, good answer</button>
+              <button style="background:#FCFAF4;border:1px solid #E0A9A3;border-radius:10px;padding:9px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E">Fix this in the brief</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="dv-fcap">Needs-you group pinned above the rest &middot; transcript with scrubber and &ldquo;what it did&rdquo;</p>
+  </div>
+
+  <div class="dv-opt" id="1b">
+    <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>The night shift &middot; one column, read like a diary &middot; outcome first, transcript on demand</div>
+    <div class="dv-card" style="width:900px">
+      <div style="background:#F7F3EB;display:flex;flex-direction:column;height:1010px">
+
+        <div style="padding:20px 30px;border-bottom:1px solid #CFC5AB;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px">
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9A2B2B">While you were closed</span>
+              <span style="font-family:'Gochi Hand',cursive;font-size:34px;line-height:1.05;color:#1D1A16">Nine calls, six booked</span>
+            </div>
+            <div style="display:flex;gap:5px">
+              <span style="background:#1D1A16;border:1px solid #1D1A16;border-radius:8px;padding:6px 11px;font-family:'Gaegu',cursive;font-size:15px;color:#FCFAF4">Last night</span>
+              <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:6px 11px;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Today</span>
+              <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:6px 11px;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">This week</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <div style="flex:1;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:11px 13px;display:flex;flex-direction:column;gap:1px"><span style="font-family:'Gochi Hand',cursive;font-size:24px;color:#1D1A16">6</span><span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">booked</span></div>
+            <div style="flex:1;background:#FDF7F5;border:1px solid #E0A9A3;border-radius:11px;padding:11px 13px;display:flex;flex-direction:column;gap:1px"><span style="font-family:'Gochi Hand',cursive;font-size:24px;color:#B2544E">2</span><span style="font-family:'Gaegu',cursive;font-size:15px;color:#B2544E">need you</span></div>
+            <div style="flex:1;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:11px 13px;display:flex;flex-direction:column;gap:1px"><span style="font-family:'Gochi Hand',cursive;font-size:24px;color:#1D1A16">&pound;1,140</span><span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">in the diary</span></div>
+            <div style="flex:1;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:11px 13px;display:flex;flex-direction:column;gap:1px"><span style="font-family:'Gochi Hand',cursive;font-size:24px;color:#1D1A16">0</span><span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">missed</span></div>
+          </div>
+        </div>
+
+        <div style="flex:1;padding:22px 30px;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+
+          <div style="flex:none;background:#FCFAF4;border:1px solid #E0A9A3;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,.05);display:flex;overflow:hidden">
+            <div style="width:5px;background:#B2544E;flex:none"></div>
+            <div style="flex:1;padding:16px 18px;display:flex;flex-direction:column;gap:0">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">18:30</span>
+                    <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">A complaint you haven&rsquo;t answered</span>
+                  </div>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#4A453C;max-width:520px">Caller was unhappy about a crown fitted last month. Robin didn&rsquo;t argue &mdash; it apologised, took the details and promised somebody would ring today.</span>
+                </div>
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#B2544E;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:20px;padding:4px 9px;white-space:nowrap">NEEDS YOU</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;padding-top:13px">
+                <button style="background:#1D1A16;border:1px solid #1D1A16;border-radius:10px;padding:9px 15px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Call +44 7900 812 004</button>
+                <button style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 15px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Read the transcript</button>
+                <button style="background:none;border:none;padding:9px 6px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Mark as handled</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:none;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,.05);display:flex;overflow:hidden">
+            <div style="width:5px;background:#4E7A48;flex:none"></div>
+            <div style="flex:1;padding:16px 18px;display:flex;flex-direction:column;gap:13px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">21:14</span>
+                    <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Cracked filling &rarr; Saturday 9:20</span>
+                  </div>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#4A453C;max-width:520px">New patient, found you on the website at dinner time. Held an emergency slot, wrote it to Dentrix, texted the confirmation.</span>
+                </div>
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#4E7A48;background:#E8F0E0;border:1px solid #A9C79F;border-radius:20px;padding:4px 9px;white-space:nowrap">BOOKED</span>
+              </div>
+
+              <div style="background:#F9F5EC;border:1px solid #DCD4BF;border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:9px">
+                <div style="display:flex;align-items:center;gap:11px">
+                  <span style="width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:50%;background:#1D1A16;color:#FCFAF4"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+                  <span style="flex:1;height:4px;border-radius:3px;background:#EFEBDE;display:block;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:22%;background:#B2544E;border-radius:3px;display:block"></span></span>
+                  <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">1:48</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <span style="align-self:flex-start;max-width:82%;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:12px 12px 12px 4px;padding:8px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#4A453C">We keep two emergency slots on Saturday morning &mdash; I can hold 9:20 with Dr. Reyes. Any pain right now?</span>
+                  <span style="align-self:flex-end;max-width:82%;background:#FCFAF4;border:1px solid #DCD4BF;border-radius:12px 12px 4px 12px;padding:8px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#4A453C">A bit sharp when I drink something cold.</span>
+                  <button style="align-self:flex-start;background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E">Show all 12 turns</button>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-wrap:wrap;gap:7px">
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#8A8271;background:#F9F5EC;border:1px solid #DCD4BF;border-radius:7px;padding:4px 9px">DENTRIX &middot; NEW PATIENT</span>
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#8A8271;background:#F9F5EC;border:1px solid #DCD4BF;border-radius:7px;padding:4px 9px">SMS SENT</span>
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#8A8271;background:#F9F5EC;border:1px solid #DCD4BF;border-radius:7px;padding:4px 9px">&pound;145 SLOT</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:none;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;display:flex;overflow:hidden">
+            <div style="width:5px;background:#DCD4BF;flex:none"></div>
+            <div style="flex:1;padding:15px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">20:02</span>
+                  <span style="font-family:'Gochi Hand',cursive;font-size:21px;color:#1D1A16">Denplan and the price of a clean</span>
+                </div>
+                <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#8A8271;max-width:520px">Got their answer, said they&rsquo;d think about it. No booking, no callback asked for.</span>
+              </div>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#8A8271;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:20px;padding:4px 9px;white-space:nowrap">ANSWERED</span>
+            </div>
+          </div>
+
+          <div style="flex:none;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;display:flex;overflow:hidden">
+            <div style="width:5px;background:#DCD4BF;flex:none"></div>
+            <div style="flex:1;padding:15px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">16:20</span>
+                  <span style="font-family:'Gochi Hand',cursive;font-size:21px;color:#8A8271">Four seconds of silence</span>
+                </div>
+                <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#A79E8B">Treated as spam. Not counted against your minutes.</span>
+              </div>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#8A8271;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:20px;padding:4px 9px;white-space:nowrap">IGNORED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="dv-fcap">Cards carry the whole story &middot; transcript expands in place on the one that matters</p>
+  </div>
+
+  <div class="dv-opt" id="1c">
+    <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>The ledger &middot; sortable table, drawer for detail &middot; for a practice manager reconciling the day</div>
+    <div class="dv-card" style="width:1240px">
+      <div style="background:#F7F3EB;display:flex;flex-direction:column;height:860px;position:relative">
+
+        <div style="padding:20px 26px;border-bottom:1px solid #CFC5AB;display:flex;align-items:flex-end;justify-content:space-between;gap:20px">
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9A2B2B">Tue 28 July &middot; 23 conversations</span>
+            <span style="font-family:'Gochi Hand',cursive;font-size:30px;line-height:1.05;color:#1D1A16">Call log</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 12px;width:210px">
+              <svg viewBox="0 0 32 32" width="14" height="14" fill="none" stroke="#8A8271" stroke-width="2" stroke-linecap="round"><circle cx="14" cy="14" r="8.4"/><path d="M20.4 20.6l6 6"/></svg>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#A79E8B">Search words said</span>
+            </div>
+            <button style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Filters</button>
+            <button style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Export CSV</button>
+          </div>
+        </div>
+
+        <div style="flex:1;overflow:hidden">
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;gap:0;padding:10px 26px;background:#FDF8E9;border-bottom:1px solid #CFC5AB">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#1D1A16">Time &darr;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Caller</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Asked about</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Outcome</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Slot</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Value</span>
+            <span></span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF;background:#FDF7F5">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">21:14</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">+44 7700 900482</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Cracked filling, Saturday opening</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#4E7A48">BOOKED</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Sat 9:20</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">&pound;145</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#B2544E">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">20:02</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Website visitor</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Denplan, price of a clean</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#8A8271">ANSWERED</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">19:47</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">+44 113 4962210</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Rebook missed hygiene</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#4E7A48">BOOKED</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Fri 16:30</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">&pound;85</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF;background:#FCF4EA">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">18:30</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">+44 7900 812004</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Unhappy with a crown</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#B4712A">HANDED OVER</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#B4712A">Call back</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF;background:#FCF4EA">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">17:55</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Website visitor</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Invisalign cost &mdash; above quote limit</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#B4712A">CALLBACK DUE</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#B4712A">Today</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#8A8271">&pound;4k?</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">15:03</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">+44 7411 220091</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Running twenty minutes late</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#8A8271">MESSAGE TAKEN</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Front desk</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#8A8271">16:20</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Unknown</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#A79E8B">Silence, hung up</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#A79E8B">IGNORED</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">12:41</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Website visitor</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Parking near the practice</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#8A8271">ANSWERED</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">11:08</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">+44 7822 664120</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Whitening, wanted a Thursday evening</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#4E7A48">BOOKED</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Thu 18:30</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">&pound;320</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+          <div style="display:grid;grid-template-columns:74px 168px minmax(0,1fr) 176px 132px 84px 44px;align-items:center;padding:11px 26px;border-bottom:1px solid #DCD4BF">
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:52</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">+44 7300 118842</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Do you see children on the NHS</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#8A8271">ANSWERED</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B">&mdash;</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:#CFC5AB">&rsaquo;</span>
+          </div>
+
+          <div style="padding:13px 26px;display:flex;align-items:center;justify-content:space-between;gap:14px">
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Showing 10 of 23 &middot; &pound;1,140 booked today</span>
+            <div style="display:flex;gap:6px">
+              <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:6px 11px;font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">Prev</span>
+              <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:6px 11px;font-family:'Space Mono',monospace;font-size:11px;color:#1D1A16">Next</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="position:absolute;top:0;right:0;bottom:0;width:430px;background:#FDF8E9;border-left:1px solid #CFC5AB;box-shadow:-14px 0 34px rgba(29,26,22,.12);display:flex;flex-direction:column">
+          <div style="padding:18px 20px;border-bottom:1px solid #CFC5AB;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">21:14 &middot; 1 min 48</span>
+                <span style="font-family:'Gochi Hand',cursive;font-size:24px;color:#1D1A16">+44 7700 900 482</span>
+              </div>
+              <span style="width:28px;height:28px;display:grid;place-items:center;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:50%;font-family:'Space Mono',monospace;font-size:12px;color:#4A453C">&times;</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px">
+              <span style="width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:50%;background:#1D1A16;color:#FCFAF4"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+              <span style="flex:1;height:4px;border-radius:3px;background:#EFEBDE;display:block;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:44%;background:#B2544E;border-radius:3px;display:block"></span><span style="position:absolute;left:44%;top:-4px;width:11px;height:11px;border-radius:50%;background:#B2544E;display:block"></span></span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">0:47</span>
+            </div>
+          </div>
+
+          <div style="padding:16px 20px;border-bottom:1px solid #DCD4BF;display:flex;flex-direction:column;gap:9px">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#4E7A48">What it did</span>
+            <div style="display:flex;flex-direction:column;gap:0">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed #DCD4BF"><span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Booked</span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Sat 9:20 &middot; Dr. Reyes</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed #DCD4BF"><span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Written to</span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Dentrix &middot; new patient</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 0"><span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Sent</span><span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">SMS confirmation</span></div>
+            </div>
+          </div>
+
+          <div style="flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:9px;overflow:hidden">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Transcript</span>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="align-self:flex-start;max-width:88%;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:12px 12px 12px 4px;padding:8px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#4A453C">Thanks for calling Acme Dental, this is Robin. What can I help you with?</span>
+              <span style="align-self:flex-end;max-width:88%;background:#FCFAF4;border:1px solid #DCD4BF;border-radius:12px 12px 4px 12px;padding:8px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#4A453C">My filling cracked at dinner. Are you open Saturday?</span>
+              <span style="align-self:flex-start;max-width:88%;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:12px 12px 12px 4px;padding:8px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#4A453C">We keep two emergency slots on Saturday morning &mdash; I can hold 9:20 with Dr. Reyes. Any pain right now?</span>
+              <span style="align-self:flex-end;max-width:88%;background:#FCFAF4;border:1px solid #DCD4BF;border-radius:12px 12px 4px 12px;padding:8px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#4A453C">A bit sharp when I drink something cold.</span>
+            </div>
+          </div>
+
+          <div style="padding:14px 20px;border-top:1px solid #CFC5AB;display:flex;gap:8px">
+            <button style="flex:1;background:#1D1A16;border:1px solid #1D1A16;border-radius:10px;padding:10px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Open in Dentrix</button>
+            <button style="flex:1;background:#FCFAF4;border:1px solid #E0A9A3;border-radius:10px;padding:10px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E">Fix in the brief</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="dv-fcap">Amber rows are the ones owing an action &middot; drawer shown open over the log</p>
+  </div>
+
+</div>
+<p class="dv-next">Try next: &ldquo;build <a class="dv-oid" href="#1a">1a</a> interactive&rdquo; &middot; &ldquo;<a class="dv-oid" href="#1b">1b</a> but with <a class="dv-oid" href="#1c">1c</a>&rsquo;s value column&rdquo; &middot; &ldquo;show the empty state and a bad-answer correction flow&rdquo;</p>
+</section>
+
+</x-dc>
+</body>
+</html>

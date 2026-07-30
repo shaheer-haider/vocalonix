@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&family=Karla:wght@400;500;700&family=Instrument+Serif&family=Public+Sans:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F7F3EB}
+  a{color:#B2544E}
+  a:hover{color:#8E3E39}
+  button{font:inherit}
+  input,textarea{font:inherit}
+  input::placeholder,textarea::placeholder{color:#A79E8B}
+  *{box-sizing:border-box}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(29,26,22,.16);border-radius:6px}
+  @keyframes vxup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes vxin{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+  @keyframes vxfade{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+
+<div style="{{ themeVars }}">
+<div data-screen-label="Conversations" style="height:100vh;min-width:1200px;display:grid;grid-template-columns:238px 380px minmax(0,1fr);background:var(--page,#F7F3EB);overflow:hidden">
+
+  <aside style="background:var(--sidebar,#FDF8E9);border-right:1px solid var(--line3,#E3DCC6);padding:24px 18px;display:flex;flex-direction:column;gap:24px;overflow-y:auto;overflow-x:hidden">
+    <div style="font-family:'Gochi Hand',cursive;font-size:27px;color:var(--ink,#1D1A16);padding-left:4px">vocalonix</div>
+    <div style="display:flex;flex-direction:column;gap:7px;position:relative">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted,#8A8271);padding-left:4px">Workspace</div>
+      <button onClick="{{ toggleWs }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:9px 11px;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)">
+        <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">&#9662;</span>
+      </button>
+      <sc-if value="{{ wsOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:100%;left:0;right:0;margin-top:5px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;box-shadow:2px 4px 0 var(--sh1,rgba(29,26,22,0.08));padding:6px;z-index:20;display:flex;flex-direction:column;gap:2px">
+          <button onClick="{{ closeWs }}" style="display:flex;justify-content:space-between;align-items:center;background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);border-radius:8px;padding:7px 9px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16);text-align:left">
+            <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green,#4E7A48)">LIVE</span>
+          </button>
+          <button onClick="{{ closeWs }}" style="display:flex;justify-content:space-between;align-items:center;background:transparent;border:1px solid transparent;border-radius:8px;padding:7px 9px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C);text-align:left">
+            <span>Northside Vets</span><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--amber,#B4712A)">DRAFT</span>
+          </button>
+        </div>
+      </sc-if>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:3px">
+      <a href="Vocalonix Dashboard.dc.html" style="{{ navIdle }}">Dashboard</a>
+      <button style="{{ navOn }}"><span>Conversations</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accentink,#B2544E)">{{ needsCount }}</span></button>
+      <a href="Vocalonix Contacts.dc.html" style="{{ navIdle }}">Contacts</a>
+      <a href="Vocalonix Bookings.dc.html" style="{{ navIdle }}">Bookings</a>
+      <a href="Vocalonix Callbacks.dc.html" style="{{ navIdle }}">Callbacks</a>
+      <a href="Vocalonix Configuration.dc.html" style="{{ navIdle }}">Configuration</a>
+      <a href="Vocalonix Knowledge.dc.html" style="{{ navIdle }}">Knowledge</a>
+      <a href="Vocalonix Settings.dc.html#team" style="{{ navIdle }}">Team</a>
+      <a href="Vocalonix Settings.dc.html#account" style="{{ navIdle }}">Account &amp; billing</a>
+      <a href="Vocalonix Settings.dc.html#notifications" style="{{ navIdle }}">Notifications</a>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--green,#4E7A48)"></div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--greenink,#3F6B3A);line-height:1.3">Live &amp; answering</div>
+        </div>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--muted,#8A8271)">0113 496 2288 &middot; website button on</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;border-top:1px dashed var(--dash,#D8CFB8);padding-top:13px">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--inset,#EFEBDE);border:1px solid var(--line,#CFC5AB);display:flex;align-items:center;justify-content:center;font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(14px * var(--fsd,1));color:var(--text,#4A453C)">O</div>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Owner One</div>
+      </div>
+    </div>
+  </aside>
+
+  <div style="border-right:1px solid var(--line,#CFC5AB);display:flex;flex-direction:column;background:var(--page,#F7F3EB);min-height:0">
+    <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line,#CFC5AB)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+        <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(26px * var(--fsd,1));color:var(--ink,#1D1A16)">Conversations</div>
+        <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--muted,#8A8271)">{{ totalLabel }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:7px 11px">
+        <svg viewBox="0 0 32 32" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted,#8A8271);flex:none"><circle cx="14" cy="14" r="8.4"></circle><path d="M20.4 20.6l6 6"></path></svg>
+        <input value="{{ query }}" onInput="{{ onQuery }}" placeholder="Search words said" style="flex:1;min-width:0;background:none;border:none;outline:none;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">
+        <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ clearSearch }}" style="background:none;border:none;padding:0;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;color:var(--muted,#8A8271)">&times;</button>
+        </sc-if>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button data-f="all" onClick="{{ pickFilter }}" style="{{ chipAll }}">All</button>
+        <button data-f="needs" onClick="{{ pickFilter }}" style="{{ chipNeeds }}">Needs you {{ needsCount }}</button>
+        <button data-f="booked" onClick="{{ pickFilter }}" style="{{ chipBooked }}">Booked 14</button>
+        <button data-f="none" onClick="{{ pickFilter }}" style="{{ chipNone }}">No booking</button>
+        <button data-f="spam" onClick="{{ pickFilter }}" style="{{ chipSpam }}">Spam</button>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;min-height:0">
+      <sc-if value="{{ hasNeeds }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:8px 16px;background:var(--sidebar,#FDF8E9);border-bottom:1px solid var(--line2,#DCD4BF);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Needs you</div>
+      </sc-if>
+      <sc-for list="{{ needsList }}" as="c" hint-placeholder-count="2">
+        <button data-id="{{ c.id }}" onClick="{{ selectRow }}" style="{{ c.rowStyle }}">
+          <span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">{{ c.who }}</span>
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">{{ c.time }}</span>
+          </span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C);text-align:left">{{ c.summary }}</span>
+          <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="{{ c.pillStyle }}">{{ c.pill }}</span>
+            <sc-if value="{{ c.showValue }}" hint-placeholder-val="{{ false }}">
+              <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">{{ c.value }}</span>
+            </sc-if>
+          </span>
+        </button>
+      </sc-for>
+
+      <sc-if value="{{ hasRest }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:8px 16px;background:var(--sidebar,#FDF8E9);border-bottom:1px solid var(--line2,#DCD4BF);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">{{ restLabel }}</div>
+      </sc-if>
+      <sc-for list="{{ restList }}" as="c" hint-placeholder-count="6">
+        <button data-id="{{ c.id }}" onClick="{{ selectRow }}" style="{{ c.rowStyle }}">
+          <span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">{{ c.who }}</span>
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">{{ c.time }}</span>
+          </span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C);text-align:left">{{ c.summary }}</span>
+          <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="{{ c.pillStyle }}">{{ c.pill }}</span>
+            <sc-if value="{{ c.showValue }}" hint-placeholder-val="{{ false }}">
+              <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">{{ c.value }}</span>
+            </sc-if>
+          </span>
+        </button>
+      </sc-for>
+
+      <sc-if value="{{ listEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:44px 26px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center">
+          <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(21px * var(--fsd,1));color:var(--ink,#1D1A16)">{{ emptyTitle }}</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));line-height:1.35;color:var(--muted,#8A8271);max-width:230px">{{ emptyBody }}</span>
+          <button onClick="{{ resetList }}" style="margin-top:4px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:8px 13px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Show everything</button>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="padding:10px 16px;border-top:1px solid var(--line,#CFC5AB);background:var(--sidebar,#FDF8E9);display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(15px * var(--fsb,1));color:var(--muted,#8A8271)">{{ footLabel }}</span>
+      <button onClick="{{ exportCsv }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:9px;padding:6px 11px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(15px * var(--fsb,1));color:var(--ink,#1D1A16)">Export CSV</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;background:var(--page,#F7F3EB);min-height:0;overflow:hidden">
+
+    <sc-if value="{{ firstRun }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px;text-align:center">
+        <span style="width:54px;height:54px;border-radius:50%;background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);display:grid;place-items:center;color:var(--green,#4E7A48)">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 13v6M12 9v14M17 5v22M22 11v10M27 15v2"></path></svg>
+        </span>
+        <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(32px * var(--fsd,1));color:var(--ink,#1D1A16)">Robin is listening</span>
+        <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(18px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271);max-width:380px">No calls yet. The first one that comes in on your number or the website button will land here, with the transcript and what it did about it.</span>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:10px;padding:10px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Make a test call</button>
+          <button style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:10px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Check the brief</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ noSelection }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:40px;text-align:center">
+        <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(26px * var(--fsd,1));color:var(--muted,#8A8271)">Pick a conversation</span>
+        <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));color:var(--muted2,#A79E8B)">The transcript and what Robin did will show here.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+      <div style="padding:18px 24px;border-bottom:1px solid var(--line,#CFC5AB);display:flex;flex-direction:column;gap:13px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+          <div style="min-width:0;display:flex;flex-direction:column;gap:4px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(28px * var(--fsd,1));color:var(--ink,#1D1A16)">{{ selWho }}</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">{{ selMeta }}</div>
+          </div>
+          <div style="flex:none;display:flex;gap:7px">
+            <button onClick="{{ callBack }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:8px 13px;cursor:pointer;white-space:nowrap;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Call back</button>
+            <button onClick="{{ share }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:8px 13px;cursor:pointer;white-space:nowrap;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Share</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;padding:10px 14px">
+          <button onClick="{{ togglePlay }}" style="width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:50%;border:none;cursor:pointer;background:var(--btnbg,#1D1A16);color:var(--btntext,#FCFAF4)">
+            <sc-if value="{{ isPaused }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M8 5.5v13l11-6.5z"></path></svg></sc-if>
+            <sc-if value="{{ isPlaying }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M8 5.5h3v13H8zM13 5.5h3v13h-3z"></path></svg></sc-if>
+          </button>
+          <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">{{ playLabel }}</span>
+          <span onClick="{{ seek }}" style="flex:1;height:14px;display:flex;align-items:center;cursor:pointer">
+            <span style="flex:1;height:4px;border-radius:3px;background:var(--inset,#EFEBDE);display:block;position:relative;pointer-events:none">
+              <span style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--accentink,#B2544E);display:block;width:{{ pct }}"></span>
+              <span style="position:absolute;top:-4px;width:11px;height:11px;border-radius:50%;background:var(--accentink,#B2544E);display:block;margin-left:-5px;left:{{ pct }}"></span>
+            </span>
+          </span>
+          <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">{{ selDur }}</span>
+        </div>
+      </div>
+
+      <div style="flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;min-height:0">
+        <div style="{{ didCardStyle }}">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="{{ didIconStyle }}"><svg viewBox="0 0 32 32" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17.4c2 1.8 3.4 3.2 4.9 5.1 2.9-5.8 6.7-10.1 11.8-13.7"></path></svg></span>
+            <span style="{{ didLabelStyle }}">{{ didLabel }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <sc-for list="{{ selDid }}" as="d" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#8A8271)">{{ d.k }}</span>
+                <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));line-height:1.25;color:var(--ink,#1D1A16)">{{ d.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ selCorrected }}" hint-placeholder-val="{{ false }}">
+          <div style="background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:3px">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--green,#4E7A48)">Added to the brief</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));line-height:1.35;color:var(--text,#4A453C)">{{ correctionText }}</span>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ selTurns }}" as="t" hint-placeholder-count="5">
+            <div style="{{ t.rowStyle }}">
+              <sc-if value="{{ t.isCaller }}" hint-placeholder-val="{{ false }}">
+                <span onClick="{{ t.seek }}" style="{{ t.bubbleStyle }}">{{ t.text }}</span>
+              </sc-if>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted2,#A79E8B);padding-top:9px;width:34px;flex:none">{{ t.t }}</span>
+              <sc-if value="{{ t.isAgent }}" hint-placeholder-val="{{ true }}">
+                <span onClick="{{ t.seek }}" style="{{ t.bubbleStyle }}">{{ t.text }}</span>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ selSilent }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px dashed var(--dash,#D8CFB8);border-radius:12px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:5px">
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Nothing was said</span>
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--muted2,#A79E8B)">Four seconds of line noise, then the caller hung up.</span>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="padding:14px 24px;border-top:1px solid var(--line,#CFC5AB);background:var(--sidebar,#FDF8E9);display:flex;align-items:center;justify-content:space-between;gap:14px">
+        <span style="min-width:0;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">{{ footQuestion }}</span>
+        <div style="flex:none;display:flex;gap:8px">
+          <sc-if value="{{ selNeeds }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ markHandled }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:9px 14px;cursor:pointer;white-space:nowrap;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Mark as handled</button>
+          </sc-if>
+          <button onClick="{{ sayGood }}" style="background:var(--card,#FCFAF4);border:1px solid var(--greenl,#A9C79F);border-radius:10px;padding:9px 14px;cursor:pointer;white-space:nowrap;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--green,#4E7A48)">Yes, good answer</button>
+          <button onClick="{{ openFix }}" style="background:var(--card,#FCFAF4);border:1px solid var(--accentline,#E0A9A3);border-radius:10px;padding:9px 14px;cursor:pointer;white-space:nowrap;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E)">Fix this in the brief</button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ fixOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(29,26,22,.34);display:grid;place-items:center;padding:40px;z-index:40;animation:vxfade .16s ease-out">
+      <div style="width:min(600px,100%);max-height:88vh;overflow-y:auto;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:18px;box-shadow:0 24px 60px rgba(29,26,22,.28);padding:24px;display:flex;flex-direction:column;gap:16px;animation:vxin .2s ease-out">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Teach Robin</span>
+            <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(28px * var(--fsd,1));color:var(--ink,#1D1A16)">Fix this in the brief</span>
+          </div>
+          <button onClick="{{ closeFix }}" style="width:30px;height:30px;flex:none;display:grid;place-items:center;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:50%;cursor:pointer;font-family:'Space Mono',monospace;font-size:13px;color:var(--text,#4A453C)">&times;</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">What Robin said</span>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ agentLines }}" as="a" hint-placeholder-count="3">
+              <button data-i="{{ a.i }}" onClick="{{ pickLine }}" style="{{ a.style }}">{{ a.text }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">What it should say next time</span>
+          <textarea value="{{ fixText }}" onInput="{{ onFixText }}" placeholder="Crowns fitted in the last 12 months are put right free of charge. Say that, apologise, and book them in with the dentist who fitted it." style="min-height:96px;resize:vertical;background:var(--soft,#F9F5EC);border:1px solid var(--line,#CFC5AB);border-radius:12px;padding:11px 13px;outline:none;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--ink,#1D1A16)"></textarea>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Where it goes</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button data-k="knowledge" onClick="{{ pickKind }}" style="{{ kindKnowledge }}">Add to knowledge</button>
+            <button data-k="rule" onClick="{{ pickKind }}" style="{{ kindRule }}">Change a rule</button>
+            <button data-k="handover" onClick="{{ pickKind }}" style="{{ kindHandover }}">Always hand to a human</button>
+          </div>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));line-height:1.35;color:var(--muted,#8A8271)">{{ kindHint }}</span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:2px">
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-size:calc(15px * var(--fsb,1));color:var(--muted2,#A79E8B)">Takes effect on the next call.</span>
+          <div style="display:flex;gap:8px">
+            <button onClick="{{ closeFix }}" style="background:none;border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:10px 15px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Cancel</button>
+            <button onClick="{{ saveFix }}" style="{{ saveBtnStyle }}">Save to the brief</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:60;background:var(--btnbg,#1D1A16);color:var(--btntext,#FCFAF4);border-radius:12px;padding:11px 18px;box-shadow:0 12px 30px rgba(29,26,22,.3);font-family:var(--fontb,'Gaegu',cursive);font-size:calc(17px * var(--fsb,1));animation:vxup .18s ease-out">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;warm&quot;,&quot;night&quot;,&quot;ink&quot;,&quot;studio&quot;],&quot;default&quot;:&quot;warm&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;typeset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;hand&quot;,&quot;plain&quot;,&quot;editorial&quot;,&quot;grotesk&quot;],&quot;default&quot;:&quot;hand&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;dataState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;day&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;day&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;showValue&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+const DATA = [
+  { id:'c1', time:'21:14', who:'+44 7700 900 482', ch:'came in on the website button', summary:'Cracked filling, wanted Saturday', status:'booked', pill:'BOOKED SAT 9:20', value:'\u00a3145', dur:108, durLabel:'1:48', when:'Last night, 21:14',
+    did:[{k:'Booked',v:'Sat 9:20am \u00b7 Dr. Reyes'},{k:'Written to',v:'Dentrix \u00b7 new patient'},{k:'Sent',v:'SMS confirmation'}],
+    turns:[
+      [2,'a','Thanks for calling Acme Dental, this is Robin. What can I help you with?'],
+      [9,'c','Hi \u2014 my filling cracked at dinner. Are you open Saturday?'],
+      [14,'a','Sorry to hear that. We keep two emergency slots on Saturday morning \u2014 I can hold 9:20 with Dr. Reyes. Any pain right now?'],
+      [26,'c','A bit sharp when I drink something cold.'],
+      [31,'a','That\u2019s worth seeing but it isn\u2019t an emergency tonight. Avoid anything cold and I\u2019ll put you down for 9:20. Can I take your name?'],
+      [44,'c','Sam Whitfield. First time with you.'],
+      [49,'a','Thanks Sam. Is this the best number to text the confirmation to?'],
+      [57,'c','Yes please.'],
+      [63,'a','Done \u2014 Saturday 9:20 with Dr. Reyes. I\u2019ve noted the cracked filling so they\u2019ll allow extra time. Anything else?'],
+      [78,'c','No, that\u2019s great. Thank you.'],
+      [82,'a','Take care, and see you Saturday.']
+    ] },
+  { id:'c2', time:'20:02', who:'Website visitor', ch:'started from the website button', summary:'Denplan and the price of a clean', status:'answered', pill:'ANSWERED \u00b7 NO BOOKING', value:'', dur:72, durLabel:'1:12', when:'Last night, 20:02',
+    did:[{k:'Answered from',v:'Fees page \u00b7 the brief'},{k:'Offered',v:'A hygiene slot'},{k:'Outcome',v:'Said they\u2019d think about it'}],
+    turns:[
+      [3,'a','Acme Dental, this is Robin. How can I help?'],
+      [8,'c','How much is a scale and polish, and do you take Denplan?'],
+      [15,'a','A hygiene visit is \u00a385, or it\u2019s included if you\u2019re on Denplan Essentials with us. Are you already a Denplan member somewhere?'],
+      [29,'c','I am, but with a practice in Sheffield.'],
+      [36,'a','You can transfer the plan across \u2014 the team handles the paperwork. Would you like me to hold a hygiene appointment while you decide?'],
+      [52,'c','I\u2019ll have a think, thanks.'],
+      [58,'a','No problem at all. Everything I\u2019ve quoted is on the fees page. Have a good evening.']
+    ] },
+  { id:'c3', time:'19:47', who:'+44 113 496 2210', ch:'rang the practice number', summary:'Rebooking a missed hygiene appointment', status:'booked', pill:'BOOKED FRI 16:30', value:'\u00a385', dur:95, durLabel:'1:35', when:'Last night, 19:47',
+    did:[{k:'Booked',v:'Fri 4:30pm \u00b7 Hygienist'},{k:'Written to',v:'Dentrix \u00b7 existing patient'},{k:'Waived',v:'Missed-visit fee'}],
+    turns:[
+      [2,'a','Acme Dental, Robin speaking.'],
+      [6,'c','I missed my hygiene appointment this morning. Can I move it?'],
+      [13,'a','Of course. I have Friday at 4:30 or Tuesday at 11. Which suits?'],
+      [24,'c','Friday, please. Am I charged for missing it?'],
+      [33,'a','Not for a first miss \u2014 I\u2019ve waived it. You\u2019re down for Friday 4:30, and I\u2019ll text a reminder the day before.'],
+      [48,'c','Perfect, thank you.']
+    ] },
+  { id:'c4', time:'18:30', who:'+44 7900 812 004', ch:'rang the practice number', summary:'Unhappy about a crown fitted last month', status:'needs', pill:'HANDED OVER \u00b7 NOT CALLED BACK', value:'', dur:143, durLabel:'2:23', when:'Last night, 18:30',
+    did:[{k:'Took',v:'Name and number'},{k:'Promised',v:'A call back today'},{k:'Avoided',v:'Any refund talk'}],
+    turns:[
+      [2,'a','Acme Dental, this is Robin. How can I help?'],
+      [7,'c','You fitted me a crown four weeks ago and it\u2019s catching every time I bite. I\u2019ve had to take painkillers all week.'],
+      [21,'a','I\u2019m sorry \u2014 that shouldn\u2019t be happening and it\u2019s not something you should be living with. Can I take your name so I can get the right person to look at it?'],
+      [38,'c','Dawn Harkness. I was with Dr. Odell.'],
+      [45,'a','Thank you Dawn. I can\u2019t book an adjustment myself, but I\u2019ll pass this to the practice manager tonight and somebody will ring you tomorrow morning.'],
+      [63,'c','Will I be charged again? Because I paid \u00a3620 for it.'],
+      [72,'a','I\u2019m not able to answer anything about the cost \u2014 the practice manager will go through that with you directly.'],
+      [86,'c','Fine. Please make sure someone actually calls.'],
+      [93,'a','I\u2019ve flagged it as urgent. Sorry again for the trouble, Dawn.']
+    ] },
+  { id:'c5', time:'17:55', who:'Website visitor', ch:'started from the website button', summary:'Asked what Invisalign costs \u2014 over your quote limit', status:'needs', pill:'CALLBACK PROMISED', value:'\u00a34k?', dur:84, durLabel:'1:24', when:'Last night, 17:55',
+    did:[{k:'Quoted',v:'Nothing \u00b7 above your limit'},{k:'Captured',v:'Email address'},{k:'Promised',v:'A price by phone today'}],
+    turns:[
+      [3,'a','Acme Dental, Robin here. What can I help with?'],
+      [8,'c','What does Invisalign cost with you?'],
+      [14,'a','Clear aligners start around \u00a32,400 and go up depending on how much movement is needed. I\u2019m not able to give you a firm figure without a consultation.'],
+      [30,'c','Roughly, though? I\u2019ve been quoted four thousand elsewhere.'],
+      [40,'a','I\u2019d rather not guess at that number. The consultation is \u00a350 and it comes off the treatment if you go ahead \u2014 can I take an email and have someone send you a proper breakdown?'],
+      [61,'c','d.mercer@\u2026 yes, that\u2019s fine.'],
+      [70,'a','Got it. Somebody will be in touch tomorrow with a written quote.']
+    ] },
+  { id:'c6', time:'16:20', who:'Unknown caller', ch:'rang the practice number', summary:'Silence, then hung up after 4 seconds', status:'spam', pill:'IGNORED \u00b7 NOT BILLED', value:'', dur:4, durLabel:'0:04', when:'Yesterday, 16:20',
+    did:[{k:'Treated as',v:'Silent call'},{k:'Billed',v:'No minutes used'},{k:'Blocked',v:'Not yet \u00b7 first time'}],
+    turns:[] },
+  { id:'c7', time:'15:03', who:'+44 7411 220 091', ch:'rang the practice number', summary:'Running twenty minutes late', status:'message', pill:'MESSAGE TAKEN', value:'', dur:38, durLabel:'0:38', when:'Yesterday, 15:03',
+    did:[{k:'Message to',v:'Front desk'},{k:'Appointment',v:'Held \u00b7 3:20pm'},{k:'Sent',v:'Nothing to the patient'}],
+    turns:[
+      [2,'a','Acme Dental, Robin speaking.'],
+      [5,'c','I\u2019m stuck in traffic, I\u2019ll be about twenty minutes late for 3:20.'],
+      [12,'a','Thanks for letting us know. I\u2019ll get that to the front desk now \u2014 they\u2019ll hold your slot if they can. What name is it under?'],
+      [24,'c','Priya Raman.'],
+      [28,'a','Passed on. Drive safely, Priya.']
+    ] },
+  { id:'c8', time:'12:41', who:'Website visitor', ch:'started from the website button', summary:'Parking near the practice', status:'answered', pill:'ANSWERED \u00b7 NO BOOKING', value:'', dur:46, durLabel:'0:46', when:'Yesterday, 12:41',
+    did:[{k:'Answered from',v:'Getting here \u00b7 the brief'},{k:'Offered',v:'Nothing further'},{k:'Outcome',v:'Question answered'}],
+    turns:[
+      [2,'a','Acme Dental, this is Robin.'],
+      [5,'c','Is there parking at the practice?'],
+      [10,'a','There are four spaces behind the building off Ashfield Lane, and the Queen Street multi-storey is a two-minute walk. Both are free on Saturdays.'],
+      [26,'c','Great, thanks.']
+    ] },
+  { id:'c9', time:'11:08', who:'+44 7822 664 120', ch:'rang the practice number', summary:'Whitening, wanted a Thursday evening', status:'booked', pill:'BOOKED THU 18:30', value:'\u00a3320', dur:132, durLabel:'2:12', when:'Yesterday, 11:08',
+    did:[{k:'Booked',v:'Thu 6:30pm \u00b7 Dr. Reyes'},{k:'Written to',v:'Dentrix \u00b7 existing patient'},{k:'Sent',v:'SMS confirmation'}],
+    turns:[
+      [3,'a','Acme Dental, Robin speaking.'],
+      [7,'c','Do you do whitening, and can I come after work?'],
+      [14,'a','We do \u2014 \u00a3320 for the take-home kit with two fittings. Thursdays we\u2019re open until eight. Would 6:30 this Thursday work?'],
+      [31,'c','That\u2019s perfect.'],
+      [35,'a','Booked. I\u2019ll text you the details \u2014 nothing to pay until the first fitting.']
+    ] },
+  { id:'c10', time:'09:52', who:'+44 7300 118 842', ch:'rang the practice number', summary:'Do you see children on the NHS', status:'answered', pill:'ANSWERED \u00b7 NO BOOKING', value:'', dur:58, durLabel:'0:58', when:'Yesterday, 09:52',
+    did:[{k:'Answered from',v:'NHS \u00b7 the brief'},{k:'Offered',v:'To join the waiting list'},{k:'Outcome',v:'Will call back'}],
+    turns:[
+      [2,'a','Acme Dental, this is Robin.'],
+      [5,'c','Are you taking on children on the NHS?'],
+      [11,'a','We do see under-18s on the NHS, but the list is closed at the moment. I can put you on the waiting list \u2014 it\u2019s about three months.'],
+      [27,'c','I\u2019ll ask my husband and ring back.'],
+      [33,'a','Of course. Ask for the NHS children\u2019s list when you do.']
+    ] }
+];
+
+class Component extends DCLogic {
+  state = { sel:'c4', query:'', filter:'all', playing:false, t:0, handled:[], corrected:{}, fixOpen:false, fixText:'', fixKind:'rule', fixLine:0, toast:'', wsOpen:false };
+
+  NAVBASE = "border-radius:10px;padding:8px 11px;cursor:pointer;text-align:left;text-decoration:none;display:block;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));";
+
+  componentWillUnmount(){ this.stop(); }
+
+  stop(){ if(this._iv){ clearInterval(this._iv); this._iv=null; } }
+
+  palette(){
+    const P = {
+      warm:{ page:'#F7F3EB',card:'#FCFAF4',sidebar:'#FDF8E9',inset:'#EFEBDE',soft:'#F9F5EC',line:'#CFC5AB',line2:'#DCD4BF',dash:'#D8CFB8',ink:'#1D1A16',text:'#4A453C',muted:'#8A8271',muted2:'#A79E8B',label:'#9A2B2B',accentl:'#EFC9C4',accentline:'#E0A9A3',accentbg:'#FBE7E4',accentbg2:'#FDF7F5',accentink:'#B2544E',green:'#4E7A48',greenl:'#A9C79F',greenbg:'#E8F0E0',amber:'#B4712A',amberl:'#E2B98A',amberbg:'#FAEBDC',btntext:'#FCFAF4',btnbg:'#1D1A16' },
+      night:{ page:'#16130F',card:'#201C17',sidebar:'#1B1713',inset:'#2A241E',soft:'#1E1A15',line:'#3A322A',line2:'#453B31',dash:'#3F362D',ink:'#F3EBDC',text:'#D6CCBA',muted:'#9A8F7C',muted2:'#7E7462',label:'#E0908A',accentl:'#6E4A46',accentline:'#7E5450',accentbg:'#382422',accentbg2:'#241A18',accentink:'#F0B4AE',green:'#8FC183',greenl:'#4E6B47',greenbg:'#24301F',amber:'#E0A567',amberl:'#6B5334',amberbg:'#332616',btntext:'#1D1A16',btnbg:'#E9A8A3' },
+      ink:{ page:'#F6F2E9',card:'#FFFDF8',sidebar:'#F1ECDF',inset:'#EDE8DA',soft:'#F3EFE4',line:'#D5CCB6',line2:'#E0D8C4',dash:'#D5CCB6',ink:'#201C15',text:'#4E4739',muted:'#8B8471',muted2:'#A69E88',label:'#8E3A2F',accentl:'#E7C0B4',accentline:'#D08E7E',accentbg:'#F7E6DF',accentbg2:'#FCF3EF',accentink:'#A34E3F',green:'#4A6E44',greenl:'#A8C29C',greenbg:'#E9EFDF',amber:'#A9701F',amberl:'#DDBB84',amberbg:'#F7ECD8',btntext:'#FBF8F0',btnbg:'#201C15' },
+      studio:{ page:'#F5F5F3',card:'#FFFFFF',sidebar:'#FBFBFA',inset:'#EFEFEC',soft:'#F8F8F6',line:'#E1E0DB',line2:'#E8E7E2',dash:'#DBDAD4',ink:'#14141A',text:'#4A4A52',muted:'#85858E',muted2:'#A3A3AA',label:'#B4322C',accentl:'#F2C4BF',accentline:'#E88A82',accentbg:'#FDECEA',accentbg2:'#FFF7F6',accentink:'#C33E36',green:'#2F7D4F',greenl:'#A9D3B8',greenbg:'#E9F5EE',amber:'#B26B12',amberl:'#EAC98F',amberbg:'#FCF3E3',btntext:'#FFFFFF',btnbg:'#14141A' }
+    };
+    return P[this.props.theme] || P.warm;
+  }
+
+  type(){
+    const TS = {
+      hand:{ disp:"'Gochi Hand',cursive", dispw:'400', fontb:"'Gaegu',cursive", bodyw:'400', fsd:'1', fsb:'1' },
+      plain:{ disp:"'Gochi Hand',cursive", dispw:'400', fontb:"'Karla',sans-serif", bodyw:'400', fsd:'1', fsb:'0.86' },
+      editorial:{ disp:"'Instrument Serif',serif", dispw:'400', fontb:"'Public Sans',sans-serif", bodyw:'400', fsd:'0.95', fsb:'0.83' },
+      grotesk:{ disp:"'Bricolage Grotesque',sans-serif", dispw:'600', fontb:"'Public Sans',sans-serif", bodyw:'400', fsd:'0.86', fsb:'0.83' }
+    };
+    return TS[this.props.typeset] || TS.hand;
+  }
+
+  vars(){
+    const p = this.palette(), t = this.type(), v = { display:'contents' };
+    Object.keys(p).forEach(k => { v['--' + k] = p[k]; });
+    Object.keys(t).forEach(k => { v['--' + k] = t[k]; });
+    return v;
+  }
+
+  fmt(s){ const m = Math.floor(s/60), r = Math.floor(s%60); return m + ':' + (r<10?'0':'') + r; }
+
+  isNeeds(c){ return c.status === 'needs' && this.state.handled.indexOf(c.id) < 0; }
+
+  visible(){
+    const q = this.state.query.trim().toLowerCase(), f = this.state.filter;
+    return DATA.filter(c => {
+      if (f === 'needs' && !this.isNeeds(c)) return false;
+      if (f === 'booked' && c.status !== 'booked') return false;
+      if (f === 'none' && (c.status === 'booked' || c.status === 'spam')) return false;
+      if (f === 'spam' && c.status !== 'spam') return false;
+      if (!q) return true;
+      if ((c.who + ' ' + c.summary + ' ' + c.pill).toLowerCase().indexOf(q) >= 0) return true;
+      return c.turns.some(t => t[2].toLowerCase().indexOf(q) >= 0);
+    });
+  }
+
+  pillStyle(c){
+    const base = 'font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.08em;border-radius:20px;padding:3px 8px;';
+    if (this.isNeeds(c)) return base + 'color:var(--accentink,#B2544E);background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4)';
+    if (c.status === 'booked') return base + 'color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F)';
+    if (c.status === 'message' || c.status === 'needs') return base + 'color:var(--amber,#B4712A);background:var(--amberbg,#FAEBDC);border:1px solid var(--amberl,#E2B98A)';
+    return base + 'color:var(--muted,#8A8271);background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF)';
+  }
+
+  rowStyle(c){
+    const on = c.id === this.state.sel;
+    const spine = this.isNeeds(c) ? 'var(--accentink,#B2544E)' : (on ? 'var(--ink,#1D1A16)' : 'transparent');
+    let s = 'width:100%;display:flex;flex-direction:column;gap:5px;padding:13px 16px;cursor:pointer;text-align:left;border:none;border-bottom:1px solid var(--line2,#DCD4BF);border-left:3px solid ' + spine + ';';
+    if (on) s += 'background:var(--card,#FCFAF4);box-shadow:inset 0 0 0 1px var(--line,#CFC5AB)';
+    else if (this.isNeeds(c)) s += 'background:var(--accentbg2,#FDF7F5)';
+    else s += 'background:transparent';
+    return s;
+  }
+
+  chip(active){
+    const b = 'border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap;font-family:var(--fontb,\'Gaegu\',cursive);font-size:calc(15px * var(--fsb,1));';
+    return active
+      ? b + 'background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);color:var(--btntext,#FCFAF4)'
+      : b + 'background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);color:var(--text,#4A453C)';
+  }
+
+  kindChip(active){
+    const b = 'border-radius:9px;padding:8px 13px;cursor:pointer;font-family:var(--fontb,\'Gaegu\',cursive);font-size:calc(16px * var(--fsb,1));';
+    return active
+      ? b + 'background:var(--accentbg,#FBE7E4);border:1px solid var(--accentink,#B2544E);color:var(--accentink,#B2544E)'
+      : b + 'background:var(--soft,#F9F5EC);border:1px solid var(--line,#CFC5AB);color:var(--text,#4A453C)';
+  }
+
+  say(msg){
+    if (this._to) clearTimeout(this._to);
+    this.setState({ toast: msg });
+    this._to = setTimeout(() => this.setState({ toast:'' }), 2600);
+  }
+
+  select(id){ this.stop(); this.setState({ sel:id, playing:false, t:0 }); }
+
+  play(){
+    const c = DATA.find(x => x.id === this.state.sel);
+    if (!c) return;
+    if (this.state.playing) { this.stop(); this.setState({ playing:false }); return; }
+    this.setState({ playing:true });
+    this._iv = setInterval(() => {
+      this.setState(s => {
+        const n = s.t + 0.5;
+        if (n >= c.dur) { this.stop(); return { t:c.dur, playing:false }; }
+        return { t:n };
+      });
+    }, 500);
+  }
+
+  renderVals(){
+    const st = this.state;
+    const first = this.props.dataState === 'empty';
+    const vis = first ? [] : this.visible();
+    const needs = vis.filter(c => this.isNeeds(c));
+    const rest = vis.filter(c => !this.isNeeds(c));
+    const openNeeds = DATA.filter(c => this.isNeeds(c)).length;
+    const sel = first ? null : DATA.find(c => c.id === st.sel && vis.indexOf(c) >= 0) || null;
+    const showVal = this.props.showValue !== false;
+
+    const map = c => ({
+      id:c.id, who:c.who, time:c.time, summary:c.summary, value:c.value,
+      pill: (c.status === 'needs' && st.handled.indexOf(c.id) >= 0) ? 'YOU CALLED THEM BACK' : c.pill,
+      showValue: showVal && !!c.value,
+      rowStyle:this.rowStyle(c), pillStyle:this.pillStyle(c)
+    });
+
+    const out = {
+      themeVars: this.vars(),
+      navOn: this.NAVBASE + 'display:flex;justify-content:space-between;align-items:center;background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);color:var(--ink,#1D1A16)',
+      navIdle: this.NAVBASE + 'background:transparent;border:1px solid transparent;color:var(--text,#4A453C)',
+      wsOpen: st.wsOpen,
+      toggleWs: () => this.setState(s => ({ wsOpen: !s.wsOpen })),
+      closeWs: () => this.setState({ wsOpen:false }),
+      navSoon: e => this.say(e.currentTarget.dataset.name + ' \u2014 designed in the next pass'),
+      needsCount: openNeeds,
+      totalLabel: first ? '0 TODAY' : '23 TODAY',
+      query: st.query,
+      hasQuery: st.query.length > 0,
+      onQuery: e => this.setState({ query:e.target.value }),
+      clearSearch: () => this.setState({ query:'' }),
+      pickFilter: e => this.setState({ filter:e.currentTarget.dataset.f }),
+      chipAll:this.chip(st.filter==='all'), chipNeeds:this.chip(st.filter==='needs'),
+      chipBooked:this.chip(st.filter==='booked'), chipNone:this.chip(st.filter==='none'), chipSpam:this.chip(st.filter==='spam'),
+      needsList: needs.map(map),
+      restList: rest.map(map),
+      hasNeeds: needs.length > 0,
+      hasRest: rest.length > 0,
+      restLabel: needs.length > 0 ? 'Everything else' : 'Yesterday evening',
+      listEmpty: vis.length === 0 && !first,
+      emptyTitle: st.query ? 'Nothing said that' : 'Nothing in here',
+      emptyBody: st.query ? 'No conversation mentions \u201c' + st.query + '\u201d. Try a shorter word \u2014 search looks inside every transcript.' : 'No conversations match this filter today.',
+      resetList: () => this.setState({ query:'', filter:'all' }),
+      footLabel: first ? 'Nothing to export yet' : 'Showing ' + vis.length + ' of 23 \u00b7 \u00a31,140 booked',
+      exportCsv: () => this.say(first ? 'Nothing to export yet' : 'Exported ' + vis.length + ' conversations to CSV'),
+      selectRow: e => this.select(e.currentTarget.dataset.id),
+      firstRun: first,
+      hasSelection: !!sel,
+      noSelection: !first && !sel,
+      fixOpen: st.fixOpen,
+      hasToast: !!st.toast,
+      toast: st.toast,
+      fixText: st.fixText,
+      onFixText: e => this.setState({ fixText:e.target.value }),
+      pickKind: e => this.setState({ fixKind:e.currentTarget.dataset.k }),
+      kindKnowledge: this.kindChip(st.fixKind==='knowledge'),
+      kindRule: this.kindChip(st.fixKind==='rule'),
+      kindHandover: this.kindChip(st.fixKind==='handover'),
+      kindHint: st.fixKind==='knowledge' ? 'Saved as a fact Robin can quote \u2014 it will show up in Knowledge.'
+        : st.fixKind==='rule' ? 'Saved as an instruction that overrides how Robin answers this topic.'
+        : 'Robin will stop answering this topic and take a message instead.',
+      closeFix: () => this.setState({ fixOpen:false }),
+      saveBtnStyle: 'border-radius:10px;padding:10px 15px;cursor:pointer;border:1px solid var(--btnbg,#1D1A16);background:var(--btnbg,#1D1A16);color:var(--btntext,#FCFAF4);font-family:var(--fontb,\'Gaegu\',cursive);font-size:calc(16px * var(--fsb,1))'
+    };
+
+    if (!sel) {
+      Object.assign(out, { selWho:'', selMeta:'', selDur:'', selTurns:[], selDid:[], agentLines:[], pct:'0%', playLabel:'0:00', isPlaying:false, isPaused:true, selNeeds:false, selSilent:false, selCorrected:false, correctionText:'', didLabel:'', didCardStyle:'display:none', didIconStyle:'', didLabelStyle:'', footQuestion:'', togglePlay:()=>{}, seek:()=>{}, openFix:()=>{}, sayGood:()=>{}, markHandled:()=>{}, callBack:()=>{}, share:()=>{}, saveFix:()=>{}, pickLine:()=>{} });
+      return out;
+    }
+
+    const cur = st.t;
+    const turns = sel.turns.map((tn, i) => {
+      const agent = tn[1] === 'a';
+      const next = sel.turns[i+1];
+      const live = st.playing && cur >= tn[0] && (!next || cur < next[0]);
+      const b = 'max-width:78%;cursor:pointer;padding:10px 13px;font-family:var(--fontb,\'Gaegu\',cursive);font-size:calc(17px * var(--fsb,1));line-height:1.35;color:var(--text,#4A453C);'
+        + (agent
+          ? 'background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);border-radius:13px 13px 13px 4px;'
+          : 'background:var(--soft,#F9F5EC);border:1px solid var(--line2,#DCD4BF);border-radius:13px 13px 4px 13px;')
+        + (live ? 'box-shadow:0 0 0 2px var(--accentink,#B2544E);' : '')
+        + (cur > 0 && cur < tn[0] ? 'opacity:.45;' : '');
+      return {
+        t:this.fmt(tn[0]), text:tn[2], isAgent:agent, isCaller:!agent,
+        rowStyle:'display:flex;align-items:flex-start;gap:11px;' + (agent ? '' : 'justify-content:flex-end;'),
+        bubbleStyle:b,
+        seek:() => { this.stop(); this.setState({ t:tn[0], playing:false }); }
+      };
+    });
+
+    const needsNow = this.isNeeds(sel);
+    const corr = st.corrected[sel.id];
+
+    Object.assign(out, {
+      selWho: sel.who,
+      selMeta: sel.when + ' \u00b7 ' + sel.durLabel + ' \u00b7 ' + sel.ch,
+      selDur: sel.durLabel,
+      selTurns: turns,
+      selDid: sel.did,
+      selSilent: sel.turns.length === 0,
+      selNeeds: needsNow,
+      selCorrected: !!corr,
+      correctionText: corr || '',
+      pct: Math.round((cur / sel.dur) * 100) + '%',
+      playLabel: this.fmt(cur),
+      isPlaying: st.playing,
+      isPaused: !st.playing,
+      didLabel: needsNow ? 'What it did \u2014 and what it left you' : 'What it did',
+      didCardStyle: 'border-radius:13px;padding:15px;display:flex;flex-direction:column;gap:10px;background:var(--card,#FCFAF4);border:1px solid ' + (needsNow ? 'var(--accentline,#E0A9A3)' : 'var(--greenl,#A9C79F)'),
+      didIconStyle: 'width:20px;height:20px;display:grid;place-items:center;border-radius:50%;' + (needsNow
+        ? 'background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);color:var(--accentink,#B2544E)'
+        : 'background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);color:var(--green,#4E7A48)'),
+      didLabelStyle: 'font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:' + (needsNow ? 'var(--accentink,#B2544E)' : 'var(--green,#4E7A48)'),
+      footQuestion: corr ? 'Fixed \u2014 Robin will answer this differently.' : 'Did it get this right?',
+      togglePlay: () => this.play(),
+      seek: e => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+        this.stop();
+        this.setState({ t: Math.round(p * sel.dur), playing:false });
+      },
+      callBack: () => this.say('Ringing ' + sel.who + '\u2026'),
+      share: () => this.say('Transcript link copied'),
+      sayGood: () => this.say('Noted \u2014 Robin keeps answering this way'),
+      markHandled: () => { this.say('Marked as handled'); this.setState(s => ({ handled: s.handled.concat(sel.id) })); },
+      openFix: () => {
+        const lines = sel.turns.filter(t => t[1] === 'a');
+        this.setState({ fixOpen:true, fixText:'', fixKind:'rule', fixLine: lines.length ? lines.length - 1 : 0 });
+      },
+      agentLines: sel.turns.map((tn, i) => ({ tn, i })).filter(x => x.tn[1] === 'a').map((x, n) => ({
+        i: n,
+        text: x.tn[2],
+        style: 'text-align:left;cursor:pointer;border-radius:11px;padding:9px 12px;font-family:var(--fontb,\'Gaegu\',cursive);font-size:calc(16px * var(--fsb,1));line-height:1.35;'
+          + (n === st.fixLine
+            ? 'background:var(--accentbg,#FBE7E4);border:1px solid var(--accentink,#B2544E);color:var(--ink,#1D1A16)'
+            : 'background:var(--soft,#F9F5EC);border:1px solid var(--line2,#DCD4BF);color:var(--muted,#8A8271)')
+      })),
+      pickLine: e => this.setState({ fixLine: Number(e.currentTarget.dataset.i) }),
+      saveFix: () => {
+        const txt = st.fixText.trim() || 'Answer this the way the practice would, not the way the script does.';
+        const where = st.fixKind === 'knowledge' ? 'Added to knowledge' : st.fixKind === 'rule' ? 'Saved as a rule' : 'Set to hand over';
+        this.setState(s => ({ fixOpen:false, corrected: Object.assign({}, s.corrected, { [sel.id]: txt }) }));
+        this.say(where + ' \u00b7 live on the next call');
+      }
+    });
+
+    return out;
+  }
+}
+</script>
+</body>
+</html>
