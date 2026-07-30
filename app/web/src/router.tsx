@@ -26,6 +26,10 @@ import {
   WorkspaceDashboardPage,
 } from "./routes/business";
 import {
+  WorkspaceBookingsPage,
+  WorkspaceCallbacksPage,
+} from "./routes/operations";
+import {
   LandingPage,
   LoginPage,
   MagicLinkPage,
@@ -146,6 +150,18 @@ const workspaceDashboardRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/dashboard",
   component: WorkspaceDashboardPage,
+});
+
+const workspaceBookingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/bookings",
+  component: WorkspaceBookingsPage,
+});
+
+const workspaceCallbacksRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/callbacks",
+  component: WorkspaceCallbacksPage,
 });
 
 const workspaceTeamRoute = createRoute({
@@ -291,6 +307,8 @@ const routeTree = rootRoute.addChildren([
   workspaceRoute.addChildren([
     workspaceIndexRoute,
     workspaceDashboardRoute,
+    workspaceBookingsRoute,
+    workspaceCallbacksRoute,
     workspaceTeamRoute,
     workspaceAccountRoute,
     workspaceOnboardingRoute,

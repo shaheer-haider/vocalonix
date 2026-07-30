@@ -174,7 +174,7 @@ function useBusinesses() {
 function workspaceTarget(pathname: string, targetSlug: string): string {
   const remainder = pathname.replace(/^\/app\/[^/]+/, "");
   const isWorkspaceSection =
-    /^\/(dashboard|team|settings|onboarding|billing|account)(?:\/|$)/.test(
+    /^\/(dashboard|bookings|callbacks|team|settings|onboarding|billing|account)(?:\/|$)/.test(
       remainder,
     );
   return `/app/${targetSlug}${isWorkspaceSection ? remainder : "/dashboard"}`;
@@ -258,12 +258,16 @@ function WorkspaceFrame({
   const pathname = location.pathname;
 
   const dashboardHref = `/app/${business.slug}/dashboard`;
+  const bookingsHref = `/app/${business.slug}/bookings`;
+  const callbacksHref = `/app/${business.slug}/callbacks`;
   const settingsHref = `/app/${business.slug}/settings`;
   const knowledgeHref = `${settingsHref}/knowledge`;
   const teamHref = `/app/${business.slug}/team`;
   const accountHref = `/app/${business.slug}/account`;
 
   const isDashboard = pathname === dashboardHref;
+  const isBookings = pathname.startsWith(bookingsHref);
+  const isCallbacks = pathname.startsWith(callbacksHref);
   const isSettings =
     pathname.startsWith(settingsHref) && !pathname.startsWith(knowledgeHref);
   const isKnowledge = pathname.startsWith(knowledgeHref);
@@ -294,6 +298,7 @@ function WorkspaceFrame({
           </select>
         </label>
         <nav aria-label="Workspace">
+          <p className="nav-section">Today</p>
           <a
             className={navActiveClass(isDashboard)}
             aria-current={isDashboard ? "page" : undefined}
@@ -302,11 +307,28 @@ function WorkspaceFrame({
             Dashboard
           </a>
           <a
+            className={navActiveClass(isBookings)}
+            aria-current={isBookings ? "page" : undefined}
+            href={bookingsHref}
+          >
+            Bookings
+            <span className="nav-item__hint">Preview</span>
+          </a>
+          <a
+            className={navActiveClass(isCallbacks)}
+            aria-current={isCallbacks ? "page" : undefined}
+            href={callbacksHref}
+          >
+            Callbacks
+            <span className="nav-item__hint">Preview</span>
+          </a>
+          <p className="nav-section">Set up</p>
+          <a
             className={navActiveClass(isSettings)}
             aria-current={isSettings ? "page" : undefined}
             href={settingsHref}
           >
-            Settings
+            Configuration
           </a>
           {can(business.role, "knowledge.manage") ? (
             <a
@@ -317,6 +339,7 @@ function WorkspaceFrame({
               Knowledge
             </a>
           ) : null}
+          <p className="nav-section">Workspace</p>
           {can(business.role, "team.manage") ? (
             <a
               className={navActiveClass(isTeam)}
@@ -331,12 +354,19 @@ function WorkspaceFrame({
             aria-current={isAccount ? "page" : undefined}
             href={accountHref}
           >
-            Account
+            Account &amp; billing
           </a>
           <a className="nav-item" href="/secret/test-agent">
             MVP lab
           </a>
         </nav>
+        <div className="sidebar-status">
+          <div className="sidebar-status__head">
+            <span className="sidebar-status__dot" />
+            Live &amp; answering
+          </div>
+          Your agent picks up calls and website chats for {business.name}.
+        </div>
       </aside>
       <main className="workspace-main">
         <div className="workspace-topbar">
@@ -496,47 +526,93 @@ export function WorkspaceDashboardPage() {
   return (
     <WorkspaceShell>
       {(business) => (
-        <div className="workspace-grid">
-          <Box style={{ padding: 20 }}>
-            <Pill variant="good">Workspace active</Pill>
-            <h2>Business control plane</h2>
-            <p>
-              Manage {business.name}&apos;s agent, knowledge, widget, and
-              tenant-scoped Dograh workflow.
-            </p>
-            <a className="ui-button" href={`/app/${business.slug}/settings`}>
-              Open settings
-            </a>
-          </Box>
-          <Box style={{ padding: 20 }}>
-            <h2>Onboarding</h2>
-            <p>
-              Resume the persisted setup flow. Each step advances only after its
-              real tenant mutation succeeds.
-            </p>
-            {can(business.role, "agent.edit") ? (
-              <a
-                className="ui-button"
-                href={`/app/${business.slug}/onboarding/business-profile`}
-              >
-                Open onboarding
+        <>
+          <div className="dash-surfaces">
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">Agent</p>
+              <h2>Robin is set up here</h2>
+              <p>
+                Voice, greeting, escalation rules, opening hours and the website
+                widget all live in Configuration.
+              </p>
+              <a className="ui-button" href={`/app/${business.slug}/settings`}>
+                Open configuration
               </a>
-            ) : (
-              <p>Your role has read-only workspace access.</p>
-            )}
-          </Box>
-          <Box style={{ padding: 20 }}>
-            <h2>Permissions</h2>
-            <p>Your role is {business.role}.</p>
-            {can(business.role, "team.manage") ? (
-              <a className="ui-button" href={`/app/${business.slug}/team`}>
-                Manage team
+            </Box>
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">Knowledge</p>
+              <h2>What the agent knows</h2>
+              <p>
+                Keep sources fresh so answers stay right — gaps show up here as
+                callers ask things the agent can&apos;t answer.
+              </p>
+              {can(business.role, "knowledge.manage") ? (
+                <a
+                  className="ui-button"
+                  href={`/app/${business.slug}/settings/knowledge`}
+                >
+                  Open knowledge
+                </a>
+              ) : (
+                <p>Your role has read-only knowledge access.</p>
+              )}
+            </Box>
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">Setup</p>
+              <h2>Finish the checklist</h2>
+              <p>
+                Resume the persisted setup flow. Each step advances only after
+                its real tenant mutation succeeds.
+              </p>
+              {can(business.role, "agent.edit") ? (
+                <a
+                  className="ui-button"
+                  href={`/app/${business.slug}/onboarding/business-profile`}
+                >
+                  Open onboarding
+                </a>
+              ) : (
+                <p>Your role has read-only workspace access.</p>
+              )}
+            </Box>
+          </div>
+          <div className="dash-surfaces dash-surfaces--secondary">
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">Today in the diary</p>
+              <h2>Bookings</h2>
+              <p>
+                A day diary with drag-to-reschedule, slot holds and a waitlist —
+                preview the flow while the booking backend lands.
+              </p>
+              <a className="ui-button" href={`/app/${business.slug}/bookings`}>
+                Open bookings preview
               </a>
-            ) : (
-              <p>Only Owners and Admins can manage workspace access.</p>
-            )}
-          </Box>
-        </div>
+            </Box>
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">Promises to keep</p>
+              <h2>Callbacks</h2>
+              <p>
+                A shared queue of callbacks the agent promised, sorted by when
+                they&apos;re due — preview the flow ahead of the backend.
+              </p>
+              <a className="ui-button" href={`/app/${business.slug}/callbacks`}>
+                Open callbacks preview
+              </a>
+            </Box>
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">Workspace</p>
+              <h2>Your team</h2>
+              <p>Your role is {business.role}.</p>
+              {can(business.role, "team.manage") ? (
+                <a className="ui-button" href={`/app/${business.slug}/team`}>
+                  Manage team
+                </a>
+              ) : (
+                <p>Only Owners and Admins can manage workspace access.</p>
+              )}
+            </Box>
+          </div>
+        </>
       )}
     </WorkspaceShell>
   );
