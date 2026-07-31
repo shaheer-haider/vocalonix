@@ -618,10 +618,92 @@ export function WorkspaceDashboardPage() {
   );
 }
 
+const sampleInvoices = [
+  { when: "12 Jul", what: "Practice · July", amount: "£85.00" },
+  { when: "12 Jun", what: "Practice · June", amount: "£81.00" },
+  { when: "12 May", what: "Practice · May, 190 extra minutes", amount: "£92.40" },
+];
+
+function BillingPreview() {
+  return (
+    <section className="account-section">
+      <div className="account-section__heading">
+        <div>
+          <h2>Plan &amp; billing</h2>
+          <p>Only an Owner can change the plan, the card, or who owns the workspace.</p>
+        </div>
+      </div>
+      <Alert variant="info" title="Design preview">
+        Billing goes live once the payments backend lands. Everything below is
+        sample data.
+      </Alert>
+      <div className="dash-surfaces">
+        <Box className="dash-surface" style={{ padding: 20 }}>
+          <p className="eyebrow">Your plan</p>
+          <h2>Practice · £79 a month</h2>
+          <p>1,200 answered minutes, 8 seats, 2 numbers included. Renews 12 Aug.</p>
+          <div className="stack-row">
+            <Button variant="ghost" disabled>
+              Change plan
+            </Button>
+          </div>
+        </Box>
+        <Box className="dash-surface" style={{ padding: 20 }}>
+          <p className="eyebrow">How you pay</p>
+          <h2>•••• 4242</h2>
+          <p>Expires 09 / 28 · Invoices go to the billing email, never to the whole team.</p>
+          <div className="stack-row">
+            <Button variant="ghost" disabled>
+              Update
+            </Button>
+          </div>
+        </Box>
+        <Box className="dash-surface" style={{ padding: 20 }}>
+          <p className="eyebrow">Phone numbers</p>
+          <h2>Two included</h2>
+          <p>Then £3 each a month. Numbers are answered by the agent, all hours.</p>
+          <div className="stack-row">
+            <Button variant="ghost" disabled>
+              Add a number
+            </Button>
+          </div>
+        </Box>
+      </div>
+      <Box style={{ padding: 20 }}>
+        <div className="account-section__heading">
+          <div>
+            <h2>Invoices</h2>
+            <p>Next · 12 Aug · estimated £79.00</p>
+          </div>
+        </div>
+        <div className="session-list">
+          {sampleInvoices.map((invoice) => (
+            <div className="session-item" key={invoice.when}>
+              <div>
+                <strong>{invoice.what}</strong>
+                <span>{invoice.when}</span>
+              </div>
+              <div className="stack-row">
+                <Pill variant="good">Paid</Pill>
+                <span>{invoice.amount}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Box>
+    </section>
+  );
+}
+
 export function WorkspaceAccountPage() {
   return (
     <WorkspaceShell>
-      {() => <AccountContent />}
+      {(business) => (
+        <>
+          <AccountContent />
+          {can(business.role, "billing.access") ? <BillingPreview /> : null}
+        </>
+      )}
     </WorkspaceShell>
   );
 }
@@ -828,6 +910,38 @@ export function TeamPage() {
               </section>
             </>
           )}
+          <section className="account-section">
+            <div className="account-section__heading">
+              <div>
+                <h2>What each role may do</h2>
+                <p>
+                  A role decides what someone can change — not what wakes them
+                  up.
+                </p>
+              </div>
+            </div>
+            <Box style={{ padding: 0, overflow: "hidden" }}>
+              <div className="data-table">
+                <div className="data-table__row data-table__row--roles data-table__row--head">
+                  <span>Permission</span>
+                  {roles.map((role) => (
+                    <span key={role}>{role}</span>
+                  ))}
+                </div>
+                {permissionRows.map((row) => (
+                  <div
+                    className="data-table__row data-table__row--roles"
+                    key={row.permission}
+                  >
+                    <span>{row.label}</span>
+                    {roles.map((role) => (
+                      <span key={role}>{can(role, row.permission) ? "✓" : "—"}</span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </Box>
+          </section>
           <InviteMemberModal
             open={inviteOpen}
             onClose={() => setInviteOpen(false)}

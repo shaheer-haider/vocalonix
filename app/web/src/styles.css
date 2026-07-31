@@ -2203,3 +2203,11 @@ p {
   border-radius: 12px;
   background: var(--paper-2);
 }
+
+.data-table__row--roles {
+  grid-template-columns: minmax(160px, 1.4fr) repeat(5, 1fr);
+}
+
+.data-table__row--roles > :nth-child(3) {
+  display: initial;
+}
