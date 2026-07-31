@@ -24,6 +24,7 @@ import {
   Alert,
   Box,
   Button,
+  EmptyState,
   LoadingState,
   Modal,
   Pill,
@@ -877,7 +878,9 @@ export function TeamPage() {
                   <Pill>{invitations.length}</Pill>
                 </div>
                 {invitations.length === 0 ? (
-                  <p className="auth-card-copy">No pending invitations.</p>
+                  <EmptyState title="Nothing outstanding">
+                    Everyone invited has joined.
+                  </EmptyState>
                 ) : (
                   <div className="session-list">
                     {invitations.map((invitation) => (
