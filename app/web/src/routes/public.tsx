@@ -48,69 +48,154 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
+const landingChannels = [
+  {
+    title: "Website voice",
+    pill: "Live",
+    live: true,
+    body: "One line of code puts a talk button on your site. Visitors speak — no app, no number to dial.",
+  },
+  {
+    title: "Browser calls",
+    pill: "Live",
+    live: true,
+    body: "Same agent, straight from the page. Barge-in, real answers from your knowledge, escalation when it matters.",
+  },
+  {
+    title: "Real phone number",
+    pill: "Soon",
+    live: false,
+    body: "Port yours or take a new one. Overflow only, or every call — your call.",
+  },
+  {
+    title: "SMS & email",
+    pill: "Soon",
+    live: false,
+    body: "Missed-call text-back that actually books the slot, and enquiries triaged before you open your laptop.",
+  },
+];
+
+const landingStats = [
+  { value: "24/7", label: "answers on your site, day or night" },
+  { value: "1 line", label: "of embed code from publish to live" },
+  { value: "1 afternoon", label: "from sign-up to live on the site" },
+];
+
 export function LandingPage() {
   const auth = useAuth();
   const isAuthenticated = auth.status === "authenticated";
+  const primaryHref = isAuthenticated ? "/app" : "/signup";
+  const primaryLabel = isAuthenticated ? "Open app →" : "Start setup →";
 
   return (
-    <AuthShell width={760}>
-      <section className="landing">
-        <Link to="/" className="landing__wordmark">
+    <div className="landing-page">
+      <header className="landing-nav">
+        <Link to="/" className="wordmark">
           vocalonix
         </Link>
-        <p className="landing__tagline">Your self-hosted AI receptionist.</p>
-        <Pill variant="accent">Self-hosted Dograh voice agents</Pill>
-        <h1>AI receptionists that answer from your website.</h1>
-        <p>
-          Vocalonix turns Dograh into a business control plane: configure the
-          agent, upload knowledge, publish a widget, then let visitors start a
-          browser-based voice call without a phone provider.
-        </p>
-        <div className="landing__actions">
+        <nav className="landing-nav__links">
+          <Link to="/design-system">Design system</Link>
+          <Link to="/secret/test-agent">MVP lab</Link>
           {isAuthenticated ? (
             <Link to="/app" className="ui-button ui-button--primary">
-              Open app →
+              Open app
             </Link>
           ) : (
-            <Link to="/signup" className="ui-button ui-button--primary">
-              Start setup →
-            </Link>
+            <>
+              <Link to="/login">Log in</Link>
+              <Link to="/signup" className="ui-button ui-button--primary">
+                Start setup
+              </Link>
+            </>
           )}
+        </nav>
+      </header>
+
+      <section className="landing-hero">
+        <Pill variant="accent">For appointment businesses</Pill>
+        <h1>Never lose another booking to a missed call.</h1>
+        <p>
+          Vocalonix answers your website out loud, 24/7 — quoting your real
+          prices, reading your real knowledge, and passing the caller to you
+          when it matters. Configure the agent, publish once, and visitors
+          start a browser voice call without a phone provider.
+        </p>
+        <div className="landing__actions">
+          <Link to={primaryHref} className="ui-button ui-button--primary">
+            {primaryLabel}
+          </Link>
           <Link to="/secret/test-agent" className="ui-button">
-            MVP lab
+            Hear it now
           </Link>
         </div>
+        <p className="landing-hero__note">
+          Self-hosted · your Dograh engine · cancel in two clicks
+        </p>
+      </section>
 
-        <div className="feature-grid">
-          {[
-            {
-              title: "Configure once",
-              body: "Set the greeting, context, widget colors, and conversation guardrails.",
-            },
-            {
-              title: "Publish to Dograh",
-              body: "Management credentials remain server-side while the workflow is synchronized.",
-            },
-            {
-              title: "Embed anywhere",
-              body: "Paste one public script and let website visitors start a browser call.",
-            },
-          ].map((feature) => (
-            <Box key={feature.title} style={{ padding: 14 }}>
-              <h2>{feature.title}</h2>
-              <p>{feature.body}</p>
+      <section className="landing-section">
+        <p className="eyebrow">One agent, every way people reach you</p>
+        <h2>Write your answers once. Every channel uses the same brief.</h2>
+        <div className="feature-grid feature-grid--four">
+          {landingChannels.map((channel) => (
+            <Box key={channel.title} style={{ padding: 16 }}>
+              <div className="account-section__heading">
+                <h3>{channel.title}</h3>
+                <Pill variant={channel.live ? "good" : "default"}>{channel.pill}</Pill>
+              </div>
+              <p>{channel.body}</p>
             </Box>
           ))}
         </div>
+      </section>
 
-        <div className="landing__note">
-          <strong>Widget-first MVP:</strong> browser calls work in the{" "}
-          <Link to="/secret/test-agent">unprotected lab</Link>. Accounts and
-          cookie-backed sessions now support real multi-business workspaces,
-          roles, and invitations.
+      <section className="landing-section">
+        <p className="eyebrow">7:40pm on a Tuesday</p>
+        <h2>The call you&apos;re not there for</h2>
+        <div className="landing-compare">
+          <Box tone="tinted" style={{ padding: 18 }}>
+            <p className="eyebrow">Today</p>
+            <ol>
+              <li>Rings out. Voicemail nobody checks until Thursday.</li>
+              <li>They google the next place on the list.</li>
+              <li>You never learn the enquiry existed.</li>
+            </ol>
+          </Box>
+          <Box style={{ padding: 18 }}>
+            <p className="eyebrow">With Vocalonix</p>
+            <ol>
+              <li>Answered in two rings, by name, with your prices.</li>
+              <li>The caller hears real answers from your knowledge.</li>
+              <li>A transcript and anything unanswered is flagged for 8am.</li>
+            </ol>
+          </Box>
         </div>
       </section>
-    </AuthShell>
+
+      <section className="landing-section landing-stats">
+        {landingStats.map((stat) => (
+          <div key={stat.value}>
+            <strong>{stat.value}</strong>
+            <span>{stat.label}</span>
+          </div>
+        ))}
+      </section>
+
+      <section className="landing-section landing-cta">
+        <h2>Put a voice on your website this afternoon.</h2>
+        <div className="landing__actions">
+          <Link to={primaryHref} className="ui-button ui-button--primary">
+            {primaryLabel}
+          </Link>
+        </div>
+      </section>
+
+      <footer className="landing-footer">
+        <span>© 2026 Vocalonix</span>
+        <Link to="/design-system">Design system</Link>
+        <Link to="/secret/test-agent">MVP lab</Link>
+      </footer>
+    </div>
   );
 }
 
@@ -144,6 +229,7 @@ export function LoginPage() {
       >
         <Box style={{ padding: 22 }}>
           <h1 className="auth-card-title">Welcome back</h1>
+          <p className="auth-card-copy">Log in to your desk.</p>
           <TextField
             label="Email"
             type="email"
@@ -238,7 +324,10 @@ export function SignupPage() {
         })}
       >
         <Box style={{ padding: 22 }}>
-          <h1 className="auth-card-title">Create your account</h1>
+          <h1 className="auth-card-title">Stop missing calls</h1>
+          <p className="auth-card-copy">
+            Set up your agent in an afternoon. No card needed locally.
+          </p>
           <TextField
             label="Full name"
             autoComplete="name"
