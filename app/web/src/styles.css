@@ -2193,3 +2193,13 @@ p {
     flex-wrap: wrap;
   }
 }
+
+.answer-editor {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--paper-2);
+}

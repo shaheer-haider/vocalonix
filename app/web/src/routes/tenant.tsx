@@ -864,6 +864,307 @@ function KnowledgeManager({
   );
 }
 
+const knowledgeTabs = [
+  { slug: "sources", label: "Sources" },
+  { slug: "answers", label: "Answers" },
+  { slug: "gaps", label: "Gaps" },
+] as const;
+
+type KnowledgeTab = (typeof knowledgeTabs)[number]["slug"];
+
+function initialKnowledgeTab(): KnowledgeTab {
+  const hash = window.location.hash.replace("#", "").toLowerCase();
+  return knowledgeTabs.some((tab) => tab.slug === hash)
+    ? (hash as KnowledgeTab)
+    : "sources";
+}
+
+export function KnowledgeWorkspace({ slug }: { slug: string }) {
+  const [tab, setTab] = useState<KnowledgeTab>(initialKnowledgeTab);
+
+  return (
+    <div className="settings-stack">
+      <nav className="config-tabs" aria-label="Knowledge">
+        {knowledgeTabs.map((item) => (
+          <a
+            key={item.slug}
+            className={`config-tab ${tab === item.slug ? "config-tab--active" : ""}`.trim()}
+            aria-current={tab === item.slug ? "page" : undefined}
+            href={`#${item.slug}`}
+            onClick={() => setTab(item.slug)}
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      {tab === "sources" ? <KnowledgeManager slug={slug} /> : null}
+      {tab === "answers" ? <AnswersTab slug={slug} /> : null}
+      {tab === "gaps" ? <GapsTab /> : null}
+    </div>
+  );
+}
+
+function AnswersTab({ slug }: { slug: string }) {
+  const [items, setItems] = useState<TenantKnowledgeItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [writing, setWriting] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [replacementId, setReplacementId] = useState<string | undefined>();
+  const [query, setQuery] = useState("");
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      setItems(
+        (await api.businesses.knowledge(slug)).filter(
+          (item) => item.kind === "text",
+        ),
+      );
+      setError(null);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to load answers.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const visible = items.filter((item) =>
+    item.title.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  async function save() {
+    if (!question.trim() || !answer.trim()) {
+      setError("Write the question and what the agent should say.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await api.businesses.createKnowledge(slug, {
+        kind: "text",
+        title: question,
+        text: answer,
+        retrievalMode: "full_document",
+        replacementId,
+      });
+      setQuestion("");
+      setAnswer("");
+      setWriting(false);
+      setReplacementId(undefined);
+      await refresh();
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to save the answer.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="settings-stack">
+      <Box style={{ padding: 24 }}>
+        <div className="account-section__heading">
+          <div>
+            <h2>What the agent says</h2>
+            <p>
+              Written answers reach callers on the first call after you
+              republish.
+            </p>
+          </div>
+          {!writing ? (
+            <Button
+              variant="primary"
+              onClick={() => {
+                setWriting(true);
+                setReplacementId(undefined);
+                setQuestion("");
+                setAnswer("");
+              }}
+            >
+              Write an answer
+            </Button>
+          ) : null}
+        </div>
+        {writing ? (
+          <div className="answer-editor">
+            <TextField
+              label="The question, as a caller asks it"
+              required
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+            />
+            <TextArea
+              label="What the agent says"
+              required
+              value={answer}
+              onChange={(event) => setAnswer(event.target.value)}
+            />
+            {error ? <Alert variant="error">{error}</Alert> : null}
+            <div className="stack-row">
+              <Button variant="ghost" onClick={() => setWriting(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" loading={saving} onClick={() => void save()}>
+                {replacementId ? "Save the new wording" : "Save answer"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        <TextField
+          label="Find an answer"
+          placeholder="Search by question…"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        {!writing && error ? <Alert variant="error">{error}</Alert> : null}
+        {loading ? (
+          <LoadingState label="Loading answers…" />
+        ) : visible.length === 0 ? (
+          <EmptyState title={query ? "Nothing matches that" : "No written answers yet"}>
+            {query
+              ? "No written answer mentions that. Try the Sources tab, or write it yourself."
+              : "Write the first answer and the agent starts using it after the next publish."}
+          </EmptyState>
+        ) : (
+          <div className="knowledge-list">
+            {visible.map((item) => {
+              const expanded = openId === item.id;
+              return (
+                <div className="knowledge-item" key={item.id}>
+                  <div className="knowledge-row">
+                    <div>
+                      <strong>{item.title}</strong>
+                      <span>
+                        {item.state === "active" ? "In use" : item.state.replaceAll("_", " ")}
+                        {" · "}
+                        {(item.sourceText ?? "").length} characters
+                      </span>
+                      {item.lastError ? <small>{item.lastError}</small> : null}
+                    </div>
+                    <div className="stack-row">
+                      <Button variant="ghost" onClick={() => setOpenId(expanded ? null : item.id)}>
+                        {expanded ? "Close" : "Check it"}
+                      </Button>
+                    </div>
+                  </div>
+                  {expanded ? (
+                    <div className="knowledge-preview">
+                      <p className="knowledge-preview__label">What the agent says</p>
+                      <pre>{item.sourceText ?? "No content available."}</pre>
+                      <div className="stack-row">
+                        {item.active ? (
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              setWriting(true);
+                              setReplacementId(item.id);
+                              setQuestion(item.title);
+                              setAnswer(item.sourceText ?? "");
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                          >
+                            Rewrite it
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setError(null);
+                            void api.businesses
+                              .deleteKnowledge(slug, item.id)
+                              .then(refresh)
+                              .catch((caught: unknown) =>
+                                setError(
+                                  caught instanceof Error
+                                    ? caught.message
+                                    : "Unable to delete the answer.",
+                                ),
+                              );
+                          }}
+                        >
+                          Stop answering this
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Box>
+    </div>
+  );
+}
+
+const sampleGaps = [
+  {
+    q: "Do you take Bupa dental insurance?",
+    count: "Asked 4×, last 40 minutes ago",
+    said: "I am not able to say which insurers we work with. Can I take your number and someone will call you back?",
+    note: "Nothing in any source mentions Bupa.",
+  },
+  {
+    q: "Do you do sedation for nervous patients?",
+    count: "Asked 3×, last 2 hours ago",
+    said: "I am not sure whether we offer that. Shall I get someone to ring you?",
+    note: "The website mentions nervous patients but never sedation.",
+  },
+  {
+    q: "Can I pay in instalments?",
+    count: "Asked 2×, last 2 days ago",
+    said: "I cannot set up a payment plan on this call. I will pass it to the front desk.",
+    note: "Nothing on finance in any source.",
+  },
+];
+
+function GapsTab() {
+  return (
+    <div className="settings-stack">
+      <Alert variant="info" title="Design preview">
+        Gaps will fill from real conversations once the unanswered-question feed
+        lands. The rows below are sample data.
+      </Alert>
+      <Box style={{ padding: 24 }}>
+        <h2>Asked, and the agent had nothing</h2>
+        <p className="auth-card-copy">
+          Pulled straight out of conversations. Answer one and it leaves this
+          queue.
+        </p>
+        <div className="knowledge-list">
+          {sampleGaps.map((gap) => (
+            <div className="knowledge-item" key={gap.q}>
+              <div className="knowledge-row">
+                <div>
+                  <strong>“{gap.q}”</strong>
+                  <span>{gap.count}</span>
+                  <small>{gap.note}</small>
+                </div>
+                <Pill variant="warn">No answer</Pill>
+              </div>
+              <div className="knowledge-preview">
+                <p className="knowledge-preview__label">What the agent said instead</p>
+                <pre>{gap.said}</pre>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Box>
+    </div>
+  );
+}
+
 function SyncStatus({ data }: { data: TenantSettingsResponse }) {
   const variant =
     data.dograh.syncState === "synced"
@@ -1682,7 +1983,7 @@ export function TenantSettingsPage({
             const canEditAgent = can(business.role, "agent.edit");
             if (section === "knowledge") {
               return can(business.role, "knowledge.manage") ? (
-                <KnowledgeManager slug={slug} />
+                <KnowledgeWorkspace slug={slug} />
               ) : (
                 <Alert variant="warn">Your role cannot manage business knowledge.</Alert>
               );
