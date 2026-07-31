@@ -29,8 +29,18 @@ import {
   Modal,
   Pill,
   SelectField,
+  TextArea,
   TextField,
 } from "../components/ui";
+import {
+  BellIcon,
+  BookIcon,
+  CalendarIcon,
+  ChatIcon,
+  PhoneIcon,
+  SettingsIcon,
+  UsersIcon,
+} from "../icons";
 import { can, permissionRows, roles } from "../permissions";
 import { AccountContent } from "./account";
 
@@ -175,7 +185,7 @@ function useBusinesses() {
 function workspaceTarget(pathname: string, targetSlug: string): string {
   const remainder = pathname.replace(/^\/app\/[^/]+/, "");
   const isWorkspaceSection =
-    /^\/(dashboard|bookings|callbacks|team|settings|onboarding|billing|account)(?:\/|$)/.test(
+    /^\/(dashboard|conversations|contacts|bookings|callbacks|notifications|team|settings|onboarding|billing|account)(?:\/|$)/.test(
       remainder,
     );
   return `/app/${targetSlug}${isWorkspaceSection ? remainder : "/dashboard"}`;
@@ -259,14 +269,19 @@ function WorkspaceFrame({
   const pathname = location.pathname;
 
   const dashboardHref = `/app/${business.slug}/dashboard`;
+  const conversationsHref = `/app/${business.slug}/conversations`;
+  const contactsHref = `/app/${business.slug}/contacts`;
   const bookingsHref = `/app/${business.slug}/bookings`;
   const callbacksHref = `/app/${business.slug}/callbacks`;
   const settingsHref = `/app/${business.slug}/settings`;
   const knowledgeHref = `${settingsHref}/knowledge`;
   const teamHref = `/app/${business.slug}/team`;
   const accountHref = `/app/${business.slug}/account`;
+  const notificationsHref = `/app/${business.slug}/notifications`;
 
   const isDashboard = pathname === dashboardHref;
+  const isConversations = pathname.startsWith(conversationsHref);
+  const isContacts = pathname.startsWith(contactsHref);
   const isBookings = pathname.startsWith(bookingsHref);
   const isCallbacks = pathname.startsWith(callbacksHref);
   const isSettings =
@@ -274,6 +289,9 @@ function WorkspaceFrame({
   const isKnowledge = pathname.startsWith(knowledgeHref);
   const isTeam = pathname.startsWith(teamHref);
   const isAccount = pathname.startsWith(accountHref);
+  const isNotifications = pathname.startsWith(notificationsHref);
+
+  const counts = { needsYou: 2, callbacks: 3, gaps: 1 };
 
   return (
     <div className="workspace-shell">
@@ -305,13 +323,32 @@ function WorkspaceFrame({
             aria-current={isDashboard ? "page" : undefined}
             href={dashboardHref}
           >
+            <CalendarIcon size={18} />
             Dashboard
+          </a>
+          <a
+            className={navActiveClass(isConversations)}
+            aria-current={isConversations ? "page" : undefined}
+            href={conversationsHref}
+          >
+            <ChatIcon size={18} />
+            Conversations
+            <span className="nav-item__count">{counts.needsYou}</span>
+          </a>
+          <a
+            className={navActiveClass(isContacts)}
+            aria-current={isContacts ? "page" : undefined}
+            href={contactsHref}
+          >
+            <UsersIcon size={18} />
+            Contacts
           </a>
           <a
             className={navActiveClass(isBookings)}
             aria-current={isBookings ? "page" : undefined}
             href={bookingsHref}
           >
+            <CalendarIcon size={18} />
             Bookings
             <span className="nav-item__hint">Preview</span>
           </a>
@@ -320,8 +357,9 @@ function WorkspaceFrame({
             aria-current={isCallbacks ? "page" : undefined}
             href={callbacksHref}
           >
+            <PhoneIcon size={18} />
             Callbacks
-            <span className="nav-item__hint">Preview</span>
+            <span className="nav-item__count">{counts.callbacks}</span>
           </a>
           <p className="nav-section">Set up</p>
           <a
@@ -329,6 +367,7 @@ function WorkspaceFrame({
             aria-current={isSettings ? "page" : undefined}
             href={settingsHref}
           >
+            <SettingsIcon size={18} />
             Configuration
           </a>
           {can(business.role, "knowledge.manage") ? (
@@ -337,7 +376,9 @@ function WorkspaceFrame({
               aria-current={isKnowledge ? "page" : undefined}
               href={knowledgeHref}
             >
+              <BookIcon size={18} />
               Knowledge
+              <span className="nav-item__count">{counts.gaps}</span>
             </a>
           ) : null}
           <p className="nav-section">Workspace</p>
@@ -347,6 +388,7 @@ function WorkspaceFrame({
               aria-current={isTeam ? "page" : undefined}
               href={teamHref}
             >
+              <UsersIcon size={18} />
               Team
             </a>
           ) : null}
@@ -355,9 +397,19 @@ function WorkspaceFrame({
             aria-current={isAccount ? "page" : undefined}
             href={accountHref}
           >
+            <PhoneIcon size={18} />
             Account &amp; billing
           </a>
+          <a
+            className={navActiveClass(isNotifications)}
+            aria-current={isNotifications ? "page" : undefined}
+            href={notificationsHref}
+          >
+            <BellIcon size={18} />
+            Notifications
+          </a>
           <a className="nav-item" href="/secret/test-agent">
+            <SettingsIcon size={18} />
             MVP lab
           </a>
         </nav>
@@ -381,6 +433,42 @@ function WorkspaceFrame({
         </div>
         {children}
       </main>
+      <nav className="mobile-bottom-nav" aria-label="Mobile">
+        <a
+          className={navActiveClass(isDashboard)}
+          href={dashboardHref}
+          aria-label="Today"
+        >
+          <CalendarIcon size={20} />
+          <span>Today</span>
+        </a>
+        <a
+          className={navActiveClass(isBookings)}
+          href={bookingsHref}
+          aria-label="Diary"
+        >
+          <CalendarIcon size={20} />
+          <span>Diary</span>
+        </a>
+        <a
+          className={navActiveClass(isCallbacks)}
+          href={callbacksHref}
+          aria-label="Callbacks"
+        >
+          <PhoneIcon size={20} />
+          <span>Callbacks</span>
+          <span className="nav-item__count nav-item__count--bottom">{counts.callbacks}</span>
+        </a>
+        <a
+          className={navActiveClass(isConversations)}
+          href={conversationsHref}
+          aria-label="Calls"
+        >
+          <ChatIcon size={20} />
+          <span>Calls</span>
+          <span className="nav-item__count nav-item__count--bottom">{counts.needsYou}</span>
+        </a>
+      </nav>
     </div>
   );
 }
@@ -524,95 +612,269 @@ export function CreateBusinessPage() {
 }
 
 export function WorkspaceDashboardPage() {
+  const [range, setRange] = useState<"today" | "7d" | "30d">("today");
+
+  const stats = {
+    today: { answered: 12, handled: 9, callbacks: 3, avg: "4m 20s" },
+    "7d": { answered: 84, handled: 71, callbacks: 19, avg: "4m 08s" },
+    "30d": { answered: 341, handled: 298, callbacks: 76, avg: "4m 15s" },
+  }[range];
+
+  const hourly = [1, 2, 4, 7, 5, 3, 2, 1, 0, 0, 0, 0];
+  const topics = [
+    { label: "Bookings", value: 35 },
+    { label: "Prices", value: 22 },
+    { label: "Opening hours", value: 18 },
+    { label: "Treatments", value: 15 },
+    { label: "Other", value: 10 },
+  ];
+
+  const callbackQueue = [
+    { who: "Dawn Whitfield", due: "9:00", task: "Follow-up", contact: "dawn" },
+    { who: "Marcus Bell", due: "12:40", task: "Slot confirmation", contact: "marcus" },
+  ];
+
+  const gaps = [
+    { q: "Do you do cosmetic whitening?", n: 4 },
+    { q: "Is there parking nearby?", n: 2 },
+  ];
+
+  const diary = [
+    { time: "9:40", title: "Nadia Kaur", sub: "Check-up", held: false },
+    { time: "10:30", title: "Marcus Bell", sub: "Slot held on the phone", held: true },
+    { time: "11:00", title: "Iris Bhatt", sub: "Check-up — booked by the agent", held: false },
+  ];
+
+  const activity = [
+    "Answered a call from Grace Odum",
+    "Booked Elena Fox for a whitening consult",
+    "Promised Dawn Whitfield a follow-up call",
+    "Sent the widget snippet to the site",
+  ];
+
   return (
     <WorkspaceShell>
       {(business) => (
         <>
-          <div className="dash-surfaces">
-            <Box className="dash-surface" style={{ padding: 20 }}>
-              <p className="eyebrow">Agent</p>
-              <h2>Your agent is set up here</h2>
-              <p>
-                Voice, greeting, escalation rules, opening hours and the website
-                widget all live in Configuration.
-              </p>
-              <a className="ui-button" href={`/app/${business.slug}/settings`}>
-                Open configuration
-              </a>
-            </Box>
-            <Box className="dash-surface" style={{ padding: 20 }}>
-              <p className="eyebrow">Knowledge</p>
-              <h2>What the agent knows</h2>
-              <p>
-                Keep sources fresh so answers stay right — gaps show up here as
-                callers ask things the agent can&apos;t answer.
-              </p>
-              {can(business.role, "knowledge.manage") ? (
-                <a
-                  className="ui-button"
-                  href={`/app/${business.slug}/settings/knowledge`}
+          <Alert variant="warn">
+            Design preview — the dashboard uses sample data until call, booking
+            and callback feeds are wired in.
+          </Alert>
+
+          <div className="dash-header" style={{ marginTop: 16 }}>
+            <div>
+              <p className="eyebrow">Briefing</p>
+              <h1>Today</h1>
+            </div>
+            <div className="dash-range">
+              {(["today", "7d", "30d"] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className={`ops-chip ${range === r ? "ops-chip--active" : ""}`.trim()}
+                  onClick={() => setRange(r)}
                 >
-                  Open knowledge
-                </a>
-              ) : (
-                <p>Your role has read-only knowledge access.</p>
-              )}
+                  {r === "today" ? "Today" : r === "7d" ? "7 days" : "30 days"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="dash-stats">
+            <Box className="dash-stat" style={{ padding: 16 }}>
+              <strong>{stats.answered}</strong>
+              <span>Calls answered</span>
+              <small>Agent picked up every one</small>
             </Box>
-            <Box className="dash-surface" style={{ padding: 20 }}>
-              <p className="eyebrow">Setup</p>
-              <h2>Finish the checklist</h2>
-              <p>
-                Resume the persisted setup flow. Each step advances only after
-                its real tenant mutation succeeds.
-              </p>
-              {can(business.role, "agent.edit") ? (
-                <a
-                  className="ui-button"
-                  href={`/app/${business.slug}/onboarding/business-profile`}
-                >
-                  Open onboarding
-                </a>
-              ) : (
-                <p>Your role has read-only workspace access.</p>
-              )}
+            <Box className="dash-stat" style={{ padding: 16 }}>
+              <strong>{stats.handled}</strong>
+              <span>Handled alone</span>
+              <small>No human needed</small>
+            </Box>
+            <Box className="dash-stat" style={{ padding: 16 }}>
+              <strong>{stats.callbacks}</strong>
+              <span>Callbacks asked</span>
+              <small>Promised out loud</small>
+            </Box>
+            <Box className="dash-stat" style={{ padding: 16 }}>
+              <strong>{stats.avg}</strong>
+              <span>Average length</span>
+              <small>From connect to finish</small>
             </Box>
           </div>
+
+          <div className="dash-surfaces" style={{ marginTop: 16 }}>
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">When people call</p>
+              <h2>Hourly pattern</h2>
+              <div className="dash-bars" aria-label="Hourly call volume">
+                {hourly.map((h, i) => {
+                  const hour = 8 + i;
+                  return (
+                    <div key={i} className="dash-bar">
+                      <div
+                        className="dash-bar__fill"
+                        style={{ height: `${(h / 7) * 100}%` }}
+                      />
+                      <span>{hour}:00</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="dash-insight">
+                Peak is 11am–12pm, but you close the phone lines at 1pm.
+              </p>
+            </Box>
+
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">What they asked about</p>
+              <h2>Topic mix</h2>
+              <div className="dash-topics">
+                {topics.map((t) => (
+                  <div key={t.label} className="dash-topic">
+                    <span>{t.label}</span>
+                    <div className="dash-topic__track">
+                      <div
+                        className="dash-topic__fill"
+                        style={{ width: `${t.value}%` }}
+                      />
+                    </div>
+                    <span>{t.value}%</span>
+                  </div>
+                ))}
+              </div>
+            </Box>
+
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <p className="eyebrow">Live</p>
+              <h2>Answering</h2>
+              <p className="dash-live-line">
+                <PhoneIcon size={16} /> 0113 496 2288
+              </p>
+              <p className="dash-live-line">
+                <ChatIcon size={16} /> Website button is on
+              </p>
+              <div className="stack-row" style={{ marginTop: 10 }}>
+                <a className="ui-button" href={`/app/${business.slug}/conversations`}>
+                  Test call
+                </a>
+                <a className="ui-button" href="/secret/test-agent">
+                  Snippet
+                </a>
+              </div>
+            </Box>
+          </div>
+
           <div className="dash-surfaces dash-surfaces--secondary">
             <Box className="dash-surface" style={{ padding: 20 }}>
-              <p className="eyebrow">Today in the diary</p>
-              <h2>Bookings</h2>
-              <p>
-                A day diary with drag-to-reschedule, slot holds and a waitlist —
-                preview the flow while the booking backend lands.
-              </p>
-              <a className="ui-button" href={`/app/${business.slug}/bookings`}>
-                Open bookings preview
-              </a>
-            </Box>
-            <Box className="dash-surface" style={{ padding: 20 }}>
-              <p className="eyebrow">Promises to keep</p>
-              <h2>Callbacks</h2>
-              <p>
-                A shared queue of callbacks the agent promised, sorted by when
-                they&apos;re due — preview the flow ahead of the backend.
-              </p>
-              <a className="ui-button" href={`/app/${business.slug}/callbacks`}>
-                Open callbacks preview
-              </a>
-            </Box>
-            <Box className="dash-surface" style={{ padding: 20 }}>
-              <p className="eyebrow">Workspace</p>
-              <h2>Your team</h2>
-              <p>Your role is {business.role}.</p>
-              {can(business.role, "team.manage") ? (
-                <a className="ui-button" href={`/app/${business.slug}/team`}>
-                  Manage team
-                </a>
+              <div className="account-section__heading">
+                <div>
+                  <p className="eyebrow">Promises to keep</p>
+                  <h2>People waiting on a call back</h2>
+                </div>
+                <Pill variant="warn">{callbackQueue.length}</Pill>
+              </div>
+              {callbackQueue.length === 0 ? (
+                <p>No callbacks queued.</p>
               ) : (
-                <p>Only Owners and Admins can manage workspace access.</p>
+                <div className="session-list" style={{ marginTop: 12 }}>
+                  {callbackQueue.map((item) => (
+                    <a
+                      key={item.who}
+                      className="session-item"
+                      href={`/app/${business.slug}/callbacks`}
+                    >
+                      <div>
+                        <strong>{item.who}</strong>
+                        <span>Due {item.due} · {item.task}</span>
+                      </div>
+                      <Pill variant="info">Open</Pill>
+                    </a>
+                  ))}
+                </div>
               )}
             </Box>
+
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <div className="account-section__heading">
+                <div>
+                  <p className="eyebrow">Teach the agent</p>
+                  <h2>Asked, and Robin had nothing</h2>
+                </div>
+                <Pill variant="warn">{gaps.length}</Pill>
+              </div>
+              {gaps.length === 0 ? (
+                <p>No gaps recorded.</p>
+              ) : (
+                <div className="session-list" style={{ marginTop: 12 }}>
+                  {gaps.map((gap) => (
+                    <div className="session-item" key={gap.q}>
+                      <div>
+                        <strong>{gap.q}</strong>
+                        <span>Heard {gap.n} times</span>
+                      </div>
+                      <div className="stack-row">
+                        <a
+                          className="ui-button"
+                          href={`/app/${business.slug}/settings/knowledge`}
+                        >
+                          Teach
+                        </a>
+                        <Button variant="ghost" disabled>
+                          Not worth it
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Box>
+
+            <Box className="dash-surface" style={{ padding: 20 }}>
+              <div className="account-section__heading">
+                <div>
+                  <p className="eyebrow">Today in the diary</p>
+                  <h2>Bookings</h2>
+                </div>
+                <a className="ui-button" href={`/app/${business.slug}/bookings`}>
+                  Open diary
+                </a>
+              </div>
+              {diary.map((slot) => (
+                <div
+                  className={`ops-row ${slot.held ? "ops-row--held" : ""}`.trim()}
+                  key={slot.time}
+                >
+                  <div className="ops-row__time">
+                    <span>{slot.time}</span>
+                  </div>
+                  <div className="ops-row__body">
+                    <span className="ops-row__title">{slot.title}</span>
+                    <span className="ops-row__meta">{slot.sub}</span>
+                  </div>
+                  {slot.held ? <Pill variant="warn">Held</Pill> : <Pill variant="info">Booked</Pill>}
+                </div>
+              ))}
+              <div className="dash-waitlist" style={{ marginTop: 12 }}>
+                <strong>1 person on the waitlist</strong>
+                <a href={`/app/${business.slug}/callbacks`}>Offer a slot</a>
+              </div>
+            </Box>
           </div>
+
+          <Box style={{ padding: 20, marginTop: 16 }}>
+            <div className="account-section__heading">
+              <div>
+                <p className="eyebrow">What Robin did today</p>
+                <h2>Activity feed</h2>
+              </div>
+            </div>
+            <ul className="dash-activity">
+              {activity.map((entry, i) => (
+                <li key={i}>{entry}</li>
+              ))}
+            </ul>
+          </Box>
         </>
       )}
     </WorkspaceShell>
@@ -626,6 +888,9 @@ const sampleInvoices = [
 ];
 
 function BillingPreview() {
+  const minutes = 742;
+  const minutesCap = 1200;
+
   return (
     <section className="account-section">
       <div className="account-section__heading">
@@ -640,6 +905,19 @@ function BillingPreview() {
       </Alert>
       <div className="dash-surfaces">
         <Box className="dash-surface" style={{ padding: 20 }}>
+          <p className="eyebrow">Minutes used</p>
+          <h2>
+            {minutes} / {minutesCap} minutes
+          </h2>
+          <p>Cycle resets 12 Aug. Extra minutes are £0.045 each.</p>
+          <div className="billing-progress" aria-label="Minutes used">
+            <div
+              className="billing-progress__bar"
+              style={{ width: `${(minutes / minutesCap) * 100}%` }}
+            />
+          </div>
+        </Box>
+        <Box className="dash-surface" style={{ padding: 20 }}>
           <p className="eyebrow">Your plan</p>
           <h2>Practice · £79 a month</h2>
           <p>1,200 answered minutes, 8 seats, 2 numbers included. Renews 12 Aug.</p>
@@ -647,21 +925,15 @@ function BillingPreview() {
             <Button variant="ghost" disabled>
               Change plan
             </Button>
-          </div>
-        </Box>
-        <Box className="dash-surface" style={{ padding: 20 }}>
-          <p className="eyebrow">How you pay</p>
-          <h2>•••• 4242</h2>
-          <p>Expires 09 / 28 · Invoices go to the billing email, never to the whole team.</p>
-          <div className="stack-row">
-            <Button variant="ghost" disabled>
-              Update
+            <Button variant="ghost" className="billing-cancel" disabled>
+              Cancel plan
             </Button>
           </div>
         </Box>
         <Box className="dash-surface" style={{ padding: 20 }}>
           <p className="eyebrow">Phone numbers</p>
           <h2>Two included</h2>
+          <p>0113 496 2288 · 020 7946 0822</p>
           <p>Then £3 each a month. Numbers are answered by the agent, all hours.</p>
           <div className="stack-row">
             <Button variant="ghost" disabled>
@@ -673,8 +945,8 @@ function BillingPreview() {
       <Box style={{ padding: 20 }}>
         <div className="account-section__heading">
           <div>
-            <h2>Invoices</h2>
-            <p>Next · 12 Aug · estimated £79.00</p>
+            <h2>Next invoice</h2>
+            <p>12 Aug · estimated £79.00</p>
           </div>
         </div>
         <div className="session-list">
@@ -717,6 +989,8 @@ export function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [escalations, setEscalations] = useState<Record<string, boolean>>({});
+  const [nights, setNights] = useState<Record<string, boolean>>({});
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -735,6 +1009,17 @@ export function TeamPage() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const e: Record<string, boolean> = {};
+    const n: Record<string, boolean> = {};
+    for (const member of members) {
+      e[member.userId] = member.role !== "Viewer";
+      n[member.userId] = member.role === "Owner" || member.role === "Admin";
+    }
+    setEscalations(e);
+    setNights(n);
+  }, [members]);
 
   async function updateRole(userId: string, role: Role) {
     setError(null);
@@ -813,16 +1098,24 @@ export function TeamPage() {
             <LoadingState label="Loading team…" />
           ) : (
             <>
+              {Object.values(nights).length > 0 && !Object.values(nights).some(Boolean) ? (
+                <Alert variant="warn" title="Nobody on nights">
+                  Add at least one person to the night chain so urgent calls can
+                  be escalated after hours.
+                </Alert>
+              ) : null}
               <Box style={{ padding: 0, overflow: "hidden" }}>
-                <div className="data-table">
-                  <div className="data-table__row data-table__row--head">
-                    <span>Member</span>
+                <div className="data-table data-table--team">
+                  <div className="data-table__row data-table__row--head data-table__row--team">
+                    <span>Person</span>
                     <span>Role</span>
-                    <span>Joined</span>
+                    <span>Escalations</span>
+                    <span>Nights</span>
+                    <span>Seen</span>
                     <span>Actions</span>
                   </div>
                   {members.map((member) => (
-                    <div className="data-table__row" key={member.userId}>
+                    <div className="data-table__row data-table__row--team" key={member.userId}>
                       <span>
                         <strong>{member.name}</strong>
                         <small>{member.email}</small>
@@ -852,7 +1145,33 @@ export function TeamPage() {
                       ) : (
                         <Pill>{member.role}</Pill>
                       )}
-                      <span>{formatDate(member.joinedAt)}</span>
+                      <span>
+                        <Button
+                          variant={escalations[member.userId] ? "primary" : "ghost"}
+                          onClick={() =>
+                            setEscalations((prev) => ({
+                              ...prev,
+                              [member.userId]: !prev[member.userId],
+                            }))
+                          }
+                        >
+                          {escalations[member.userId] ? "On" : "Off"}
+                        </Button>
+                      </span>
+                      <span>
+                        <Button
+                          variant={nights[member.userId] ? "primary" : "ghost"}
+                          onClick={() =>
+                            setNights((prev) => ({
+                              ...prev,
+                              [member.userId]: !prev[member.userId],
+                            }))
+                          }
+                        >
+                          {nights[member.userId] ? "On" : "Off"}
+                        </Button>
+                      </span>
+                      <span>{formatDate(new Date().toISOString())}</span>
                       {business.role === "Owner" ||
                       (member.role !== "Owner" && member.role !== "Admin") ? (
                         <Button
@@ -868,6 +1187,19 @@ export function TeamPage() {
                   ))}
                 </div>
               </Box>
+              {business.role === "Owner" ? (
+                <Box style={{ padding: 20, marginTop: 16 }}>
+                  <div className="account-section__heading">
+                    <div>
+                      <h2>Ownership</h2>
+                      <p>Transfer ownership to another active member.</p>
+                    </div>
+                    <Button variant="ghost" disabled>
+                      Transfer ownership
+                    </Button>
+                  </div>
+                </Box>
+              ) : null}
 
               <section className="account-section">
                 <div className="account-section__heading">

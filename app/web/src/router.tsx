@@ -25,10 +25,13 @@ import {
   WorkspaceAccountPage,
   WorkspaceDashboardPage,
 } from "./routes/business";
+import { WorkspaceContactsPage } from "./routes/contacts";
+import { WorkspaceConversationsPage } from "./routes/conversations";
 import {
   WorkspaceBookingsPage,
   WorkspaceCallbacksPage,
 } from "./routes/operations";
+import { WorkspaceNotificationsPage } from "./routes/notifications";
 import {
   LandingPage,
   LoginPage,
@@ -152,6 +155,18 @@ const workspaceDashboardRoute = createRoute({
   component: WorkspaceDashboardPage,
 });
 
+const workspaceConversationsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/conversations",
+  component: WorkspaceConversationsPage,
+});
+
+const workspaceContactsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/contacts",
+  component: WorkspaceContactsPage,
+});
+
 const workspaceBookingsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/bookings",
@@ -162,6 +177,12 @@ const workspaceCallbacksRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/callbacks",
   component: WorkspaceCallbacksPage,
+});
+
+const workspaceNotificationsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/notifications",
+  component: WorkspaceNotificationsPage,
 });
 
 const workspaceTeamRoute = createRoute({
@@ -325,8 +346,11 @@ const routeTree = rootRoute.addChildren([
   workspaceRoute.addChildren([
     workspaceIndexRoute,
     workspaceDashboardRoute,
+    workspaceConversationsRoute,
+    workspaceContactsRoute,
     workspaceBookingsRoute,
     workspaceCallbacksRoute,
+    workspaceNotificationsRoute,
     workspaceTeamRoute,
     workspaceAccountRoute,
     workspaceOnboardingRoute,
