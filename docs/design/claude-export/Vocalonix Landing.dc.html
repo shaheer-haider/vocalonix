@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&family=Karla:wght@400;500;600&family=Instrument+Serif&family=Public+Sans:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#F7F3EB; }
+  a { color:#B2544E; }
+  a:hover { color:#8E3E39; }
+  button { font: inherit; }
+  input[type=range] { accent-color:#B2544E; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+  @keyframes wave { 0%,100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+  @keyframes rise { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: none; } }
+</style>
+</helmet>
+
+<div style="{{ themeVars }}">
+<div style="min-height:100vh;background:var(--page,#F7F3EB);position:relative">
+
+  <header style="border-bottom:1px solid var(--line,#CFC5AB);background:var(--page,#F7F3EB);position:sticky;top:0;z-index:40">
+    <div style="max-width:1180px;margin:0 auto;padding:0 40px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px">
+      <div style="font-family:'Gochi Hand',cursive;font-size:27px;color:var(--ink,#1D1A16)">vocalonix</div>
+      <nav style="display:flex;align-items:center;gap:26px">
+        <a href="#channels" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">Channels</a>
+        <a href="#integrations" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">Integrations</a>
+        <a href="#pricing" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">Pricing</a>
+        <a href="#faq" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">FAQ</a>
+      </nav>
+      <div style="display:flex;align-items:center;gap:16px">
+        <a href="#" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">Log in</a>
+        <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4)" style-hover="background:var(--btnhover,#332E27)">Start free trial</button>
+      </div>
+    </div>
+  </header>
+
+  <section style="max-width:1180px;margin:0 auto;padding:70px 40px 44px;display:grid;grid-template-columns:1.02fr 1fr;gap:60px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:20px;padding-top:8px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">For appointment businesses</span>
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--muted2,#A79E8B)"></span>
+        <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted,#8A8271)">Voice &amp; phone</span>
+      </div>
+      <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(60px * var(--fsd,1));line-height:1.02;color:var(--ink,#1D1A16);text-wrap:pretty">Never lose another booking to a missed call.</div>
+      <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(21px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C);max-width:530px;text-wrap:pretty">Vocalonix answers your website and your phone, out loud, 24/7 &mdash; quoting your real prices, checking your real diary, and passing the caller to you when it matters.</div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-top:4px">
+        <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:12px;padding:14px 26px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(20px * var(--fsb,1));color:var(--btntext,#FCFAF4)" style-hover="background:var(--btnhover,#332E27)">Start free trial &rarr;</button>
+        <a href="#pricing" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--accentink,#B2544E)">See pricing</a>
+      </div>
+      <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">14 days free &middot; no card &middot; cancel in two clicks</div>
+      <div style="display:flex;flex-direction:column;gap:9px;border-top:1px dashed var(--dash,#D8CFB8);padding-top:18px;margin-top:6px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted,#8A8271)">Plugs into what you already run</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">
+          <sc-for list="{{ heroTools }}" as="t" hint-placeholder-count="6">
+            <span style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:20px;padding:5px 12px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">{{ t.name }}</span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted,#8A8271)">Hear it now &mdash; pick your trade</div>
+        <div style="display:flex;gap:3px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:9px;padding:3px">
+          <button data-b="dental" onClick="{{ pickBiz }}" style="{{ bizDental }}">Dental</button>
+          <button data-b="salon" onClick="{{ pickBiz }}" style="{{ bizSalon }}">Salon</button>
+          <button data-b="vet" onClick="{{ pickBiz }}" style="{{ bizVet }}">Vet</button>
+          <button data-b="pmu" onClick="{{ pickBiz }}" style="{{ bizPmu }}">Lash / PMU</button>
+        </div>
+      </div>
+
+      <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:16px;box-shadow:0 18px 44px var(--sh2,rgba(29,26,22,0.12));overflow:hidden;min-height:492px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line2,#DCD4BF);background:var(--soft,#F9F5EC)">
+          <div style="width:30px;height:30px;border-radius:9px;background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand',cursive;font-size:15px;color:var(--accentink,#B2544E)">{{ bizInitial }}</div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16);line-height:1.2">{{ bizName }}</div>
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted,#8A8271)">{{ statusLine }}</div>
+          </div>
+          <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accentink,#B2544E)">{{ clock }}</div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px 30px;text-align:center">
+            <div style="width:126px;height:126px;border-radius:50%;border:1px dashed var(--dash,#D8CFB8);display:flex;align-items:center;justify-content:center">
+              <div style="width:84px;height:84px;border-radius:25px;background:var(--accent,#E9A8A3);border:1px solid var(--accentline,#E0A9A3);display:flex;align-items:flex-end;justify-content:center;gap:4px;padding:21px 0">
+                <div style="width:5px;height:19px;border-radius:3px;background:var(--card,#FCFAF4)"></div>
+                <div style="width:5px;height:32px;border-radius:3px;background:var(--card,#FCFAF4)"></div>
+                <div style="width:5px;height:25px;border-radius:3px;background:var(--card,#FCFAF4)"></div>
+                <div style="width:5px;height:38px;border-radius:3px;background:var(--card,#FCFAF4)"></div>
+                <div style="width:5px;height:17px;border-radius:3px;background:var(--card,#FCFAF4)"></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(27px * var(--fsd,1));color:var(--ink,#1D1A16)">{{ bizHeadline }}</div>
+              <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271);max-width:310px">A scripted 15-second demo &mdash; no microphone needed.</div>
+            </div>
+            <button onClick="{{ startCall }}" style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:26px;padding:14px 30px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(20px * var(--fsb,1));color:var(--btntext,#FCFAF4);box-shadow:0 8px 20px var(--sh3,rgba(29,26,22,0.25))" style-hover="background:var(--btnhover,#332E27)">Talk to us</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isConnecting }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:36px 30px;text-align:center">
+            <div style="width:34px;height:34px;border-radius:50%;border:3px solid var(--line,#CFC5AB);border-top-color:var(--accentink,#B2544E);animation:spin .8s linear infinite"></div>
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(24px * var(--fsd,1));color:var(--ink,#1D1A16)">Connecting you&hellip;</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Same agent your callers reach on the phone.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+            <div style="flex:1;padding:18px;display:flex;flex-direction:column;gap:9px;justify-content:flex-end;background:var(--soft,#F9F5EC)">
+              <sc-for list="{{ lines }}" as="l" hint-placeholder-count="0">
+                <div style="display:flex;justify-content:{{ l.justify }};animation:rise .28s ease-out">
+                  <div style="max-width:82%;background:{{ l.bg }};border:1px solid {{ l.border }};border-radius:{{ l.radius }};padding:9px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--text,#4A453C)">{{ l.text }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="border-top:1px solid var(--line2,#DCD4BF);padding:16px 18px;display:flex;align-items:center;gap:16px;background:var(--card,#FCFAF4)">
+              <div style="flex:1;display:flex;align-items:center;gap:3px;height:34px">
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accentl,#EFC9C4);animation:wave 1s ease-in-out infinite;animation-delay:0s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accentl,#EFC9C4);animation:wave 1s ease-in-out infinite;animation-delay:.08s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accent,#E9A8A3);animation:wave 1s ease-in-out infinite;animation-delay:.16s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accentl,#EFC9C4);animation:wave 1s ease-in-out infinite;animation-delay:.24s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accent,#E9A8A3);animation:wave 1s ease-in-out infinite;animation-delay:.32s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accentl,#EFC9C4);animation:wave 1s ease-in-out infinite;animation-delay:.4s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accent,#E9A8A3);animation:wave 1s ease-in-out infinite;animation-delay:.48s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accentl,#EFC9C4);animation:wave 1s ease-in-out infinite;animation-delay:.56s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accentl,#EFC9C4);animation:wave 1s ease-in-out infinite;animation-delay:.64s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accent,#E9A8A3);animation:wave 1s ease-in-out infinite;animation-delay:.72s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accentl,#EFC9C4);animation:wave 1s ease-in-out infinite;animation-delay:.8s"></div>
+                <div style="flex:1;height:100%;border-radius:2px;background:var(--accentl,#EFC9C4);animation:wave 1s ease-in-out infinite;animation-delay:.88s"></div>
+              </div>
+              <button onClick="{{ endCall }}" style="background:var(--accentbg2,#FDF7F5);border:1px solid var(--accentl,#EFC9C4);border-radius:22px;padding:10px 20px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--accentink,#B2544E)" style-hover="border-color:var(--accentink,#B2544E)">Hang up</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isEnded }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;display:flex;flex-direction:column;gap:15px;padding:24px">
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Call ended &middot; {{ clock }}</div>
+              <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(26px * var(--fsd,1));color:var(--ink,#1D1A16)">{{ bizOutcome }}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:20px;padding:3px 8px">BOOKED</span>
+                <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">{{ endBooked }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--amber,#B4712A);background:var(--amberbg,#FAEBDC);border:1px solid var(--amberl,#E2B98A);border-radius:20px;padding:3px 8px">SYNCED</span>
+                <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">{{ endSynced }}</span>
+              </div>
+              <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--muted,#8A8271);padding-top:2px">ANSWERED FROM &middot; {{ endSources }}</div>
+            </div>
+            <div style="margin-top:auto;display:flex;gap:10px;flex-wrap:wrap">
+              <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:11px 18px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--btntext,#FCFAF4)" style-hover="background:var(--btnhover,#332E27)">Get this on my site</button>
+              <button onClick="{{ resetCall }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:11px 18px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)" style-hover="border-color:var(--accentink,#B2544E)">Call again</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </section>
+
+  <section id="channels" style="border-top:1px solid var(--line,#CFC5AB);background:var(--soft,#F9F5EC)">
+    <div style="max-width:1180px;margin:0 auto;padding:70px 40px;display:flex;flex-direction:column;gap:30px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:30px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">One agent, every way people reach you</div>
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(40px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16)">Website, phone, and soon your inbox</div>
+        </div>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.45;color:var(--text,#4A453C);max-width:400px">Write your answers once. Every channel you switch on uses the same brief, the same prices, the same diary.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:16px">
+        <div style="grid-column:span 3;position:relative;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:16px;box-shadow:3px 4px 0 var(--sh0,rgba(29,26,22,0.05));padding:26px;display:flex;flex-direction:column;gap:14px;transition:transform .16s ease,box-shadow .16s ease" style-hover="transform:translate(-2px,-2px);box-shadow:5px 7px 0 var(--sh0,rgba(29,26,22,0.05))">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+            <div style="width:60px;height:60px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);color:var(--label,#9A2B2B)"><svg viewBox="0 0 32 32" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 8.6c0-1.7 1.3-2.6 3-2.7 3.4-.2 13.9-.3 17.2 0 1.7.1 2.8.9 2.8 2.7.1 3.6.1 10.2 0 13.6 0 1.7-1.1 2.6-2.8 2.7-3.3.3-13.8.2-17.2 0-1.7-.1-3-.9-3-2.7-.1-3.4-.1-10 0-13.6Z"/><path d="M4.7 11.4c7 .3 19.4.2 27 0"/><path d="M7.6 8.6h.1M10.4 8.7h.1"/><path d="M12.6 18.4c0-1.6.1-2.8.1-3.6M16 20.6c.1-3 .1-5.9 0-8.4M19.4 18.9c.1-1.9.1-3.4 0-4.6"/></svg></div>
+            <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:20px;padding:3px 8px">LIVE</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(27px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16)">Website voice</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.45;color:var(--text,#4A453C)">One line of code puts a talk button on your site. Visitors speak, no app, no number to dial.</div>
+          </div>
+          <div style="margin-top:auto;padding-top:14px;border-top:1px dashed var(--line2,#DCD4BF);display:flex;flex-wrap:wrap;gap:8px"><span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.06em;color:var(--muted,#8A8271);background:var(--soft,#F9F5EC);border:1px solid var(--line2,#DCD4BF);border-radius:6px;padding:4px 8px">1-line embed</span><span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.06em;color:var(--muted,#8A8271);background:var(--soft,#F9F5EC);border:1px solid var(--line2,#DCD4BF);border-radius:6px;padding:4px 8px">No app</span><span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.06em;color:var(--muted,#8A8271);background:var(--soft,#F9F5EC);border:1px solid var(--line2,#DCD4BF);border-radius:6px;padding:4px 8px">Barge-in</span></div>
+        </div>
+        <div style="grid-column:span 3;position:relative;background:var(--card,#FCFAF4);border:1px solid var(--accentline,#E0A9A3);border-radius:16px;box-shadow:3px 4px 0 var(--sh0,rgba(29,26,22,0.05));padding:26px;display:flex;flex-direction:column;gap:14px;transition:transform .16s ease,box-shadow .16s ease" style-hover="transform:translate(-2px,-2px);box-shadow:5px 7px 0 var(--sh0,rgba(29,26,22,0.05))">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+            <div style="width:60px;height:60px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);color:var(--label,#9A2B2B)"><svg viewBox="0 0 32 32" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5.6c1.2-.6 2 .1 2.5 1.2.5 1 1 2.3 1.3 3.2.3 1-.2 1.6-1 2.2-.9.7-1.2 1.1-.8 2.1.7 2 2.6 4.2 4.6 5.2 1 .5 1.5.2 2.2-.6.6-.7 1.2-1.2 2.2-.8 1 .4 2.3.9 3.2 1.4 1.1.6 1.7 1.4 1 2.6-1 1.8-3 3.5-5.3 3.4-3.3-.2-7.2-2.6-10-5.4-2.8-2.9-5-6.7-5.1-9.9-.1-2.3 1.5-4.2 3.2-5.2Z"/><path d="M19.5 5.5c3.4.5 6.3 3.3 6.9 6.7"/></svg></div>
+            <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:20px;padding:3px 8px">LIVE</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(27px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16)">Real phone number</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.45;color:var(--text,#4A453C)">Port yours or take a new one, powered by Telnyx. Overflow only, or every call, your call.</div>
+          </div>
+          <div style="margin-top:auto;padding-top:14px;border-top:1px dashed var(--line2,#DCD4BF);display:flex;flex-wrap:wrap;gap:8px"><span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.06em;color:var(--muted,#8A8271);background:var(--soft,#F9F5EC);border:1px solid var(--line2,#DCD4BF);border-radius:6px;padding:4px 8px">Telnyx</span><span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.06em;color:var(--muted,#8A8271);background:var(--soft,#F9F5EC);border:1px solid var(--line2,#DCD4BF);border-radius:6px;padding:4px 8px">Port or new</span><span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.06em;color:var(--muted,#8A8271);background:var(--soft,#F9F5EC);border:1px solid var(--line2,#DCD4BF);border-radius:6px;padding:4px 8px">Overflow rules</span></div>
+        </div>
+        <div style="grid-column:span 2;background:var(--card,#FCFAF4);border:1px dashed var(--line,#CFC5AB);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted,#8A8271);display:grid;place-items:center"><svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.8 9.2C4.9 7.4 6 6.4 7.8 6.3c3.3-.3 13-.3 16.3 0 1.8.1 2.9 1 3 2.9.2 2.7.2 6.3 0 9-.1 1.8-1.2 2.7-3 2.8-2.6.2-7 .2-9.4.1l-5.5 3.4c-.5.3-1 0-.9-.6l.4-3.1c-1.9-.4-2.8-1.3-2.9-3-.2-2.7-.2-5.9 0-8.6Z"/><path d="M10 12.4c3.7-.2 8.4-.2 12 0M10 16.4c2.5-.2 5.4-.2 7.6 0"/></svg></span>
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(21px * var(--fsd,1));color:var(--ink,#1D1A16)">WhatsApp</div>
+            <span style="margin-left:auto"><span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--muted,#8A8271);background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:20px;padding:3px 8px">SOON</span></span>
+          </div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">Text replies with the same answers. Join the waitlist from your dashboard.</div>
+        </div>
+        <div style="grid-column:span 2;background:var(--card,#FCFAF4);border:1px dashed var(--line,#CFC5AB);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted,#8A8271);display:grid;place-items:center"><svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.8 10.2c.1-1.8 1.2-2.7 3-2.8 3.5-.3 14.9-.3 18.4 0 1.8.1 2.9 1 3 2.8.2 3 .2 8.4 0 11.4-.1 1.8-1.2 2.7-3 2.8-3.5.3-14.9.3-18.4 0-1.8-.1-2.9-1-3-2.8-.2-3-.2-8.4 0-11.4Z"/><path d="M4.3 9.6c3.6 2.9 7.4 5.7 9.6 7.2 1.4.9 2.6.9 4 0 2.2-1.5 6-4.3 9.6-7.2"/></svg></span>
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(21px * var(--fsd,1));color:var(--ink,#1D1A16)">Email</div>
+            <span style="margin-left:auto"><span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--muted,#8A8271);background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:20px;padding:3px 8px">SOON</span></span>
+          </div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">Enquiries answered and triaged before you open your laptop.</div>
+        </div>
+        <div style="grid-column:span 2;background:var(--card,#FCFAF4);border:1px dashed var(--line,#CFC5AB);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted,#8A8271);display:grid;place-items:center"><svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 8.4C3.7 6.7 4.7 5.8 6.4 5.7c2.8-.3 9.4-.3 12.2 0 1.7.1 2.7.9 2.8 2.7.2 2.4.2 5.4 0 7.8-.1 1.7-1.1 2.6-2.8 2.7-2.2.2-6.7.2-9.2.1l-4.4 2.7c-.5.3-1 0-.9-.6l.3-2.4c-1.5-.4-2.7-1.2-2.8-2.5-.2-2.4-.2-5.4 0-7.8Z"/><path d="M24 11.7c1.9.2 3.6.5 4 2.3.3 1.7.3 3.9 0 5.7-.2 1.3-1 2-2.2 2.3l.3 2.2c.1.5-.3.8-.8.5l-3.5-2.1c-1.7.1-4 .1-5.6 0"/></svg></span>
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(21px * var(--fsd,1));color:var(--ink,#1D1A16)">SMS</div>
+            <span style="margin-left:auto"><span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--muted,#8A8271);background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:20px;padding:3px 8px">SOON</span></span>
+          </div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">Missed-call text-back that actually books the slot.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="border-top:1px solid var(--line,#CFC5AB)">
+    <div style="max-width:1180px;margin:0 auto;padding:70px 40px;display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Do the maths</div>
+        <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(40px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16);text-wrap:pretty">Every unanswered call is someone booking with a competitor</div>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">Drag the sliders to your reality. We assume Vocalonix converts only one in three of the calls you're missing today &mdash; the pessimistic case.</div>
+        <div style="display:flex;flex-direction:column;gap:18px;padding-top:6px">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Calls you miss each week</span>
+              <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(24px * var(--fsd,1));color:var(--ink,#1D1A16)">{{ calls }}</span>
+            </div>
+            <input type="range" min="1" max="60" step="1" value="{{ calls }}" onChange="{{ setCalls }}" style="width:100%;height:22px;cursor:pointer">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">What an average booking is worth</span>
+              <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(24px * var(--fsd,1));color:var(--ink,#1D1A16)">${{ value }}</span>
+            </div>
+            <input type="range" min="20" max="900" step="10" value="{{ value }}" onChange="{{ setValue }}" style="width:100%;height:22px;cursor:pointer">
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:16px;box-shadow:0 14px 34px var(--sh2,rgba(29,26,22,0.12));padding:30px 32px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted,#8A8271)">Recovered every month</div>
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(64px * var(--fsd,1));line-height:1;color:var(--ink,#1D1A16)">${{ recovered }}</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--text,#4A453C)">{{ recoveredNote }}</div>
+        </div>
+        <div style="height:1px;background:var(--line2,#DCD4BF)"></div>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Growth plan</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">$149 / month</span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Pays for itself after</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">{{ payback }}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Return on the subscription</span>
+            <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--green,#4E7A48)">{{ roi }}</span>
+          </div>
+        </div>
+        <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:12px;padding:13px 22px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--btntext,#FCFAF4)" style-hover="background:var(--btnhover,#332E27)">Start free trial &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="integrations" style="border-top:1px solid var(--line,#CFC5AB);background:var(--soft,#F9F5EC)">
+    <div style="max-width:1180px;margin:0 auto;padding:70px 40px;display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:30px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Integrations</div>
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(40px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16)">It talks to your booking system</div>
+        </div>
+        <div style="display:flex;gap:3px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:10px;padding:3px">
+          <button data-b="dental" onClick="{{ pickBiz }}" style="{{ bizDental }}">Dental</button>
+          <button data-b="salon" onClick="{{ pickBiz }}" style="{{ bizSalon }}">Salon</button>
+          <button data-b="vet" onClick="{{ pickBiz }}" style="{{ bizVet }}">Vet</button>
+          <button data-b="pmu" onClick="{{ pickBiz }}" style="{{ bizPmu }}">Lash / Brow / PMU</button>
+        </div>
+      </div>
+      <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C);max-width:620px">{{ bizIntegroBlurb }}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        <sc-for list="{{ tools }}" as="t" hint-placeholder-count="3">
+          <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:20px 22px;display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(23px * var(--fsd,1));color:var(--ink,#1D1A16)">{{ t.name }}</div>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:20px;padding:3px 8px">{{ t.status }}</span>
+            </div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--text,#4A453C)">{{ t.does }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px dashed var(--dash,#D8CFB8);padding-top:20px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted,#8A8271)">Everyone gets</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">
+          <span style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:20px;padding:6px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Google Calendar</span>
+          <span style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:20px;padding:6px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Outlook</span>
+          <span style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:20px;padding:6px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Stripe</span>
+          <span style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:20px;padding:6px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Zapier</span>
+          <span style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:20px;padding:6px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Slack</span>
+          <span style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:20px;padding:6px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Telnyx numbers</span>
+          <span style="background:var(--inset,#EFEBDE);border:1px dashed var(--dash,#D8CFB8);border-radius:20px;padding:6px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Ask for yours &rarr;</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="border-top:1px solid var(--line,#CFC5AB)">
+    <div style="max-width:1180px;margin:0 auto;padding:70px 40px;display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:640px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">7:40pm on a Tuesday</div>
+        <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(40px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16)">The call you're not there for</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line2,#DCD4BF);border-radius:14px;padding:24px 26px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Today</div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:11px"><span style="color:var(--muted2,#A79E8B);font-family:'Space Mono',monospace;font-size:12px;padding-top:3px">01</span><span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">Rings out. Voicemail nobody checks until Thursday.</span></div>
+            <div style="display:flex;gap:11px"><span style="color:var(--muted2,#A79E8B);font-family:'Space Mono',monospace;font-size:12px;padding-top:3px">02</span><span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">They google the next place on the list.</span></div>
+            <div style="display:flex;gap:11px"><span style="color:var(--muted2,#A79E8B);font-family:'Space Mono',monospace;font-size:12px;padding-top:3px">03</span><span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">You never learn the enquiry existed.</span></div>
+          </div>
+        </div>
+        <div style="background:var(--accentbg2,#FDF7F5);border:1px solid var(--accentline,#E0A9A3);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:24px 26px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accentink,#B2544E)">With Vocalonix</div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:11px"><span style="color:var(--accentink,#B2544E);font-family:'Space Mono',monospace;font-size:12px;padding-top:3px">01</span><span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.4;color:var(--text,#4A453C)">Answered in two rings, by name, with your prices.</span></div>
+            <div style="display:flex;gap:11px"><span style="color:var(--accentink,#B2544E);font-family:'Space Mono',monospace;font-size:12px;padding-top:3px">02</span><span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.4;color:var(--text,#4A453C)">Slot held in your calendar, confirmation texted.</span></div>
+            <div style="display:flex;gap:11px"><span style="color:var(--accentink,#B2544E);font-family:'Space Mono',monospace;font-size:12px;padding-top:3px">03</span><span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.4;color:var(--text,#4A453C)">Transcript waiting for you at 8am, with anything it couldn't answer flagged.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="border-top:1px solid var(--line,#CFC5AB);background:var(--soft,#F9F5EC)">
+    <div style="max-width:1180px;margin:0 auto;padding:64px 40px;display:flex;flex-direction:column;gap:26px">
+      <div style="display:flex;flex-wrap:wrap;gap:26px;align-items:center;justify-content:space-between">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(38px * var(--fsd,1));color:var(--ink,#1D1A16)">92%</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">of calls answered without a human</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(38px * var(--fsd,1));color:var(--ink,#1D1A16)">2 rings</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">average pickup, day or night</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(38px * var(--fsd,1));color:var(--ink,#1D1A16)">1 afternoon</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">from sign-up to live on the site</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(38px * var(--fsd,1));color:var(--ink,#1D1A16)">4 trades</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">dental, salon, vet, lash &amp; PMU</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">&ldquo;It booked four new patients the first weekend. I hadn't even told the front desk it was on.&rdquo;</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:auto">
+            <div style="width:30px;height:30px;border-radius:50%;background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand',cursive;font-size:14px;color:var(--accentink,#B2544E)">R</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271);line-height:1.3">Practice owner<br>2-chair dental, Leeds</div>
+          </div>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">&ldquo;I stopped doing consult calls between clients. It quotes balayage better than I do.&rdquo;</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:auto">
+            <div style="width:30px;height:30px;border-radius:50%;background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand',cursive;font-size:14px;color:var(--accentink,#B2544E)">M</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271);line-height:1.3">Salon owner<br>Fresha user, 6 chairs</div>
+          </div>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">&ldquo;Out-of-hours emergencies get triaged to the on-call nurse instead of a voicemail box.&rdquo;</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:auto">
+            <div style="width:30px;height:30px;border-radius:50%;background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand',cursive;font-size:14px;color:var(--accentink,#B2544E)">J</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271);line-height:1.3">Clinic director<br>Small animal practice</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing" style="border-top:1px solid var(--line,#CFC5AB)">
+    <div style="max-width:1180px;margin:0 auto;padding:70px 40px;display:flex;flex-direction:column;gap:30px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:30px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Pricing</div>
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(40px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16)">One booking a month covers it</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;gap:3px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:10px;padding:3px">
+            <button data-c="monthly" onClick="{{ pickCycle }}" style="{{ cycMonthly }}">Monthly</button>
+            <button data-c="annual" onClick="{{ pickCycle }}" style="{{ cycAnnual }}">Annual</button>
+          </div>
+          <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--green,#4E7A48)">2 months free</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start">
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:16px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:26px 26px 28px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(25px * var(--fsd,1));color:var(--ink,#1D1A16)">Chair</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Solo, one location, website only</div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:7px">
+            <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(52px * var(--fsd,1));line-height:1;color:var(--ink,#1D1A16)">${{ p1 }}</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271);padding-bottom:6px">/ month</span>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--muted,#8A8271)">{{ cycleNote }}</div>
+          <div style="height:1px;background:var(--line2,#DCD4BF)"></div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">300 answered minutes</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Website voice widget</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">1 booking integration</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Transcripts &amp; callback list</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Email support</div>
+          </div>
+          <button style="margin-top:auto;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;padding:12px 18px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)" style-hover="border-color:var(--accentink,#B2544E)">Start free trial</button>
+        </div>
+
+        <div style="background:var(--card,#FCFAF4);border:2px solid var(--accentink,#B2544E);border-radius:16px;box-shadow:0 14px 34px var(--sh2,rgba(29,26,22,0.12));padding:26px 26px 28px;display:flex;flex-direction:column;gap:16px;position:relative">
+          <div style="position:absolute;top:-12px;left:26px;background:var(--accentink,#B2544E);border-radius:20px;padding:4px 12px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--card,#FCFAF4)">Most practices pick this</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(25px * var(--fsd,1));color:var(--ink,#1D1A16)">Front desk</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Website <em>and</em> a real phone number</div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:7px">
+            <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(52px * var(--fsd,1));line-height:1;color:var(--ink,#1D1A16)">${{ p2 }}</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271);padding-bottom:6px">/ month</span>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--muted,#8A8271)">{{ cycleNote }}</div>
+          <div style="height:1px;background:var(--accenthair,#F3E1DD)"></div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">1,200 answered minutes</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Phone number included (Telnyx)</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Up to 3 locations, unlimited seats</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Every integration, callback routing</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Early access to WhatsApp &amp; SMS</div>
+          </div>
+          <button style="margin-top:auto;background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:12px;padding:13px 18px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--btntext,#FCFAF4)" style-hover="background:var(--btnhover,#332E27)">Start free trial &rarr;</button>
+        </div>
+
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:16px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:26px 26px 28px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(25px * var(--fsd,1));color:var(--ink,#1D1A16)">Group</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Multi-site owners and agencies</div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:7px">
+            <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(52px * var(--fsd,1));line-height:1;color:var(--ink,#1D1A16)">${{ p3 }}</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271);padding-bottom:6px">/ month</span>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--muted,#8A8271)">{{ cycleNote }}</div>
+          <div style="height:1px;background:var(--line2,#DCD4BF)"></div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">5,000 answered minutes</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">10 workspaces, one dashboard</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">White-label widget &amp; API</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Priority number porting</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Named onboarding contact</div>
+          </div>
+          <button style="margin-top:auto;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;padding:12px 18px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)" style-hover="border-color:var(--accentink,#B2544E)">Talk to us</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:14px;padding:18px 22px">
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C);flex:1;min-width:260px">Extra minutes are $0.09 each &mdash; no bundles to buy, no per-seat pricing, no setup fee. Numbers are billed at cost.</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:var(--green,#4E7A48)"></span><span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">14-day trial</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:var(--green,#4E7A48)"></span><span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Cancel in two clicks</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:var(--green,#4E7A48)"></span><span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Transcripts are yours to export</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" style="border-top:1px solid var(--line,#CFC5AB);background:var(--soft,#F9F5EC)">
+    <div style="max-width:1180px;margin:0 auto;padding:70px 40px;display:grid;grid-template-columns:0.85fr 1.15fr;gap:56px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Before you ask</div>
+        <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(40px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16)">The six things everyone asks</div>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">Still unsure? Start the trial and make it answer these yourself &mdash; that's usually faster than reading.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;overflow:hidden">
+          <button data-i="0" onClick="{{ toggleFaq }}" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:transparent;border:none;padding:16px 20px;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--ink,#1D1A16)"><span>Does it sound like a robot?</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accentink,#B2544E)">&#9662;</span></button>
+          <sc-if value="{{ faq0 }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:0 20px 18px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">Press the demo button at the top and judge for yourself. You pick the voice and the tone, and callers can interrupt it mid-sentence like a real conversation.</div>
+          </sc-if>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;overflow:hidden">
+          <button data-i="1" onClick="{{ toggleFaq }}" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:transparent;border:none;padding:16px 20px;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--ink,#1D1A16)"><span>What happens when it doesn't know something?</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accentink,#B2544E)">&#9662;</span></button>
+          <sc-if value="{{ faq1 }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:0 20px 18px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">It says so, takes a number, and flags the question in your dashboard as something to teach it. It never invents a price or a policy.</div>
+          </sc-if>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;overflow:hidden">
+          <button data-i="2" onClick="{{ toggleFaq }}" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:transparent;border:none;padding:16px 20px;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--ink,#1D1A16)"><span>Do I have to change my phone number?</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accentink,#B2544E)">&#9662;</span></button>
+          <sc-if value="{{ faq2 }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:0 20px 18px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">No. Keep your line and forward only the calls you miss, or port the number to us. Either way it's handled during onboarding.</div>
+          </sc-if>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;overflow:hidden">
+          <button data-i="3" onClick="{{ toggleFaq }}" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:transparent;border:none;padding:16px 20px;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--ink,#1D1A16)"><span>Can it actually book, or just take messages?</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accentink,#B2544E)">&#9662;</span></button>
+          <sc-if value="{{ faq3 }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:0 20px 18px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">It books into a connected system &mdash; your practice software or calendar. Without an integration it holds the request and texts the caller a confirmation once you accept.</div>
+          </sc-if>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;overflow:hidden">
+          <button data-i="4" onClick="{{ toggleFaq }}" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:transparent;border:none;padding:16px 20px;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--ink,#1D1A16)"><span>Is patient and client data safe?</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accentink,#B2544E)">&#9662;</span></button>
+          <sc-if value="{{ faq4 }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:0 20px 18px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">Each business is isolated: its own agent, its own knowledge, its own transcripts. Recordings are optional, retention is yours to set, and you can export or delete everything at any time.</div>
+          </sc-if>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:12px;overflow:hidden">
+          <button data-i="5" onClick="{{ toggleFaq }}" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:transparent;border:none;padding:16px 20px;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--ink,#1D1A16)"><span>How long until it's live?</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accentink,#B2544E)">&#9662;</span></button>
+          <sc-if value="{{ faq5 }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:0 20px 18px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">An afternoon for the website widget. A phone number takes a day or two if you're porting, minutes if you take a new one.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="border-top:1px solid var(--line,#CFC5AB)">
+    <div style="max-width:1180px;margin:0 auto;padding:80px 40px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+      <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(46px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16);max-width:640px;text-wrap:pretty">Tonight's missed calls are already someone else's bookings</div>
+      <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C);max-width:470px">Fourteen days free. Live this afternoon. If it doesn't pay for itself, cancel in two clicks.</div>
+      <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:12px;padding:15px 30px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(20px * var(--fsb,1));color:var(--btntext,#FCFAF4);box-shadow:0 8px 20px var(--sh3,rgba(29,26,22,0.25))" style-hover="background:var(--btnhover,#332E27)">Start free trial &rarr;</button>
+      <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">No card. No contract. No setup fee.</div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid var(--line,#CFC5AB);background:var(--sidebar,#FDF8E9)">
+    <div style="max-width:1180px;margin:0 auto;padding:30px 40px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
+      <div style="font-family:'Gochi Hand',cursive;font-size:22px;color:var(--ink,#1D1A16)">vocalonix</div>
+      <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">
+        <a href="#pricing" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">Pricing</a>
+        <a href="#integrations" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">Integrations</a>
+        <a href="#" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">Status</a>
+        <a href="#" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C);text-decoration:none">Privacy</a>
+        <sc-if value="{{ devMode }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex;align-items:center;gap:7px;background:var(--inset,#EFEBDE);border:1px dashed var(--dash,#D8CFB8);border-radius:20px;padding:5px 11px">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--muted,#8A8271)">DEV</span>
+            <a href="#" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E)">Internal lab</a>
+          </span>
+        </sc-if>
+        <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">&copy; 2026 Vocalonix</span>
+      </div>
+    </div>
+  </footer>
+
+  <sc-if value="{{ showControls }}" hint-placeholder-val="{{ true }}">
+    <div style="position:fixed;left:22px;bottom:22px;z-index:60;background:#1D1A16;border-radius:14px;padding:14px 16px;box-shadow:0 14px 34px rgba(0,0,0,0.3);display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:#8A8271">Review controls</div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.08em;color:#E9A8A3">{{ comboLabel }}</div>
+      </div>
+      <div style="display:flex;gap:3px">
+        <button data-t="warm" onClick="{{ pickTheme }}" style="{{ cWarm }}">Warm</button>
+        <button data-t="night" onClick="{{ pickTheme }}" style="{{ cNight }}">Night</button>
+        <button data-t="ink" onClick="{{ pickTheme }}" style="{{ cInk }}">Ink</button>
+        <button data-t="studio" onClick="{{ pickTheme }}" style="{{ cStudio }}">Studio</button>
+      </div>
+      <div style="display:flex;gap:3px">
+        <button data-ts="hand" onClick="{{ pickTypeset }}" style="{{ cHand }}">As drawn</button>
+        <button data-ts="plain" onClick="{{ pickTypeset }}" style="{{ cPlain }}">Hand+plain</button>
+        <button data-ts="editorial" onClick="{{ pickTypeset }}" style="{{ cEditorial }}">Editorial</button>
+        <button data-ts="grotesk" onClick="{{ pickTypeset }}" style="{{ cGrotesk }}">Grotesk</button>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;warm&quot;,&quot;night&quot;,&quot;ink&quot;,&quot;studio&quot;],&quot;default&quot;:&quot;warm&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;typeset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;hand&quot;,&quot;plain&quot;,&quot;editorial&quot;,&quot;grotesk&quot;],&quot;default&quot;:&quot;hand&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;showControls&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Review&quot;},&quot;devMode&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+class Component extends DCLogic {
+  state = { theme: null, typeset: null, biz: 'dental', call: 'idle', secs: 0, lines: [], cycle: 'monthly', calls: 14, value: 180, faq: 0 };
+
+  palette(name) {
+    const P = {
+      warm: {
+        page: '#F7F3EB', card: '#FCFAF4', sidebar: '#FDF8E9', inset: '#EFEBDE', inset2: '#F2EEE1', soft: '#F9F5EC', row: '#FDFBF6', rowalt: '#FBF4F1',
+        line: '#CFC5AB', line2: '#DCD4BF', line3: '#E3DCC6', dash: '#D8CFB8', ink: '#1D1A16', text: '#4A453C', muted: '#8A8271', muted2: '#A79E8B', label: '#9A2B2B',
+        accent: '#E9A8A3', accentl: '#EFC9C4', accentline: '#E0A9A3', accentbg: '#FBE7E4', accentbg2: '#FDF7F5', accenthair: '#F3E1DD', accentink: '#B2544E',
+        green: '#4E7A48', greenl: '#A9C79F', greenbg: '#E8F0E0', greenink: '#3F6B3A', greenmuted: '#6E8C68', amber: '#B4712A', amberl: '#E2B98A', amberbg: '#FAEBDC', amberbg2: '#FCF4EA',
+        btntext: '#FCFAF4', btnbg: '#1D1A16', btnhover: '#332E27',
+        sh: ['rgba(29,26,22,0.05)', 'rgba(29,26,22,0.08)', 'rgba(29,26,22,0.12)', 'rgba(29,26,22,0.25)'], natural: 'hand', title: 'Warm paper'
+      },
+      night: {
+        page: '#16130F', card: '#201C17', sidebar: '#1B1713', inset: '#2A241E', inset2: '#262119', soft: '#1E1A15', row: '#241F19', rowalt: '#2A211E',
+        line: '#3A322A', line2: '#453B31', line3: '#332B24', dash: '#3F362D', ink: '#F3EBDC', text: '#D6CCBA', muted: '#9A8F7C', muted2: '#7E7462', label: '#E0908A',
+        accent: '#E9A8A3', accentl: '#6E4A46', accentline: '#7E5450', accentbg: '#382422', accentbg2: '#241A18', accenthair: '#4A312D', accentink: '#F0B4AE',
+        green: '#8FC183', greenl: '#4E6B47', greenbg: '#24301F', greenink: '#A6D19A', greenmuted: '#7F9C77', amber: '#E0A567', amberl: '#6B5334', amberbg: '#332616', amberbg2: '#2A2114',
+        btntext: '#1D1A16', btnbg: '#E9A8A3', btnhover: '#F2BDB8',
+        sh: ['rgba(0,0,0,0.35)', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.55)'], natural: 'hand', title: 'Night desk'
+      },
+      ink: {
+        page: '#F6F2E9', card: '#FFFDF8', sidebar: '#F1ECDF', inset: '#EDE8DA', inset2: '#F0EBDE', soft: '#F3EFE4', row: '#FFFDF8', rowalt: '#FFF8F5',
+        line: '#D5CCB6', line2: '#E0D8C4', line3: '#DFD7C3', dash: '#D5CCB6', ink: '#201C15', text: '#4E4739', muted: '#8B8471', muted2: '#A69E88', label: '#8E3A2F',
+        accent: '#C9705F', accentl: '#E7C0B4', accentline: '#D08E7E', accentbg: '#F7E6DF', accentbg2: '#FCF3EF', accenthair: '#EDDBD3', accentink: '#A34E3F',
+        green: '#4A6E44', greenl: '#A8C29C', greenbg: '#E9EFDF', greenink: '#3D5E39', greenmuted: '#6C8663', amber: '#A9701F', amberl: '#DDBB84', amberbg: '#F7ECD8', amberbg2: '#FBF4E7',
+        btntext: '#FBF8F0', btnbg: '#201C15', btnhover: '#3A342A',
+        sh: ['rgba(32,28,21,0.05)', 'rgba(32,28,21,0.08)', 'rgba(32,28,21,0.12)', 'rgba(32,28,21,0.25)'], natural: 'editorial', title: 'Ink & paper'
+      },
+      studio: {
+        page: '#F5F5F3', card: '#FFFFFF', sidebar: '#FBFBFA', inset: '#EFEFEC', inset2: '#F2F2EF', soft: '#F8F8F6', row: '#FFFFFF', rowalt: '#FFF9F8',
+        line: '#E1E0DB', line2: '#E8E7E2', line3: '#E8E7E2', dash: '#DBDAD4', ink: '#14141A', text: '#4A4A52', muted: '#85858E', muted2: '#A3A3AA', label: '#B4322C',
+        accent: '#E2564C', accentl: '#F2C4BF', accentline: '#E88A82', accentbg: '#FDECEA', accentbg2: '#FFF7F6', accenthair: '#F7DDDA', accentink: '#C33E36',
+        green: '#2F7D4F', greenl: '#A9D3B8', greenbg: '#E9F5EE', greenink: '#256B42', greenmuted: '#5E8E72', amber: '#B26B12', amberl: '#EAC98F', amberbg: '#FCF3E3', amberbg2: '#FFF9F0',
+        btntext: '#FFFFFF', btnbg: '#14141A', btnhover: '#2C2C35',
+        sh: ['rgba(20,20,26,0.04)', 'rgba(20,20,26,0.07)', 'rgba(20,20,26,0.10)', 'rgba(20,20,26,0.22)'], natural: 'grotesk', title: 'Studio white'
+      }
+    };
+    return P[name] || P.warm;
+  }
+
+  typesetOf(name) {
+    const TS = {
+      hand: { disp: "'Gochi Hand',cursive", dispw: '400', fontb: "'Gaegu',cursive", bodyw: '400', fsd: '1', fsb: '1', title: 'As drawn' },
+      plain: { disp: "'Gochi Hand',cursive", dispw: '400', fontb: "'Karla',sans-serif", bodyw: '400', fsd: '1', fsb: '0.86', title: 'Hand + plain' },
+      editorial: { disp: "'Instrument Serif',serif", dispw: '400', fontb: "'Public Sans',sans-serif", bodyw: '400', fsd: '0.95', fsb: '0.83', title: 'Editorial' },
+      grotesk: { disp: "'Bricolage Grotesque',sans-serif", dispw: '600', fontb: "'Public Sans',sans-serif", bodyw: '400', fsd: '0.86', fsb: '0.83', title: 'Grotesk' }
+    };
+    return TS[name] || TS.hand;
+  }
+
+  business(key) {
+    const B = {
+      dental: {
+        name: 'Acme Dental', initial: 'A', headline: 'Ready when you are',
+        outcome: 'Booked, not voicemailed', booked: 'Friday 4:30pm hygiene slot, held in Dentrix',
+        synced: 'Patient details written back to your chart', sources: 'price list, opening hours',
+        blurb: 'Your agent reads live availability and writes the appointment back, so the front desk never re-types a booking.',
+        tools: [
+          { name: 'Dentrix', status: 'LIVE', does: 'Reads open slots, writes the appointment, matches existing patients.' },
+          { name: 'Open Dental', status: 'LIVE', does: 'Two-way sync for scheduling, recalls and treatment notes.' },
+          { name: 'Curve Dental', status: 'LIVE', does: 'Cloud practice management \u2014 booking plus insurance eligibility lookups.' }
+        ],
+        script: [
+          [400, 'agent', 'Thanks for calling Acme Dental. What can I help you with?'],
+          [2600, 'visitor', 'Do you take Delta Dental, and how much is a cleaning?'],
+          [4800, 'agent', "We're in-network with Delta Dental PPO. A cleaning and exam is $145, usually covered in full."],
+          [8100, 'visitor', 'Can I come Friday afternoon?'],
+          [10300, 'agent', "I have 4:30 on Friday with Dr. Reyes. Shall I put you in and text you the confirmation?"],
+          [13700, 'visitor', 'Yes please.']
+        ]
+      },
+      salon: {
+        name: 'Fern & Fig Salon', initial: 'F', headline: 'Say hello to Fernie',
+        outcome: 'Chair filled at 7:40pm', booked: 'Saturday 11am balayage with Mia, held in Fresha',
+        synced: 'Deposit link texted to the client', sources: 'service menu, stylist rota',
+        blurb: 'It quotes from your service menu, respects each stylist\u2019s rota, and takes the deposit before it hangs up.',
+        tools: [
+          { name: 'Fresha', status: 'LIVE', does: 'Live stylist availability, booking, deposits and no-show protection.' },
+          { name: 'Vagaro', status: 'LIVE', does: 'Books by service and stylist, syncs client history back.' },
+          { name: 'Square Appointments', status: 'LIVE', does: 'Calendar sync plus card-on-file for deposits.' }
+        ],
+        script: [
+          [400, 'agent', 'Fern and Fig, this is Fernie. How can I help?'],
+          [2600, 'visitor', 'How much is a balayage, and can you fit me in Saturday?'],
+          [4800, 'agent', 'Balayage starts at $180 and takes about three hours. Mia has 11am on Saturday.'],
+          [8100, 'visitor', "That works. Do you need a deposit?"],
+          [10300, 'agent', "$40, and I'll text you the link now. You're booked with Mia at eleven."],
+          [13700, 'visitor', 'Amazing, thank you!']
+        ]
+      },
+      vet: {
+        name: 'Northside Vets', initial: 'N', headline: 'Ask us anything',
+        outcome: 'Urgent case triaged in 40 seconds', booked: 'Emergency slot held, on-call nurse paged',
+        synced: 'Patient record opened in ezyVet before arrival', sources: 'triage protocol, clinic hours',
+        blurb: 'Emergencies get triaged by your own protocol and escalated to the on-call nurse; routine calls just get booked.',
+        tools: [
+          { name: 'ezyVet', status: 'LIVE', does: 'Books consults, opens the patient record, logs the call summary.' },
+          { name: 'Vetstoria', status: 'LIVE', does: 'Real-time online booking rules, species and reason aware.' },
+          { name: 'Provet Cloud', status: 'LIVE', does: 'Appointment sync and client history lookups mid-call.' }
+        ],
+        script: [
+          [400, 'agent', 'Northside Vets, how can I help today?'],
+          [2600, 'visitor', 'My dog ate chocolate about an hour ago.'],
+          [4800, 'agent', "That can be serious depending on his size. I'm treating this as urgent and paging the on-call nurse now."],
+          [8100, 'visitor', 'Should I bring him in?'],
+          [10300, 'agent', "Yes, come straight over. I've held an emergency slot and opened his record for the team."],
+          [13700, 'visitor', 'On my way.']
+        ]
+      },
+      pmu: {
+        name: 'Studio Ink Brows', initial: 'S', headline: 'Ask about a treatment',
+        outcome: 'Consult booked with patch test', booked: 'Tuesday 2pm brow consult, held in GlossGenius',
+        synced: 'Patch-test reminder scheduled 48h before', sources: 'treatment guide, aftercare notes',
+        blurb: 'Long treatments, patch tests and aftercare questions all follow your rules \u2014 including the ones clients ask at midnight.',
+        tools: [
+          { name: 'GlossGenius', status: 'LIVE', does: 'Books treatments with the right duration, takes deposits, sends forms.' },
+          { name: 'Booksy', status: 'LIVE', does: 'Availability by artist and service, review requests after.' },
+          { name: 'Acuity Scheduling', status: 'LIVE', does: 'Multi-step bookings: patch test, consult, then the appointment.' }
+        ],
+        script: [
+          [400, 'agent', 'Studio Ink Brows, how can I help?'],
+          [2600, 'visitor', 'How long does powder brows last, and what does it cost?'],
+          [4800, 'agent', 'Powder brows last one to three years, $420 including the six-week top-up.'],
+          [8100, 'visitor', 'Do I need a patch test?'],
+          [10300, 'agent', "Yes, 48 hours before. I can book Tuesday 2pm for the consult and slot the patch test in Sunday."],
+          [13700, 'visitor', "Perfect, book it."]
+        ]
+      }
+    };
+    return B[key] || B.dental;
+  }
+
+  seg(active, dark) {
+    if (dark) {
+      const d = "border-radius:7px;padding:5px 9px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.04em;white-space:nowrap;";
+      return active ? d + 'background:#F3EBDC;border:1px solid #F3EBDC;color:#1D1A16' : d + 'background:transparent;border:1px solid #3A322A;color:#A79E8B';
+    }
+    const p = "border-radius:7px;padding:5px 11px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));white-space:nowrap;";
+    return active
+      ? p + 'background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);color:var(--ink,#1D1A16)'
+      : p + 'background:transparent;border:1px solid transparent;color:var(--muted,#8A8271)';
+  }
+
+  clearTimers() {
+    (this._timers || []).forEach(clearTimeout);
+    this._timers = [];
+    if (this._tick) { clearInterval(this._tick); this._tick = null; }
+  }
+
+  componentWillUnmount() { this.clearTimers(); }
+
+  start = () => {
+    this.clearTimers();
+    this.setState({ call: 'connecting', lines: [], secs: 0 });
+    this._timers.push(setTimeout(() => {
+      this.setState({ call: 'live' });
+      this._tick = setInterval(() => this.setState(s => ({ secs: s.secs + 1 })), 1000);
+      const script = this.business(this.state.biz).script;
+      script.forEach(([at, who, text]) => {
+        this._timers.push(setTimeout(() => this.setState(s => ({ lines: s.lines.concat([{ who: who, text: text }]) })), at));
+      });
+      this._timers.push(setTimeout(() => { this.clearTimers(); this.setState({ call: 'ended' }); }, script[script.length - 1][0] + 2600));
+    }, 1500));
+  };
+
+  money(n) { return Math.round(n).toLocaleString('en-US'); }
+
+  renderVals() {
+    const themeName = this.state.theme || this.props.theme || 'warm';
+    const p = this.palette(themeName);
+    const tsName = this.state.typeset || this.props.typeset || p.natural;
+    const ts = this.typesetOf(tsName);
+    const vars = {};
+    Object.keys(p).forEach(k => { if (k !== 'sh' && k !== 'natural' && k !== 'title') vars['--' + k] = p[k]; });
+    Object.keys(ts).forEach(k => { if (k !== 'title') vars['--' + k] = ts[k]; });
+    p.sh.forEach((c, i) => { vars['--sh' + i] = c; });
+
+    const biz = this.business(this.state.biz), c = this.state.call, s = this.state.secs;
+    const status = { idle: 'Voice agent \u00b7 ready', connecting: 'Connecting', live: 'On a call', ended: 'Call ended' };
+
+    const calls = this.state.calls, value = this.state.value;
+    const recovered = calls * 4.33 * value * (1 / 3);
+    const plan = 149;
+    const payCalls = Math.max(1, Math.ceil(plan / (value / 3)));
+    const annual = this.state.cycle === 'annual';
+    const price = n => annual ? Math.round(n * 10 / 12) : n;
+    const f = this.state.faq;
+
+    return {
+      themeVars: vars,
+      comboLabel: p.title + ' / ' + ts.title,
+      showControls: this.props.showControls !== false,
+      devMode: this.props.devMode === true,
+      pickTheme: e => { const n = e.currentTarget.dataset.t; this.setState({ theme: n, typeset: this.palette(n).natural }); },
+      pickTypeset: e => this.setState({ typeset: e.currentTarget.dataset.ts }),
+      cWarm: this.seg(themeName === 'warm', true), cNight: this.seg(themeName === 'night', true),
+      cInk: this.seg(themeName === 'ink', true), cStudio: this.seg(themeName === 'studio', true),
+      cHand: this.seg(tsName === 'hand', true), cPlain: this.seg(tsName === 'plain', true),
+      cEditorial: this.seg(tsName === 'editorial', true), cGrotesk: this.seg(tsName === 'grotesk', true),
+
+      bizDental: this.seg(this.state.biz === 'dental'), bizSalon: this.seg(this.state.biz === 'salon'),
+      bizVet: this.seg(this.state.biz === 'vet'), bizPmu: this.seg(this.state.biz === 'pmu'),
+      pickBiz: e => { this.clearTimers(); this.setState({ biz: e.currentTarget.dataset.b, call: 'idle', lines: [], secs: 0 }); },
+      bizName: biz.name, bizInitial: biz.initial, bizHeadline: biz.headline, bizOutcome: biz.outcome,
+      endBooked: biz.booked, endSynced: biz.synced, endSources: biz.sources,
+      bizIntegroBlurb: biz.blurb, tools: biz.tools,
+      heroTools: biz.tools.concat([{ name: 'Google Calendar' }, { name: 'Stripe' }, { name: 'Telnyx numbers' }]),
+
+      isIdle: c === 'idle', isConnecting: c === 'connecting', isLive: c === 'live', isEnded: c === 'ended',
+      statusLine: status[c], clock: String(Math.floor(s / 60)) + ':' + String(s % 60).padStart(2, '0'),
+      startCall: this.start,
+      endCall: () => { this.clearTimers(); this.setState({ call: 'ended' }); },
+      resetCall: () => { this.clearTimers(); this.setState({ call: 'idle', lines: [], secs: 0 }); },
+      lines: this.state.lines.map(l => l.who === 'agent'
+        ? { text: l.text, justify: 'flex-end', bg: 'var(--accentbg,#FBE7E4)', border: 'var(--accentl,#EFC9C4)', radius: '13px 13px 4px 13px' }
+        : { text: l.text, justify: 'flex-start', bg: 'var(--card,#FCFAF4)', border: 'var(--line2,#DCD4BF)', radius: '13px 13px 13px 4px' }),
+
+      calls: calls, value: value,
+      setCalls: e => this.setState({ calls: Number(e.target.value) }),
+      setValue: e => this.setState({ value: Number(e.target.value) }),
+      recovered: this.money(recovered),
+      recoveredNote: 'if it converts just one in three of the ' + Math.round(calls * 4.33) + ' calls you miss a month',
+      payback: payCalls === 1 ? 'the first booking' : payCalls + ' bookings',
+      roi: recovered > 0 ? Math.round(recovered / plan) + '\u00d7 the plan' : '\u2014',
+
+      cycMonthly: this.seg(!annual), cycAnnual: this.seg(annual),
+      pickCycle: e => this.setState({ cycle: e.currentTarget.dataset.c }),
+      p1: price(49), p2: price(149), p3: price(399),
+      cycleNote: annual ? 'Billed yearly \u00b7 2 months free' : 'Billed monthly \u00b7 cancel anytime',
+
+      faq0: f === 0, faq1: f === 1, faq2: f === 2, faq3: f === 3, faq4: f === 4, faq5: f === 5,
+      toggleFaq: e => { const i = Number(e.currentTarget.dataset.i); this.setState(st => ({ faq: st.faq === i ? null : i })); }
+    };
+  }
+}
+</script>
+</body>
+</html>

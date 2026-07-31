@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&family=Karla:wght@400;500;600&family=Instrument+Serif&family=Public+Sans:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#EDE7DA; }
+  a { color:#B2544E; }
+  a:hover { color:#8E3E39; }
+  button { font: inherit; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+</style>
+</helmet>
+
+<div style="{{ themeVars }}">
+<div style="min-height:100vh;background:var(--page,#F7F3EB);padding:54px 0 110px">
+  <div style="max-width:1180px;margin:0 auto;padding:0 40px;display:flex;flex-direction:column;gap:44px">
+
+    <header style="display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:30px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Vocalonix kit &middot; v2</div>
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(46px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16)">Foundations</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C);max-width:640px;text-wrap:pretty">Every colour is a role, not a hex. One token set per theme, one per typeset &mdash; so a page written against these tokens works in all four looks without a second stylesheet.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271);width:62px">Theme</span>
+            <div style="display:flex;gap:4px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:10px;padding:3px">
+              <button data-t="warm" onClick="{{ pickTheme }}" style="{{ tWarm }}">Warm paper</button>
+              <button data-t="night" onClick="{{ pickTheme }}" style="{{ tNight }}">Night desk</button>
+              <button data-t="ink" onClick="{{ pickTheme }}" style="{{ tInk }}">Ink &amp; paper</button>
+              <button data-t="studio" onClick="{{ pickTheme }}" style="{{ tStudio }}">Studio white</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271);width:62px">Typeset</span>
+            <div style="display:flex;gap:4px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:10px;padding:3px">
+              <button data-ts="hand" onClick="{{ pickTypeset }}" style="{{ tsHand }}">As drawn</button>
+              <button data-ts="plain" onClick="{{ pickTypeset }}" style="{{ tsPlain }}">Hand + plain</button>
+              <button data-ts="editorial" onClick="{{ pickTypeset }}" style="{{ tsEditorial }}">Editorial</button>
+              <button data-ts="grotesk" onClick="{{ pickTypeset }}" style="{{ tsGrotesk }}">Grotesk</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="height:1px;background:var(--line,#CFC5AB)"></div>
+    </header>
+
+    <section style="display:flex;flex-direction:column;gap:26px">
+      <div style="display:flex;align-items:baseline;gap:14px">
+        <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(30px * var(--fsd,1));color:var(--ink,#1D1A16)">Colour roles</div>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Swatches are live &mdash; switch theme above and they all move.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B);white-space:nowrap">Surfaces</div>
+        <div style="flex:1;height:1px;background:var(--line2,#DCD4BF)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--page,#F7F3EB)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--page</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">App background</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--card,#FCFAF4)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--card</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Every card, input, menu</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--sidebar,#FDF8E9)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--sidebar</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Left rail only</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--inset,#EFEBDE)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--inset</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Wells: tracks, segment bar, avatars</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--inset2,#F2EEE1)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--inset2</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Neutral working state</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--soft,#F9F5EC)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--soft</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Dashed advisory panels</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--row,#FDFBF6)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--row</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">List row rest</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--rowalt,#FBF4F1)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--rowalt</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">List row needing attention</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B);white-space:nowrap">Lines</div>
+        <div style="flex:1;height:1px;background:var(--line2,#DCD4BF)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--line,#CFC5AB)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--line</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Card + control border</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--line2,#DCD4BF)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--line2</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Inner border, hairline</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--line3,#E3DCC6)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--line3</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Sidebar edge</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--dash,#D8CFB8)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--dash</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Dashed dividers and panels</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B);white-space:nowrap">Text</div>
+        <div style="flex:1;height:1px;background:var(--line2,#DCD4BF)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--ink,#1D1A16)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--ink</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Headings, primary values</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--text,#4A453C)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--text</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Body copy</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--muted,#8A8271)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--muted</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Labels, helpers, secondary</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--muted2,#A79E8B)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--muted2</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Chart ticks, disabled</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--label,#9A2B2B)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--label</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Mono eyebrow only</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B);white-space:nowrap">Accent</div>
+        <div style="flex:1;height:1px;background:var(--line2,#DCD4BF)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--accent,#E9A8A3)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--accent</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Chart bars, active dot</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--accentl,#EFC9C4)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--accentl</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Accent borders, light bars</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--accentline,#E0A9A3)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--accentline</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Bar outline, warning field</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--accentbg,#FBE7E4)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--accentbg</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Active nav, agent bubble</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--accentbg2,#FDF7F5)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--accentbg2</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Attention card ground</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--accenthair,#F3E1DD)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--accenthair</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Divider inside accent cards</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--accentink,#B2544E)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--accentink</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Links, spinner, destructive text</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B);white-space:nowrap">Live &amp; healthy</div>
+        <div style="flex:1;height:1px;background:var(--line2,#DCD4BF)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--green,#4E7A48)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--green</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Dot, pill text</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--greenl,#A9C79F)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--greenl</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Pill border</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--greenbg,#E8F0E0)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--greenbg</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Pill and banner fill</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--greenink,#3F6B3A)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--greenink</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Text on green fill</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--greenmuted,#6E8C68)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--greenmuted</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Secondary on green</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B);white-space:nowrap">Needs attention</div>
+        <div style="flex:1;height:1px;background:var(--line2,#DCD4BF)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--amber,#B4712A)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--amber</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Pending text, required marker</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--amberl,#E2B98A)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--amberl</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Pending border</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--amberbg,#FAEBDC)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--amberbg</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Pending banner fill</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--amberbg2,#FCF4EA)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--amberbg2</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Pill inside pending banner</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B);white-space:nowrap">Buttons</div>
+        <div style="flex:1;height:1px;background:var(--line2,#DCD4BF)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--btnbg,#1D1A16)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--btnbg</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Primary fill, toast</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--btntext,#FCFAF4)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--btntext</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Text on primary</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--btnhover,#332E27)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--btnhover</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Primary hover</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B);white-space:nowrap">Ranked ramp</div>
+        <div style="flex:1;height:1px;background:var(--line2,#DCD4BF)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--r1,#8E3E39)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--r1</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Largest share</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--r2,#A9524B)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--r2</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">2nd</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--r3,#BE6A62)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--r3</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">3rd</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--r4,#CE8079)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--r4</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">4th</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="height:50px;border-radius:9px;border:1px solid var(--line,#CFC5AB);background:var(--r5,#D9948C)"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">--r5</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Smallest, still visible</div>
+        </div>
+      </div>
+    </div>
+    </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:22px">
+      <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(30px * var(--fsd,1));color:var(--ink,#1D1A16)">Type</div>
+      <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:start">
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:24px 26px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Display 46 &middot; page title</div>
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(46px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16)">Your receptionist, this week</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Display 36 &middot; screen title</div>
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(36px * var(--fsd,1));line-height:1.1;color:var(--ink,#1D1A16)">4 calls handled today</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Display 22 &middot; card title &nbsp;/&nbsp; 38 &middot; stat</div>
+            <div style="display:flex;align-items:baseline;gap:18px">
+              <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Conversations</div>
+              <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(38px * var(--fsd,1));color:var(--ink,#1D1A16)">84</div>
+            </div>
+          </div>
+          <div style="height:1px;background:var(--line2,#DCD4BF)"></div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Body 19 &middot; intro</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));line-height:1.5;color:var(--text,#4A453C)">Publish saves this business, validates its workflow and mints a public embed token.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Body 17 &middot; default &nbsp;/&nbsp; 19 &middot; list row</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.45;color:var(--text,#4A453C)">Hours are given to the agent as context. They do not create availability or booking.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Body 16 &middot; helper, muted</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.35;color:var(--muted,#8A8271)">One hostname per line. Empty means any site can load your widget.</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Mono, fixed size</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">Space Mono never scales with the typeset. It carries eyebrows, timestamps, durations, counts and status text.</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">11 / .14em &middot; eyebrow accent</div>
+              <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted,#8A8271)">10 / .14em &middot; field group label</div>
+              <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--muted,#8A8271)">12 &middot; 09:14&nbsp;&nbsp;2:41&nbsp;&nbsp;emb_kAuz&hellip;</div>
+              <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green,#4E7A48)">9 / .1em &middot; pill text</div>
+            </div>
+          </div>
+          <div style="background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(20px * var(--fsd,1));color:var(--ink,#1D1A16)">Rule</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--text,#4A453C)">Sizes are written once as <span style="font-family:'Space Mono',monospace;font-size:13px">calc(17px * var(--fsb,1))</span>. Typesets change the multiplier, never the layout.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:22px">
+      <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(30px * var(--fsd,1));color:var(--ink,#1D1A16)">Shape, space, depth</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start">
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Radius</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:70px;height:34px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:20px"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">20 pill</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:70px;height:34px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:14px"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">14 card</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:70px;height:34px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:12px"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">12 row, banner</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:70px;height:34px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:11px"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">11 button, field</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:70px;height:34px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:8px"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">8 inner, segment</span></div>
+          </div>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Spacing</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:4px;height:14px;background:var(--accent,#E9A8A3)"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">4 &middot; icon gap</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:8px;height:14px;background:var(--accent,#E9A8A3)"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">8 &middot; row gap</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:14px;height:14px;background:var(--accent,#E9A8A3)"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">14 &middot; in-card, grid</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:18px;height:14px;background:var(--accent,#E9A8A3)"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">18 &middot; between cards</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:24px;height:14px;background:var(--accent,#E9A8A3)"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">22&ndash;24 &middot; card padding</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:30px;height:14px;background:var(--accent,#E9A8A3)"></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">26/30 &middot; page padding</span></div>
+          </div>
+        </div>
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Depth</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:11px 13px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">--sh0 &middot; every card</div>
+            <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:11px 13px;box-shadow:2px 4px 0 var(--sh1,rgba(29,26,22,0.08));font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">--sh1 &middot; dropdown</div>
+            <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:11px 13px;box-shadow:0 18px 44px var(--sh2,rgba(29,26,22,0.12));font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">--sh2 &middot; screen, modal</div>
+            <div style="background:var(--btnbg,#1D1A16);border-radius:11px;padding:11px 13px;box-shadow:0 8px 20px var(--sh3,rgba(29,26,22,0.25));font-family:'Space Mono',monospace;font-size:11px;color:var(--btntext,#FCFAF4)">--sh3 &middot; toast</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;align-items:baseline;gap:14px">
+        <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(30px * var(--fsd,1));color:var(--ink,#1D1A16)">Primitives</div>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Only what already repeats across three or more screens.</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:16px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Buttons</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+            <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4)" style-hover="background:var(--btnhover,#332E27)">Republish</button>
+            <button style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)" style-hover="border-color:var(--accentink,#B2544E)">Test the agent</button>
+            <button style="background:transparent;border:none;padding:9px 4px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--accentink,#B2544E);text-decoration:underline">All conversations</button>
+            <button style="background:var(--accentbg2,#FDF7F5);border:1px solid var(--accentl,#EFC9C4);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--accentink,#B2544E)" style-hover="border-color:var(--accentink,#B2544E)">Revoke</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+            <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:10px;padding:6px 12px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Small primary</button>
+            <button style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:9px;padding:4px 10px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));color:var(--ink,#1D1A16)">Inline action</button>
+            <button disabled="disabled" style="background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:11px;padding:9px 16px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted2,#A79E8B);cursor:not-allowed">Publish</button>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">disabled = nothing to publish</span>
+          </div>
+        </div>
+
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:16px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Status</div>
+          <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:20px;padding:4px 9px">LIVE</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--amber,#B4712A);background:var(--amberbg,#FAEBDC);border:1px solid var(--amberl,#E2B98A);border-radius:20px;padding:4px 9px">CHANGES PENDING</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--muted,#8A8271);background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:20px;padding:4px 9px">DRAFT</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--accentink,#B2544E);background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);border-radius:20px;padding:4px 9px">NO ANSWER</span>
+          </div>
+          <div style="height:1px;background:var(--line2,#DCD4BF)"></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:9px">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--green,#4E7A48);animation:pulse 2.4s ease-in-out infinite"></div>
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Answering &mdash; pulsing dot, never a badge</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px">
+              <div style="width:15px;height:15px;border-radius:50%;border:2px solid var(--line,#CFC5AB);border-top-color:var(--accentink,#B2544E);animation:spin .8s linear infinite"></div>
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Working &mdash; spinner plus a sentence, never alone</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:16px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Fields</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:center;gap:5px">
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Agent name</span>
+              <span style="color:var(--amber,#B4712A);font-family:'Space Mono',monospace;font-size:11px">*</span>
+            </div>
+            <input value="AcmeBot" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:10px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16);outline:none" style-focus="border-color:var(--accentink,#B2544E)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Timezone</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:10px 13px">
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)">America / New_York</span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">&#9662;</span>
+            </div>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Searchable. Same picker everywhere a zone is asked for.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Allowed domains</span>
+            <div style="min-height:62px;background:var(--card,#FCFAF4);border:1px solid var(--accentline,#E0A9A3);border-radius:11px;padding:10px 13px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--muted2,#A79E8B)">acmedental.com</div>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E)">Error and warning states borrow the accent line, not red.</span>
+          </div>
+          <button onClick="{{ toggleCheck }}" style="display:flex;align-items:center;gap:10px;background:transparent;border:none;padding:0;cursor:pointer;text-align:left">
+            <sc-if value="{{ checked }}" hint-placeholder-val="{{ true }}">
+              <span style="width:20px;height:20px;border-radius:6px;background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);color:var(--btntext,#FCFAF4);display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:11px">&#10003;</span>
+            </sc-if>
+            <sc-if value="{{ unchecked }}" hint-placeholder-val="{{ false }}">
+              <span style="width:20px;height:20px;border-radius:6px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB)"></span>
+            </sc-if>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Let visitors interrupt the agent</span>
+          </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:16px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Segmented &amp; nav</div>
+            <div style="display:flex;gap:4px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:10px;padding:3px;align-self:flex-start">
+              <button data-v="all" onClick="{{ pickDemo }}" style="{{ dAll }}">All</button>
+              <button data-v="esc" onClick="{{ pickDemo }}" style="{{ dEsc }}">Escalated</button>
+              <button data-v="gap" onClick="{{ pickDemo }}" style="{{ dGap }}">Unanswered</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;max-width:230px">
+              <div style="background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);border-radius:10px;padding:8px 11px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)">Dashboard</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;border-radius:10px;padding:8px 11px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--text,#4A453C)"><span>Conversations</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accentink,#B2544E)">4</span></div>
+            </div>
+          </div>
+          <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Ranked ramp</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="height:9px;background:var(--inset,#EFEBDE);border-radius:5px;overflow:hidden"><div style="width:78%;height:100%;background:var(--r1,#8E3E39)"></div></div>
+              <div style="height:9px;background:var(--inset,#EFEBDE);border-radius:5px;overflow:hidden"><div style="width:62%;height:100%;background:var(--r2,#A9524B)"></div></div>
+              <div style="height:9px;background:var(--inset,#EFEBDE);border-radius:5px;overflow:hidden"><div style="width:44%;height:100%;background:var(--r3,#BE6A62)"></div></div>
+              <div style="height:9px;background:var(--inset,#EFEBDE);border-radius:5px;overflow:hidden"><div style="width:28%;height:100%;background:var(--r4,#CE8079)"></div></div>
+              <div style="height:9px;background:var(--inset,#EFEBDE);border-radius:5px;overflow:hidden"><div style="width:14%;height:100%;background:var(--r5,#D9948C)"></div></div>
+            </div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.35;color:var(--muted,#8A8271)">Strongest share gets --r1. Order the ramp, never pick per row &mdash; the weakest step still clears the track.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Publish banner &mdash; the one state model</div>
+          <div style="display:flex;gap:4px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:10px;padding:3px">
+            <button data-b="pending" onClick="{{ pickBanner }}" style="{{ bPending }}">Changes pending</button>
+            <button data-b="publishing" onClick="{{ pickBanner }}" style="{{ bPublishing }}">Publishing</button>
+            <button data-b="live" onClick="{{ pickBanner }}" style="{{ bLive }}">Live</button>
+            <button data-b="draft" onClick="{{ pickBanner }}" style="{{ bDraft }}">Draft</button>
+          </div>
+        </div>
+        <sc-if value="{{ isPending }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:14px;background:var(--amberbg,#FAEBDC);border:1px solid var(--amberl,#E2B98A);border-radius:12px;padding:12px 16px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber,#B4712A);border:1px solid var(--amberl,#E2B98A);border-radius:20px;padding:4px 9px;background:var(--amberbg2,#FCF4EA)">Changes pending</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C);flex:1">You edited the greeting 4 minutes ago. Visitors still hear the old version until you republish.</div>
+            <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Republish</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isPublishing }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;background:var(--inset2,#F2EEE1);border:1px solid var(--line,#CFC5AB);border-radius:12px;padding:12px 16px">
+            <div style="width:15px;height:15px;border-radius:50%;border:2px solid var(--line,#CFC5AB);border-top-color:var(--accentink,#B2544E);animation:spin .8s linear infinite"></div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Publishing to the live widget&hellip; knowledge is re-attached automatically.</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:12px;padding:12px 16px">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green,#4E7A48)"></div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--greenink,#3F6B3A);flex:1">Live and up to date &mdash; published just now.</div>
+            <button style="background:transparent;border:none;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--greenink,#3F6B3A);text-decoration:underline">View history</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isDraft }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:14px;background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:12px;padding:12px 16px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted,#8A8271);border:1px solid var(--line2,#DCD4BF);border-radius:20px;padding:4px 9px;background:var(--card,#FCFAF4)">Draft</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C);flex:1">Not on your site yet. Two steps left before this agent can answer.</div>
+            <button style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Finish setup</button>
+          </div>
+        </sc-if>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">Four states, one component, one owner per screen. Never show a status badge and a Publish button that disagree.</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:20px;align-items:start">
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">List row &amp; transcript</div>
+          <div style="border:1px solid var(--line2,#DCD4BF);border-radius:12px;background:var(--row,#FDFBF6);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:14px;padding:13px 15px">
+              <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--muted,#8A8271);width:52px;flex:0 0 52px">09:14</span>
+              <span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(19px * var(--fsb,1));color:var(--ink,#1D1A16)">Cost of Invisalign and payment plans</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:20px;padding:3px 8px">ANSWERED</span>
+              <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--muted,#8A8271);width:46px;text-align:right">2:41</span>
+            </div>
+            <div style="border-top:1px dashed var(--dash,#D8CFB8);padding:14px 15px;display:flex;flex-direction:column;gap:8px;background:var(--soft,#F9F5EC)">
+              <div style="display:flex;justify-content:flex-start"><div style="max-width:76%;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:12px 12px 12px 4px;padding:8px 12px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Visitor bubble &mdash; inset fill, tail bottom-left</div></div>
+              <div style="display:flex;justify-content:flex-end"><div style="max-width:76%;background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);border-radius:12px 12px 4px 12px;padding:8px 12px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Agent bubble &mdash; accent fill, tail bottom-right</div></div>
+              <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--muted,#8A8271);padding-top:4px">GROUNDED IN &middot; pricing.pdf, services.txt</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:16px 18px;display:flex;flex-direction:column;gap:4px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted,#8A8271)">Calls answered</div>
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(38px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16)">84</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--green,#4E7A48)">+12% vs last week</div>
+          </div>
+          <div style="background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:9px;align-items:center;text-align:center">
+            <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(20px * var(--fsd,1));color:var(--ink,#1D1A16)">No conversations yet</div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.35;color:var(--muted,#8A8271)">Every empty state names the next action.</div>
+            <button style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:8px 14px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Make a test call</button>
+          </div>
+          <div style="align-self:flex-start;background:var(--btnbg,#1D1A16);border-radius:11px;padding:11px 18px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4);box-shadow:0 8px 20px var(--sh3,rgba(29,26,22,0.25))">Callback marked done</div>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:16px">
+      <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(30px * var(--fsd,1));color:var(--ink,#1D1A16)">Not components yet</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div style="background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:9px">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--label,#9A2B2B)">Waiting for a second use</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.45;color:var(--text,#4A453C)">Conversation row, stat tile, attention item, workspace card, hours editor, call panel, theme tile. Each exists once. I'd rather build the landing page and the setup spine first, then promote whatever survives contact with three screens.</div>
+        </div>
+        <div style="background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:9px">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--label,#9A2B2B)">How theming works</div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.45;color:var(--text,#4A453C)">One custom-property set on the app root, four palettes, four typesets, independent of each other. Components never name a hex &mdash; every value below is <span style="font-family:'Space Mono',monospace;font-size:13px">var(--role, default)</span>, so an untokenised page still renders as warm paper.</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;warm&quot;,&quot;night&quot;,&quot;ink&quot;,&quot;studio&quot;],&quot;default&quot;:&quot;warm&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;typeset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;hand&quot;,&quot;plain&quot;,&quot;editorial&quot;,&quot;grotesk&quot;],&quot;default&quot;:&quot;hand&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: null, typeset: null, demo: 'all', banner: 'pending', checked: true };
+
+  palette(name) {
+    const P = {
+      warm: {
+        page: '#F7F3EB', card: '#FCFAF4', sidebar: '#FDF8E9', inset: '#EFEBDE', inset2: '#F2EEE1', soft: '#F9F5EC', row: '#FDFBF6', rowalt: '#FBF4F1',
+        line: '#CFC5AB', line2: '#DCD4BF', line3: '#E3DCC6', dash: '#D8CFB8', ink: '#1D1A16', text: '#4A453C', muted: '#8A8271', muted2: '#A79E8B', label: '#9A2B2B',
+        accent: '#E9A8A3', accentl: '#EFC9C4', accentline: '#E0A9A3', accentbg: '#FBE7E4', accentbg2: '#FDF7F5', accenthair: '#F3E1DD', accentink: '#B2544E',
+        green: '#4E7A48', greenl: '#A9C79F', greenbg: '#E8F0E0', greenink: '#3F6B3A', greenmuted: '#6E8C68', amber: '#B4712A', amberl: '#E2B98A', amberbg: '#FAEBDC', amberbg2: '#FCF4EA',
+        btntext: '#FCFAF4', btnbg: '#1D1A16', btnhover: '#332E27',
+        ramp: ['#8E3E39', '#A9524B', '#BE6A62', '#CE8079', '#D9948C'],
+        sh: ['rgba(29,26,22,0.05)', 'rgba(29,26,22,0.08)', 'rgba(29,26,22,0.12)', 'rgba(29,26,22,0.25)'], natural: 'hand'
+      },
+      night: {
+        page: '#16130F', card: '#201C17', sidebar: '#1B1713', inset: '#2A241E', inset2: '#262119', soft: '#1E1A15', row: '#241F19', rowalt: '#2A211E',
+        line: '#3A322A', line2: '#453B31', line3: '#332B24', dash: '#3F362D', ink: '#F3EBDC', text: '#D6CCBA', muted: '#9A8F7C', muted2: '#7E7462', label: '#E0908A',
+        accent: '#E9A8A3', accentl: '#6E4A46', accentline: '#7E5450', accentbg: '#382422', accentbg2: '#241A18', accenthair: '#4A312D', accentink: '#F0B4AE',
+        green: '#8FC183', greenl: '#4E6B47', greenbg: '#24301F', greenink: '#A6D19A', greenmuted: '#7F9C77', amber: '#E0A567', amberl: '#6B5334', amberbg: '#332616', amberbg2: '#2A2114',
+        btntext: '#1D1A16', btnbg: '#E9A8A3', btnhover: '#F2BDB8',
+        ramp: ['#E9A8A3', '#D18F89', '#B9766F', '#A15E57', '#8A4841'],
+        sh: ['rgba(0,0,0,0.35)', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.55)'], natural: 'hand'
+      },
+      ink: {
+        page: '#F6F2E9', card: '#FFFDF8', sidebar: '#F1ECDF', inset: '#EDE8DA', inset2: '#F0EBDE', soft: '#F3EFE4', row: '#FFFDF8', rowalt: '#FFF8F5',
+        line: '#D5CCB6', line2: '#E0D8C4', line3: '#DFD7C3', dash: '#D5CCB6', ink: '#201C15', text: '#4E4739', muted: '#8B8471', muted2: '#A69E88', label: '#8E3A2F',
+        accent: '#C9705F', accentl: '#E7C0B4', accentline: '#D08E7E', accentbg: '#F7E6DF', accentbg2: '#FCF3EF', accenthair: '#EDDBD3', accentink: '#A34E3F',
+        green: '#4A6E44', greenl: '#A8C29C', greenbg: '#E9EFDF', greenink: '#3D5E39', greenmuted: '#6C8663', amber: '#A9701F', amberl: '#DDBB84', amberbg: '#F7ECD8', amberbg2: '#FBF4E7',
+        btntext: '#FBF8F0', btnbg: '#201C15', btnhover: '#3A342A',
+        ramp: ['#A34E3F', '#B45F4E', '#C4725F', '#CE8271', '#D48F7C'],
+        sh: ['rgba(32,28,21,0.05)', 'rgba(32,28,21,0.08)', 'rgba(32,28,21,0.12)', 'rgba(32,28,21,0.25)'], natural: 'editorial'
+      },
+      studio: {
+        page: '#F5F5F3', card: '#FFFFFF', sidebar: '#FBFBFA', inset: '#EFEFEC', inset2: '#F2F2EF', soft: '#F8F8F6', row: '#FFFFFF', rowalt: '#FFF9F8',
+        line: '#E1E0DB', line2: '#E8E7E2', line3: '#E8E7E2', dash: '#DBDAD4', ink: '#14141A', text: '#4A4A52', muted: '#85858E', muted2: '#A3A3AA', label: '#B4322C',
+        accent: '#E2564C', accentl: '#F2C4BF', accentline: '#E88A82', accentbg: '#FDECEA', accentbg2: '#FFF7F6', accenthair: '#F7DDDA', accentink: '#C33E36',
+        green: '#2F7D4F', greenl: '#A9D3B8', greenbg: '#E9F5EE', greenink: '#256B42', greenmuted: '#5E8E72', amber: '#B26B12', amberl: '#EAC98F', amberbg: '#FCF3E3', amberbg2: '#FFF9F0',
+        btntext: '#FFFFFF', btnbg: '#14141A', btnhover: '#2C2C35',
+        ramp: ['#B93830', '#C9463C', '#D65A4F', '#DA6F63', '#DE8378'],
+        sh: ['rgba(20,20,26,0.04)', 'rgba(20,20,26,0.07)', 'rgba(20,20,26,0.10)', 'rgba(20,20,26,0.22)'], natural: 'grotesk'
+      }
+    };
+    return P[name] || P.warm;
+  }
+
+  typesetOf(name) {
+    const TS = {
+      hand: { disp: "'Gochi Hand',cursive", dispw: '400', fontb: "'Gaegu',cursive", bodyw: '400', fsd: '1', fsb: '1' },
+      plain: { disp: "'Gochi Hand',cursive", dispw: '400', fontb: "'Karla',sans-serif", bodyw: '400', fsd: '1', fsb: '0.86' },
+      editorial: { disp: "'Instrument Serif',serif", dispw: '400', fontb: "'Public Sans',sans-serif", bodyw: '400', fsd: '0.95', fsb: '0.83' },
+      grotesk: { disp: "'Bricolage Grotesque',sans-serif", dispw: '600', fontb: "'Public Sans',sans-serif", bodyw: '400', fsd: '0.86', fsb: '0.83' }
+    };
+    return TS[name] || TS.hand;
+  }
+
+  seg(active, big) {
+    const p = "border-radius:8px;padding:" + (big ? '5px 12px' : '4px 10px') + ";cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(" + (big ? 16 : 15) + "px * var(--fsb,1));";
+    return active
+      ? p + 'background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);color:var(--ink,#1D1A16)'
+      : p + 'background:transparent;border:1px solid transparent;color:var(--muted,#8A8271)';
+  }
+
+  renderVals() {
+    const themeName = this.state.theme || this.props.theme || 'warm';
+    const p = this.palette(themeName);
+    const tsName = this.state.typeset || this.props.typeset || p.natural;
+    const ts = this.typesetOf(tsName);
+
+    const vars = {};
+    Object.keys(p).forEach(k => { if (k !== 'ramp' && k !== 'sh' && k !== 'natural') vars['--' + k] = p[k]; });
+    Object.keys(ts).forEach(k => { vars['--' + k] = ts[k]; });
+    p.ramp.forEach((c, i) => { vars['--r' + (i + 1)] = c; });
+    p.sh.forEach((c, i) => { vars['--sh' + i] = c; });
+
+    const b = this.state.banner, d = this.state.demo;
+    return {
+      themeVars: vars,
+      tWarm: this.seg(themeName === 'warm', true), tNight: this.seg(themeName === 'night', true),
+      tInk: this.seg(themeName === 'ink', true), tStudio: this.seg(themeName === 'studio', true),
+      tsHand: this.seg(tsName === 'hand', true), tsPlain: this.seg(tsName === 'plain', true),
+      tsEditorial: this.seg(tsName === 'editorial', true), tsGrotesk: this.seg(tsName === 'grotesk', true),
+      pickTheme: e => { const n = e.currentTarget.dataset.t; this.setState({ theme: n, typeset: this.palette(n).natural }); },
+      pickTypeset: e => this.setState({ typeset: e.currentTarget.dataset.ts }),
+      dAll: this.seg(d === 'all', true), dEsc: this.seg(d === 'esc', true), dGap: this.seg(d === 'gap', true),
+      pickDemo: e => this.setState({ demo: e.currentTarget.dataset.v }),
+      bPending: this.seg(b === 'pending'), bPublishing: this.seg(b === 'publishing'), bLive: this.seg(b === 'live'), bDraft: this.seg(b === 'draft'),
+      isPending: b === 'pending', isPublishing: b === 'publishing', isLive: b === 'live', isDraft: b === 'draft',
+      pickBanner: e => this.setState({ banner: e.currentTarget.dataset.b }),
+      checked: this.state.checked, unchecked: !this.state.checked,
+      toggleCheck: () => this.setState(s => ({ checked: !s.checked }))
+    };
+  }
+}
+</script>
+</body>
+</html>

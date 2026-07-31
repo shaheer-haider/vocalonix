@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F7F3EB}
+  a{color:#B2544E}
+  a:hover{color:#8E3E39}
+  button{font:inherit}
+  input,textarea{font:inherit}
+  *{box-sizing:border-box}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(29,26,22,.16);border-radius:6px}
+  @keyframes vxup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div data-screen-label="Callbacks" style="height:100vh;min-width:1280px;display:grid;grid-template-columns:238px minmax(0,1fr) 342px;background:#F7F3EB;overflow:hidden">
+
+  <aside style="background:#FDF8E9;border-right:1px solid #E3DCC6;padding:24px 18px;display:flex;flex-direction:column;gap:24px;overflow-y:auto;overflow-x:hidden">
+    <div style="font-family:'Gochi Hand',cursive;font-size:27px;color:#1D1A16;padding-left:4px">vocalonix</div>
+    <div style="display:flex;flex-direction:column;gap:7px;position:relative">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8A8271;padding-left:4px">Workspace</div>
+      <button onClick="{{ toggleWs }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 11px;cursor:pointer;text-align:left;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16" style-hover="border-color:#B2544E">
+        <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">&#9662;</span>
+      </button>
+      <sc-if value="{{ wsOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:100%;left:0;right:0;margin-top:5px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;box-shadow:2px 4px 0 rgba(29,26,22,0.08);padding:6px;z-index:20;display:flex;flex-direction:column;gap:2px">
+          <button onClick="{{ closeWs }}" style="display:flex;justify-content:space-between;align-items:center;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:8px;padding:7px 9px;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;text-align:left">
+            <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#4E7A48">LIVE</span>
+          </button>
+          <button onClick="{{ closeWs }}" style="display:flex;justify-content:space-between;align-items:center;background:transparent;border:1px solid transparent;border-radius:8px;padding:7px 9px;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#4A453C;text-align:left" style-hover="background:#F2EEE1">
+            <span>Northside Vets</span><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#B4712A">DRAFT</span>
+          </button>
+        </div>
+      </sc-if>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:3px">
+      <a href="Vocalonix Dashboard.dc.html" style="{{ navIdle }}">Dashboard</a>
+      <a href="Vocalonix Conversations.dc.html" style="{{ navIdle }}">Conversations</a>
+      <a href="Vocalonix Contacts.dc.html" style="{{ navIdle }}">Contacts</a>
+      <a href="Vocalonix Bookings.dc.html" style="{{ navIdle }}">Bookings</a>
+      <button style="{{ navOn }}"><span>Callbacks</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:#B2544E">{{ openCount }}</span></button>
+      <a href="Vocalonix Configuration.dc.html" style="{{ navIdle }}">Configuration</a>
+      <a href="Vocalonix Knowledge.dc.html" style="{{ navIdle }}">Knowledge</a>
+      <a href="Vocalonix Settings.dc.html#team" style="{{ navIdle }}">Team</a>
+      <a href="Vocalonix Settings.dc.html#account" style="{{ navIdle }}">Account &amp; billing</a>
+      <a href="Vocalonix Settings.dc.html#notifications" style="{{ navIdle }}">Notifications</a>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <sc-if value="{{ hasLate }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#FBE7E4;border:1px solid #EFC9C4;border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:9px">
+          <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#B2544E">Past the promise</div>
+          <div style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">{{ lateBlurb }}</div>
+          <button onClick="{{ showLate }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:10px;padding:8px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Work through them</button>
+        </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:9px;border-top:1px dashed #D8CFB8;padding-top:13px">
+        <div style="width:26px;height:26px;border-radius:50%;background:#EFEBDE;border:1px solid #CFC5AB;display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand',cursive;font-size:14px;color:#4A453C">O</div>
+        <div style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Owner One</div>
+      </div>
+    </div>
+  </aside>
+
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid #CFC5AB">
+
+    <div style="padding:20px 24px 14px;display:flex;flex-direction:column;gap:13px;border-bottom:1px solid #CFC5AB">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:'Gochi Hand',cursive;font-size:28px;line-height:1.05;color:#1D1A16">Callbacks</span>
+          <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">One queue. Robin fills it, the waitlist fills it, so does the front desk.</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onClick="{{ sweep }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16" style-hover="border-color:#B2544E">Share out the unassigned</button>
+          <button onClick="{{ newTask }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:10px;padding:9px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">New callback</button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:7px 13px;display:flex;align-items:baseline;gap:7px">
+              <span style="{{ s.vStyle }}">{{ s.v }}</span>
+              <span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">{{ s.k }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <button data-f="all" onClick="{{ pickFilter }}" style="{{ chipAll }}">Everything</button>
+          <button data-f="mine" onClick="{{ pickFilter }}" style="{{ chipMine }}">Mine</button>
+          <button data-f="unassigned" onClick="{{ pickFilter }}" style="{{ chipUn }}">Nobody&rsquo;s</button>
+          <button data-f="overdue" onClick="{{ pickFilter }}" style="{{ chipLate }}">Late</button>
+          <button data-f="waitlist" onClick="{{ pickFilter }}" style="{{ chipWait }}">From the waitlist</button>
+          <button onClick="{{ toggleDone }}" style="{{ chipDone }}">{{ doneLabel }}</button>
+        </div>
+      </div>
+
+      <sc-if value="{{ hasHashNote }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#F9F5EC;border:1px dashed #D8CFB8;border-radius:11px;padding:9px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">{{ hashNote }}</span>
+          <button onClick="{{ clearFilter }}" style="background:transparent;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E;text-decoration:underline">Show everything</button>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow:auto">
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+        <div style="{{ g.headStyle }}">
+          <span style="{{ g.labelStyle }}">{{ g.label }}</span>
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#A79E8B">{{ g.count }}</span>
+        </div>
+        <sc-for list="{{ g.items }}" as="t" hint-placeholder-count="3">
+          <button data-id="{{ t.id }}" onClick="{{ t.pick }}" style="{{ t.style }}">
+            <span style="flex:none;width:78px;display:flex;flex-direction:column;gap:2px;text-align:left">
+              <span style="{{ t.dueTimeStyle }}">{{ t.dueTime }}</span>
+              <span style="{{ t.dueRelStyle }}">{{ t.dueRel }}</span>
+            </span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;text-align:left">
+              <span style="display:flex;align-items:baseline;gap:8px;min-width:0">
+                <span style="{{ t.nameStyle }}">{{ t.who }}</span>
+                <span style="{{ t.srcStyle }}">{{ t.srcTag }}</span>
+                <sc-if value="{{ t.promised }}" hint-placeholder-val="{{ false }}">
+                  <span style="flex:none;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#B4712A">PROMISED OUT LOUD</span>
+                </sc-if>
+              </span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#8A8271;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.why }}</span>
+            </span>
+            <span style="flex:none;display:flex;align-items:center;gap:9px">
+              <sc-if value="{{ t.hasTries }}" hint-placeholder-val="{{ false }}">
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#B4712A">{{ t.tryTag }}</span>
+              </sc-if>
+              <span style="{{ t.whoChip }}">{{ t.whoLabel }}</span>
+            </span>
+          </button>
+        </sc-for>
+      </sc-for>
+
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:44px 24px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center">
+          <span style="font-family:'Gochi Hand',cursive;font-size:23px;color:#1D1A16">{{ emptyTitle }}</span>
+          <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#8A8271;max-width:340px">{{ emptyLine }}</span>
+          <button onClick="{{ clearFilter }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Show everything</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;min-height:0;overflow:auto;background:#F7F3EB">
+
+    <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:20px 20px 26px;display:flex;flex-direction:column;gap:16px">
+
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <span style="{{ selSrcStyle }}">{{ selSrcTag }}</span>
+            <button onClick="{{ clearSel }}" style="background:transparent;border:none;padding:0;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;color:#A79E8B">CLOSE &times;</button>
+          </div>
+          <span style="font-family:'Gochi Hand',cursive;font-size:26px;line-height:1.1;color:#1D1A16">{{ selWho }}</span>
+          <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.04em;color:#8A8271">{{ selChannel }}</span>
+          <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#4A453C">{{ selWhy }}</span>
+        </div>
+
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ selFacts }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;align-items:baseline;gap:10px">
+              <span style="flex:none;width:74px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">{{ f.k }}</span>
+              <span style="flex:1;font-family:'Gaegu',cursive;font-size:17px;line-height:1.25;color:#1D1A16">{{ f.v }}</span>
+            </div>
+          </sc-for>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;padding-top:3px;border-top:1px dashed #E3DCC6">
+            <sc-for list="{{ selLinks }}" as="l" hint-placeholder-count="2">
+              <a href="{{ l.href }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:5px 11px;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16;text-decoration:none;margin-top:8px" style-hover="border-color:#B2544E">{{ l.label }}</a>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Whose job it is</span>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <sc-for list="{{ people }}" as="p" hint-placeholder-count="4">
+              <button data-p="{{ p.key }}" onClick="{{ assign }}" style="{{ p.style }}">{{ p.label }}</button>
+            </sc-for>
+          </div>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#8A8271">{{ assignNote }}</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Due back</span>
+            <span style="{{ selDueStyle }}">{{ selDueText }}</span>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <sc-for list="{{ dueOptions }}" as="d" hint-placeholder-count="3">
+              <button data-d="{{ d.key }}" onClick="{{ setDue }}" style="{{ d.style }}">{{ d.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#F9F5EC;border:1px dashed #D8CFB8;border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Attempts</span>
+          <sc-for list="{{ selTries }}" as="a" hint-placeholder-count="2">
+            <div style="display:flex;gap:9px;align-items:baseline">
+              <span style="flex:none;width:42px;font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B">{{ a.t }}</span>
+              <span style="flex:1;font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">{{ a.v }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noTries }}" hint-placeholder-val="{{ false }}">
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Nobody has tried yet.</span>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ selOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <button onClick="{{ markSpoke }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:11px;padding:11px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:18px;color:#FCFAF4" style-hover="background:#332E27">Spoke to them &mdash; done</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button onClick="{{ markNoAnswer }}" style="{{ ghostBtn }}">No answer</button>
+              <button onClick="{{ markVoicemail }}" style="{{ ghostBtn }}">Left a message</button>
+              <button onClick="{{ handBack }}" style="{{ ghostBtn }}">Robin tries</button>
+            </div>
+            <button onClick="{{ dropTask }}" style="background:transparent;border:none;padding:4px 0;cursor:pointer;text-align:left;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E;text-decoration:underline">Not needed any more</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ selClosed }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#E8F0E0;border:1px solid #A9C79F;border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;gap:8px">
+            <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#3F6B3A">{{ closedLine }}</span>
+            <button onClick="{{ reopen }}" style="align-self:flex-start;background:#FCFAF4;border:1px solid #A9C79F;border-radius:10px;padding:7px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#3F6B3A">Put it back in the queue</button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ noSel }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:20px 20px 26px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Who is carrying what</span>
+          <sc-for list="{{ load }}" as="m" hint-placeholder-count="4">
+            <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:12px;padding:11px 13px;display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:9px">
+                <span style="font-family:'Gaegu',cursive;font-size:18px;line-height:1.15;color:#1D1A16">{{ m.name }}</span>
+                <span style="{{ m.countStyle }}">{{ m.count }}</span>
+              </div>
+              <div style="height:8px;background:#EFEBDE;border-radius:4px;overflow:hidden"><div style="{{ m.bar }}"></div></div>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#8A8271">{{ m.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#FDF8E9;border:1px solid #CFC5AB;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#9A2B2B">Where today&rsquo;s came from</span>
+          <sc-for list="{{ sources }}" as="s" hint-placeholder-count="4">
+            <div style="display:flex;align-items:baseline;gap:10px">
+              <span style="flex:none;width:26px;font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">{{ s.n }}</span>
+              <span style="flex:1;font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#4A453C">{{ s.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#F9F5EC;border:1px dashed #D8CFB8;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:7px">
+          <span style="font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">Pick somebody on the left</span>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#8A8271">Every task keeps the call it came from, so you can hear what was promised before you ring.</span>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:60;background:#1D1A16;color:#FCFAF4;border-radius:12px;padding:11px 18px;box-shadow:0 10px 28px rgba(29,26,22,.24);font-family:'Gaegu',cursive;font-size:17px;animation:vxup .18s ease-out">{{ toast }}</div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;showDone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Queue&quot;},&quot;startFilter&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Everything&quot;,&quot;Mine&quot;,&quot;Unassigned&quot;,&quot;Late&quot;,&quot;Waitlist&quot;],&quot;default&quot;:&quot;Everything&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Queue&quot;},&quot;whoAmI&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;You&quot;,&quot;Priya&quot;,&quot;Marta&quot;],&quot;default&quot;:&quot;You&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Queue&quot;}}">
+class Component extends DCLogic {
+  NOW = 884;
+  NAVBASE = "border-radius:10px;padding:8px 11px;cursor:pointer;text-align:left;text-decoration:none;display:block;font-family:'Gaegu',cursive;font-size:18px;";
+
+  PEOPLE = [
+    { key: 'You', label: 'You', sub: 'Owner' },
+    { key: 'Priya', label: 'Priya', sub: 'Front desk' },
+    { key: 'Marta', label: 'Marta', sub: 'Front desk' },
+    { key: 'Robin', label: 'Robin', sub: 'The agent' }
+  ];
+
+  SRC = {
+    call: ['FROM A CALL', '#4A453C', '#F1EDE1', '#DCD4BF'],
+    waitlist: ['FROM THE WAITLIST', '#B2544E', '#FBE7E4', '#EFC9C4'],
+    noshow: ['DID NOT ARRIVE', '#B2544E', '#FBE7E4', '#EFC9C4'],
+    deposit: ['DEPOSIT UNPAID', '#B4712A', '#FAEBDC', '#E2B98A'],
+    hand: ['ADDED BY HAND', '#4A453C', '#F1EDE1', '#DCD4BF']
+  };
+
+  T = [
+    { id: 'k1', who: 'Dawn Whitfield', ch: '+44 7900 812 004', src: 'call', promised: true, day: 0, due: 750, assignee: 'Priya',
+      why: 'Unhappy about a crown fitted last month. Robin took the details and promised a call today.',
+      made: 'Yesterday 18:30 \u00b7 3m 12s', hist: '4th visit \u00b7 flagged as upset',
+      tries: [{ t: '09:10', v: 'Priya rang \u2014 no answer, no voicemail left' }], links: ['call', 'contact'] },
+    { id: 'w2', who: 'Nina Roche', ch: '+44 7700 900 118', src: 'waitlist', promised: false, day: 0, due: 900, assignee: null,
+      why: 'On the waitlist for hygiene, any afternoon. The 3:20 with Aleks came free \u2014 hers until 3pm.',
+      made: 'Added to the waitlist Monday', hist: '2nd visit \u00b7 never missed one',
+      tries: [], links: ['booking', 'contact'] },
+    { id: 'k3', who: 'Anna Pryce', ch: '+44 7412 660 118', src: 'call', promised: true, day: 0, due: 960, assignee: 'You',
+      why: 'Wanted to know if you take Bupa. Robin had no answer, so it took her number instead.',
+      made: 'Today 09:14 \u00b7 1m 48s', hist: 'First time calling',
+      tries: [], links: ['call', 'knowledge', 'contact'] },
+    { id: 'd1', who: 'Hugo Marsh', ch: '+44 7508 221 340', src: 'deposit', promised: false, day: 0, due: 1005, assignee: 'You',
+      why: 'Filling on Friday with no deposit paid. Policy wants a card before we hold the slot.',
+      made: 'Booked by Robin 13:58', hist: '3rd visit \u00b7 one late cancellation',
+      tries: [], links: ['booking', 'contact'] },
+    { id: 'k2', who: 'Elena Fox', ch: 'elena.fox@gmail.com', src: 'call', promised: true, day: 0, due: 1020, assignee: null,
+      why: 'Asked what Invisalign costs \u2014 above the price Robin is allowed to quote out loud.',
+      made: 'Yesterday 17:55 \u00b7 from the website button', hist: 'Website visitor \u00b7 no visits yet',
+      tries: [], links: ['call', 'contact'] },
+    { id: 'n1', who: 'Dan Price', ch: '+44 7900 447 201', src: 'noshow', promised: false, day: 0, due: 1050, assignee: 'Priya',
+      why: 'Did not arrive for his 11:00 check-up. Needs rebooking, and the deposit rule now applies to him.',
+      made: 'Marked as a no-show 11:20', hist: '5th visit \u00b7 second no-show',
+      tries: [], links: ['booking', 'contact'] },
+    { id: 'w1', who: 'Callum Ford', ch: '+44 7311 508 662', src: 'waitlist', promised: false, day: 1, due: 540, assignee: 'Marta',
+      why: 'Waiting on a Thursday evening check-up. Dr. Osei has one late slot left next week.',
+      made: 'Added to the waitlist 09:12', hist: '2nd visit',
+      tries: [], links: ['booking', 'contact'] },
+    { id: 'h1', who: 'Ray Boland', ch: '+44 7822 119 003', src: 'hand', promised: false, day: 1, due: 660, assignee: 'Marta',
+      why: 'Asked for the practice manager by name and would not say what it was about.',
+      made: 'Added by Priya at the desk', hist: 'No record \u2014 possibly not a patient',
+      tries: [], links: ['contact'] },
+    { id: 'p1', who: 'Peter Vance', ch: '+44 7700 331 884', src: 'call', promised: false, day: 1, due: 960, assignee: 'Priya',
+      why: 'Wants his hygiene appointment moved. Rung twice, no answer either time.',
+      made: 'Today 08:41 \u00b7 2m 05s', hist: '6th visit \u00b7 plan member',
+      tries: [{ t: '10:02', v: 'Priya rang \u2014 no answer' }, { t: '12:40', v: 'Priya rang \u2014 no answer, voicemail full' }], links: ['call', 'contact'] },
+    { id: 'w3', who: 'Marta Silva', ch: '+44 7455 620 771', src: 'waitlist', promised: false, day: 3, due: 600, assignee: null,
+      why: 'Wants the first free Saturday for whitening. Nothing open until the 22nd.',
+      made: 'Added to the waitlist last Friday', hist: 'First time booking',
+      tries: [], links: ['booking', 'contact'] },
+    { id: 'z1', who: 'Grace Odum', ch: '+44 7900 118 552', src: 'call', promised: true, day: 0, due: 700, assignee: 'Priya', state: 'spoke', closedAt: '11:40',
+      why: 'Asked to move next week\u2019s hygiene. Moved to Tuesday 4:00 while she was on the phone.',
+      made: 'Today 08:12 \u00b7 1m 32s', hist: '7th visit',
+      tries: [{ t: '11:40', v: 'Priya spoke to her \u2014 rebooked for Tuesday' }], links: ['call', 'booking'] },
+    { id: 'z2', who: 'Yusuf Adeyemi', ch: '+44 7500 664 019', src: 'call', promised: false, day: 0, due: 600, assignee: 'You', state: 'voicemail', closedAt: '09:52',
+      why: 'Wanted his Saturday hygiene changed. Voicemail left with two times to pick from.',
+      made: 'Yesterday 16:20 \u00b7 2m 44s', hist: '3rd visit',
+      tries: [{ t: '09:52', v: 'You left a voicemail with two options' }], links: ['call', 'contact'] }
+  ];
+
+  LINKS = {
+    call: { label: 'The call \u2197', href: 'Vocalonix Conversations.dc.html' },
+    booking: { label: 'The booking \u2197', href: 'Vocalonix Bookings.dc.html' },
+    contact: { label: 'Contact \u2197', href: 'Vocalonix Contacts.dc.html' },
+    knowledge: { label: 'The gap \u2197', href: 'Vocalonix Knowledge.dc.html#gaps' }
+  };
+
+  state = { filter: null, sel: null, showDone: null, wsOpen: false, toast: '',
+    assign: {}, st: {}, dueOv: {}, extra: {}, fromLink: '' };
+
+  componentDidMount() {
+    const h = (location.hash || '').replace('#', '');
+    if (h.indexOf('t=') === 0) { this.setState({ sel: h.slice(2), fromLink: 'task' }); return; }
+    const notes = {
+      overdue: 'Opened from a link \u2014 showing only what is already late.',
+      waitlist: 'Opened from Bookings \u2014 showing waitlist callbacks only.',
+      mine: 'Opened from a link \u2014 showing your callbacks only.',
+      unassigned: 'Opened from a link \u2014 showing tasks nobody owns.'
+    };
+    if (notes[h]) this.setState({ filter: h, fromLink: notes[h] });
+  }
+
+  say(m) {
+    clearTimeout(this._t);
+    this.setState({ toast: m });
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+
+  clock(m) {
+    const mm = ((m % 1440) + 1440) % 1440;
+    let h = Math.floor(mm / 60);
+    const s = h >= 12 ? 'pm' : 'am';
+    h = h % 12 === 0 ? 12 : h % 12;
+    return h + ':' + String(mm % 60).padStart(2, '0') + s;
+  }
+
+  span(d) {
+    const a = Math.abs(d), h = Math.floor(a / 60), m = a % 60;
+    if (a < 60) return m + 'm';
+    if (!m) return h + 'h';
+    return h + 'h ' + m + 'm';
+  }
+
+  rows() {
+    const st = this.state;
+    return this.T.map(t => {
+      const kind = st.st[t.id] || t.state || 'open';
+      const abs = st.dueOv[t.id] !== undefined ? st.dueOv[t.id] : t.day * 1440 + t.due;
+      const owner = st.assign[t.id] !== undefined ? st.assign[t.id] : t.assignee;
+      const tries = t.tries.concat(st.extra[t.id] || []);
+      const diff = abs - this.NOW;
+      const closed = kind === 'spoke' || kind === 'voicemail' || kind === 'dropped';
+      let bucket = 'today';
+      if (closed) bucket = 'closed';
+      else if (diff < 0) bucket = 'late';
+      else if (diff <= 60) bucket = 'soon';
+      else if (abs >= 1440) bucket = 'ahead';
+      return Object.assign({}, t, { kind: kind, abs: abs, owner: owner, allTries: tries, diff: diff, closed: closed, bucket: bucket });
+    });
+  }
+
+  dueLabel(r) { return this.clock(r.abs); }
+
+  relLabel(r) {
+    if (r.kind === 'spoke') return 'done ' + r.closedAt;
+    if (r.kind === 'voicemail') return 'message left';
+    if (r.kind === 'dropped') return 'dropped';
+    const d = Math.floor(r.abs / 1440);
+    if (d === 1) return 'tomorrow';
+    if (d > 1) return 'in ' + d + ' days';
+    if (r.diff < 0) return this.span(r.diff) + ' late';
+    return 'in ' + this.span(r.diff);
+  }
+
+  renderVals() {
+    const st = this.state;
+    const all = this.rows();
+    const FMAP = { Everything: 'all', Mine: 'mine', Unassigned: 'unassigned', Late: 'overdue', Waitlist: 'waitlist' };
+    const filter = st.filter || FMAP[this.props.startFilter] || 'all';
+    const me = this.props.whoAmI || 'You';
+    const showDone = st.showDone === null ? (this.props.showDone ?? true) : st.showDone;
+
+    const open = all.filter(r => !r.closed);
+    const late = open.filter(r => r.diff < 0);
+    const un = open.filter(r => !r.owner);
+    const closedToday = all.filter(r => r.kind === 'spoke' || r.kind === 'voicemail');
+
+    let list = all;
+    if (filter === 'mine') list = all.filter(r => r.owner === me);
+    else if (filter === 'unassigned') list = all.filter(r => !r.owner && !r.closed);
+    else if (filter === 'overdue') list = all.filter(r => !r.closed && r.diff < 0);
+    else if (filter === 'waitlist') list = all.filter(r => r.src === 'waitlist');
+    if (!showDone) list = list.filter(r => !r.closed);
+
+    const chip = on => 'border-radius:8px;padding:5px 10px;cursor:pointer;font-family:\'Gaegu\',cursive;font-size:15px;' +
+      (on ? 'background:#1D1A16;border:1px solid #1D1A16;color:#FCFAF4' : 'background:#FCFAF4;border:1px solid #CFC5AB;color:#4A453C');
+    const small = on => 'border-radius:8px;padding:5px 10px;cursor:pointer;font-family:\'Gaegu\',cursive;font-size:15px;' +
+      (on ? 'background:#FBE7E4;border:1px solid #EFC9C4;color:#1D1A16' : 'background:#FCFAF4;border:1px solid #CFC5AB;color:#4A453C');
+    const ghost = 'background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 12px;cursor:pointer;font-family:\'Gaegu\',cursive;font-size:16px;color:#1D1A16';
+
+    const BK = [
+      ['late', 'Late \u2014 already promised', '#B2544E'],
+      ['soon', 'Within the hour', '#B4712A'],
+      ['today', 'Later today', '#8A8271'],
+      ['ahead', 'Tomorrow and after', '#8A8271'],
+      ['closed', 'Closed today', '#4E7A48']
+    ];
+
+    const groups = BK.map(b => {
+      const items = list.filter(r => r.bucket === b[0]).sort((x, y) => x.abs - y.abs);
+      if (!items.length) return null;
+      return {
+        label: b[1],
+        count: items.length + (b[0] === 'closed' ? ' done' : ' waiting'),
+        headStyle: 'position:sticky;top:0;z-index:3;background:#FDF8E9;border-bottom:1px solid #DCD4BF;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px',
+        labelStyle: 'font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:' + b[2],
+        items: items.map(r => {
+          const s = this.SRC[r.src];
+          const on = st.sel === r.id;
+          const bg = on ? '#FDF7F5' : r.closed ? '#F9F7F1' : r.bucket === 'late' ? '#FBF4F1' : '#FDFBF6';
+          return {
+            id: r.id,
+            who: r.who,
+            why: r.why,
+            promised: r.promised && !r.closed,
+            hasTries: r.allTries.length > 0 && !r.closed,
+            tryTag: r.allTries.length + (r.allTries.length === 1 ? ' TRY' : ' TRIES'),
+            dueTime: this.dueLabel(r),
+            dueRel: this.relLabel(r),
+            dueTimeStyle: 'font-family:\'Space Mono\',monospace;font-size:13px;color:' + (r.closed ? '#A79E8B' : r.bucket === 'late' ? '#B2544E' : '#4A453C'),
+            dueRelStyle: 'font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.06em;color:' + (r.closed ? '#4E7A48' : r.bucket === 'late' ? '#B2544E' : '#A79E8B'),
+            nameStyle: 'flex:none;font-family:\'Gaegu\',cursive;font-size:19px;line-height:1.15;color:' + (r.closed ? '#8A8271' : '#1D1A16'),
+            srcTag: s[0],
+            srcStyle: 'flex:none;font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.07em;border-radius:20px;padding:2px 7px;color:' + s[1] + ';background:' + s[2] + ';border:1px solid ' + s[3],
+            whoLabel: r.owner || 'nobody',
+            whoChip: 'flex:none;border-radius:20px;padding:4px 10px;font-family:\'Gaegu\',cursive;font-size:15px;' +
+              (r.owner ? 'background:#EFEBDE;border:1px solid #DCD4BF;color:#4A453C' : 'background:#FBE7E4;border:1px dashed #E0A9A3;color:#B2544E'),
+            style: 'width:100%;display:flex;align-items:center;gap:14px;padding:12px 20px;cursor:pointer;text-align:left;border:none;border-bottom:1px solid #E9E2CE;border-left:3px solid ' +
+              (on ? '#B2544E' : 'transparent') + ';background:' + bg,
+            pick: () => this.setState({ sel: r.id })
+          };
+        })
+      };
+    }).filter(Boolean);
+
+    const loadFor = k => open.filter(r => r.owner === k);
+    const maxLoad = Math.max(1, ...this.PEOPLE.map(p => loadFor(p.key).length), un.length);
+    const RAMP = ['#8E3E39', '#A9524B', '#BE6A62', '#CE8079'];
+
+    const out = {
+      navOn: this.NAVBASE + 'display:flex;justify-content:space-between;align-items:center;background:#FBE7E4;border:1px solid #EFC9C4;color:#1D1A16',
+      navIdle: this.NAVBASE + 'background:transparent;border:1px solid transparent;color:#4A453C',
+      wsOpen: st.wsOpen,
+      toggleWs: () => this.setState(s => ({ wsOpen: !s.wsOpen })),
+      closeWs: () => this.setState({ wsOpen: false }),
+      navSoon: e => this.say(e.currentTarget.dataset.name + ' \u2014 designed in the next pass'),
+      openCount: String(open.length),
+
+      hasLate: late.length > 0,
+      lateBlurb: late.length === 1 ? 'One promise has gone past its time.' : late.length + ' promises have gone past their time.',
+      showLate: () => this.setState({ filter: 'overdue', sel: null, fromLink: '' }),
+
+      stats: [
+        { v: String(open.length), k: 'still waiting', vStyle: 'font-family:\'Gochi Hand\',cursive;font-size:21px;color:#1D1A16' },
+        { v: String(late.length), k: 'late', vStyle: 'font-family:\'Gochi Hand\',cursive;font-size:21px;color:#B2544E' },
+        { v: String(un.length), k: 'nobody\u2019s', vStyle: 'font-family:\'Gochi Hand\',cursive;font-size:21px;color:#B4712A' },
+        { v: String(closedToday.length), k: 'closed today', vStyle: 'font-family:\'Gochi Hand\',cursive;font-size:21px;color:#4E7A48' }
+      ],
+
+      chipAll: chip(filter === 'all'), chipMine: chip(filter === 'mine'), chipUn: chip(filter === 'unassigned'),
+      chipLate: chip(filter === 'overdue'), chipWait: chip(filter === 'waitlist'),
+      chipDone: small(showDone), doneLabel: showDone ? 'Hiding nothing' : 'Show closed',
+      pickFilter: e => this.setState({ filter: e.currentTarget.dataset.f, fromLink: '' }),
+      toggleDone: () => this.setState({ showDone: !showDone }),
+      clearFilter: () => this.setState({ filter: 'all', fromLink: '' }),
+      hasHashNote: !!st.fromLink && st.fromLink !== 'task',
+      hashNote: st.fromLink === 'task' ? '' : st.fromLink,
+
+      newTask: () => this.say('New callback \u2014 pick a contact, then a time'),
+      sweep: () => {
+        if (!un.length) { this.say('Everything already has a name on it'); return; }
+        const a = {};
+        un.forEach((r, i) => { a[r.id] = ['Priya', 'Marta', 'You'][i % 3]; });
+        this.setState(s => ({ assign: Object.assign({}, s.assign, a) }));
+        this.say(un.length + ' shared between Priya, Marta and you');
+      },
+
+      groups: groups,
+      isEmpty: groups.length === 0,
+      emptyTitle: filter === 'overdue' ? 'Nothing is late' : filter === 'unassigned' ? 'Everything has an owner' : 'Nothing here',
+      emptyLine: filter === 'overdue'
+        ? 'Every promise still has time left on it.'
+        : filter === 'unassigned' ? 'Every open callback has somebody\u2019s name on it.' : 'No callback matches that filter right now.',
+
+      load: this.PEOPLE.map((p, i) => {
+        const mine = loadFor(p.key);
+        const l = mine.filter(r => r.diff < 0).length;
+        const next = mine.slice().sort((a, b) => a.abs - b.abs)[0];
+        return {
+          name: p.label + ' \u00b7 ' + p.sub,
+          count: mine.length ? String(mine.length) : '\u2014',
+          countStyle: 'font-family:\'Space Mono\',monospace;font-size:12px;color:' + (l ? '#B2544E' : '#8A8271'),
+          bar: 'height:100%;background:' + RAMP[i] + ';width:' + Math.round(mine.length / maxLoad * 100) + '%',
+          note: !mine.length ? 'Nothing waiting'
+            : (l ? l + ' late \u00b7 ' : '') + 'next ' + this.clock(next.abs) + ' \u00b7 ' + next.who
+        };
+      }).concat([{
+        name: 'Nobody yet',
+        count: un.length ? String(un.length) : '\u2014',
+        countStyle: 'font-family:\'Space Mono\',monospace;font-size:12px;color:' + (un.length ? '#B4712A' : '#8A8271'),
+        bar: 'height:100%;background:#EFC9C4;width:' + Math.round(un.length / maxLoad * 100) + '%',
+        note: un.length ? 'Share them out before the afternoon goes' : 'Nothing unclaimed'
+      }]),
+
+      sources: [
+        { n: String(all.filter(r => r.src === 'call').length), v: 'Robin took a number on a call' },
+        { n: String(all.filter(r => r.src === 'waitlist').length), v: 'Waiting for a slot in the diary' },
+        { n: String(all.filter(r => r.src === 'noshow' || r.src === 'deposit').length), v: 'Booking rules \u2014 no-shows and deposits' },
+        { n: String(all.filter(r => r.src === 'hand').length), v: 'Added at the desk by hand' }
+      ],
+
+      hasToast: !!st.toast, toast: st.toast,
+      ghostBtn: ghost,
+      hasSel: false, noSel: true,
+      selWho: '', selChannel: '', selWhy: '', selSrcTag: '', selSrcStyle: '', selFacts: [], selLinks: [],
+      people: [], assign: () => {}, assignNote: '', dueOptions: [], setDue: () => {},
+      selDueText: '', selDueStyle: '', selTries: [], noTries: false, selOpen: false, selClosed: false, closedLine: '',
+      clearSel: () => this.setState({ sel: null }),
+      markSpoke: () => {}, markNoAnswer: () => {}, markVoicemail: () => {}, handBack: () => {}, dropTask: () => {}, reopen: () => {}
+    };
+
+    const r = all.find(x => x.id === st.sel);
+    if (r) {
+      const s = this.SRC[r.src];
+      out.hasSel = true;
+      out.noSel = false;
+      out.selWho = r.who;
+      out.selChannel = r.ch;
+      out.selWhy = r.why;
+      out.selSrcTag = s[0];
+      out.selSrcStyle = 'align-self:flex-start;font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.07em;border-radius:20px;padding:3px 9px;color:' + s[1] + ';background:' + s[2] + ';border:1px solid ' + s[3];
+      out.selFacts = [
+        { k: 'asked', v: r.made },
+        { k: 'promised', v: r.promised ? 'Robin said somebody would ring today' : 'No promise made out loud' },
+        { k: 'history', v: r.hist },
+        { k: 'due back', v: this.dueLabel(r) + ' \u00b7 ' + this.relLabel(r) }
+      ];
+      out.selLinks = (r.links || []).map(k => this.LINKS[k]).filter(Boolean);
+
+      out.people = this.PEOPLE.concat([{ key: '', label: 'Nobody', sub: '' }]).map(p => ({
+        key: p.key,
+        label: p.label,
+        style: small((r.owner || '') === p.key)
+      }));
+      out.assign = e => {
+        const k = e.currentTarget.dataset.p || '';
+        this.setState(s2 => ({ assign: Object.assign({}, s2.assign, { [r.id]: k || null }) }));
+        this.say(k ? (k === 'Robin' ? 'Robin will ring out from your number' : k + ' has it now') : 'Back in the shared pile');
+      };
+      out.assignNote = r.owner === 'Robin'
+        ? 'Robin dials out, reads the note, and hands over if they want a person.'
+        : r.owner ? 'Shows up in ' + r.owner + '\u2019s list, and on the shared queue.' : 'Nobody owns this yet \u2014 it sits in the shared pile.';
+
+      const D = [
+        { key: '30', label: 'In 30 min', at: this.NOW + 30 },
+        { key: '5pm', label: 'Before 5pm', at: 1020 },
+        { key: 'tom', label: 'Tomorrow 9am', at: 1440 + 540 }
+      ];
+      out.dueOptions = D.map(d => ({ key: d.key, label: d.label, style: small(r.abs === d.at) }));
+      out.setDue = e => {
+        const d = D.find(x => x.key === e.currentTarget.dataset.d);
+        this.setState(s2 => ({ dueOv: Object.assign({}, s2.dueOv, { [r.id]: d.at }) }));
+        this.say('Due ' + this.clock(d.at) + (d.at >= 1440 ? ' tomorrow' : ''));
+      };
+      out.selDueText = this.dueLabel(r) + ' \u00b7 ' + this.relLabel(r);
+      out.selDueStyle = 'font-family:\'Space Mono\',monospace;font-size:12px;color:' + (!r.closed && r.diff < 0 ? '#B2544E' : '#8A8271');
+
+      out.selTries = r.allTries;
+      out.noTries = r.allTries.length === 0;
+      out.selOpen = !r.closed;
+      out.selClosed = r.closed;
+      out.closedLine = r.kind === 'spoke'
+        ? 'Spoke to them at ' + (r.closedAt || 'today') + '. Logged on the contact, and the promise is cleared.'
+        : r.kind === 'voicemail' ? 'Message left at ' + (r.closedAt || 'today') + '. It comes back if they have not rung by tomorrow.'
+        : 'Dropped \u2014 nobody is expecting a call.';
+
+      const close = (kind, msg) => {
+        this.setState(s2 => ({ st: Object.assign({}, s2.st, { [r.id]: kind }) }));
+        this.say(msg);
+      };
+      out.markSpoke = () => close('spoke', r.who + ' \u2014 done, and written on the contact');
+      out.markVoicemail = () => close('voicemail', 'Message left \u2014 back tomorrow if they do not ring');
+      out.dropTask = () => close('dropped', 'Dropped \u2014 taken off the queue');
+      out.reopen = () => {
+        this.setState(s2 => {
+          const n = Object.assign({}, s2.st); delete n[r.id]; return { st: n };
+        });
+        this.say(r.who + ' is back in the queue');
+      };
+      out.markNoAnswer = () => {
+        const n = r.allTries.length + 1;
+        this.setState(s2 => ({
+          extra: Object.assign({}, s2.extra, { [r.id]: (s2.extra[r.id] || []).concat([{ t: this.clock(this.NOW), v: (r.owner || 'Somebody') + ' rang \u2014 no answer' }]) }),
+          dueOv: Object.assign({}, s2.dueOv, { [r.id]: this.NOW + 45 })
+        }));
+        this.say(n === 3 ? 'Third miss \u2014 try a text instead' : 'No answer \u2014 back in the queue for ' + this.clock(this.NOW + 45));
+      };
+      out.handBack = () => {
+        this.setState(s2 => ({ assign: Object.assign({}, s2.assign, { [r.id]: 'Robin' }) }));
+        this.say('Robin will ring ' + r.who + ' and read the note back');
+      };
+    }
+    return out;
+  }
+}
+
+</script>
+</body>
+</html>

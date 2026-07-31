@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&family=Karla:wght@400;500;700&family=Instrument+Serif&family=Public+Sans:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F7F3EB}
+  a{color:#B2544E}
+  a:hover{color:#8E3E39}
+  button{font:inherit}
+  input,textarea{font:inherit}
+  input::placeholder{color:#A79E8B}
+  *{box-sizing:border-box}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(29,26,22,.16);border-radius:6px}
+  @keyframes vxup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes vxfade{from{opacity:0}to{opacity:1}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</helmet>
+
+<div style="{{ themeVars }}">
+<div style="height:100vh;min-width:1200px;display:grid;grid-template-columns:238px minmax(0,1fr);background:var(--page,#F7F3EB);overflow:hidden">
+
+  <aside style="background:var(--sidebar,#FDF8E9);border-right:1px solid var(--line3,#E3DCC6);padding:24px 18px;display:flex;flex-direction:column;gap:24px;overflow-y:auto;overflow-x:hidden">
+    <div style="font-family:'Gochi Hand',cursive;font-size:27px;color:var(--ink,#1D1A16);padding-left:4px">vocalonix</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted,#8A8271);padding-left:4px">Workspace</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:9px 11px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)">
+        <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">&#9662;</span>
+      </div>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:3px">
+      <a href="Vocalonix Dashboard.dc.html" style="{{ navDash }}">Dashboard</a>
+      <a href="Vocalonix Conversations.dc.html" style="{{ navConv }}">Conversations</a>
+      <a href="Vocalonix Contacts.dc.html" style="{{ navContacts }}">Contacts</a>
+      <a href="Vocalonix Bookings.dc.html" style="{{ navBookings }}">Bookings</a>
+      <a href="Vocalonix Callbacks.dc.html" style="{{ navCallbacks }}">Callbacks</a>
+      <a href="Vocalonix Configuration.dc.html" style="{{ navConfig }}">Configuration</a>
+      <a href="Vocalonix Knowledge.dc.html" style="{{ navKnowledge }}">Knowledge</a>
+      <a href="Vocalonix Settings.dc.html#team" style="{{ navIdle }}">Team</a>
+      <a href="Vocalonix Settings.dc.html#account" style="{{ navIdle }}">Account &amp; billing</a>
+      <a href="Vocalonix Settings.dc.html#notifications" style="{{ navIdle }}">Notifications</a>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+
+      <sc-if value="{{ sideLive }}" hint-placeholder-val="{{ true }}">
+        <div style="background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green,#4E7A48);animation:pulse 2.4s ease-in-out infinite"></div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--greenink,#3F6B3A);line-height:1.3">Live &amp; answering</div>
+          </div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--muted,#8A8271)">0113 496 2288 &middot; website button on</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sideOffline }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--accentink,#B2544E)"></div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E);line-height:1.3">Not answering</div>
+          </div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--muted,#8A8271)">Since 08:12 &middot; calls ringing out</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sidePaused }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green,#4E7A48);animation:pulse 2.4s ease-in-out infinite"></div>
+            <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--greenink,#3F6B3A);line-height:1.3">Live &amp; answering</div>
+          </div>
+          <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));line-height:1.3;color:var(--amber,#B4712A)">Dentrix writes paused &middot; 2 waiting</div>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;align-items:center;gap:9px;border-top:1px dashed var(--dash,#D8CFB8);padding-top:13px">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--inset,#EFEBDE);border:1px solid var(--line,#CFC5AB);display:flex;align-items:center;justify-content:center;font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(14px * var(--fsd,1));color:var(--text,#4A453C)">O</div>
+        <div style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Owner One</div>
+      </div>
+    </div>
+  </aside>
+
+  <sc-if value="{{ isConv }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="Conversations - first run" style="display:grid;grid-template-columns:380px minmax(0,1fr);min-height:0;overflow:hidden">
+    <div style="border-right:1px solid var(--line,#CFC5AB);display:flex;flex-direction:column;min-height:0">
+      <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line,#CFC5AB)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+          <div style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(26px * var(--fsd,1));color:var(--ink,#1D1A16)">Conversations</div>
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--muted,#8A8271)">0 TODAY</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:7px 11px;opacity:.6">
+          <svg viewBox="0 0 32 32" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted,#8A8271);flex:none"><circle cx="14" cy="14" r="8.4"></circle><path d="M20.4 20.6l6 6"></path></svg>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted2,#A79E8B)">Search words said</span>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span style="border-radius:8px;padding:5px 10px;background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);color:var(--btntext,#FCFAF4);font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1))">All</span>
+          <span style="border-radius:8px;padding:5px 10px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);color:var(--muted2,#A79E8B);font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1))">Needs you</span>
+          <span style="border-radius:8px;padding:5px 10px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);color:var(--muted2,#A79E8B);font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1))">Booked</span>
+          <span style="border-radius:8px;padding:5px 10px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);color:var(--muted2,#A79E8B);font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1))">Spam</span>
+        </div>
+      </div>
+      <div style="flex:1;min-height:0;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="border:1px dashed var(--dash,#D8CFB8);background:var(--soft,#F9F5EC);border-radius:12px;padding:20px 18px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Nothing here yet</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.35;color:var(--muted,#8A8271)">Every call and website chat lands in this list, newest first, with the transcript beside it.</span>
+        </div>
+        <div style="height:1px;background:var(--line2,#DCD4BF)"></div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">This is what a row will look like</span>
+          <div style="border:1px dashed var(--dash,#D8CFB8);border-radius:11px;padding:12px 13px;display:flex;flex-direction:column;gap:7px;opacity:.55">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <div style="height:11px;width:132px;border-radius:6px;background:var(--inset,#EFEBDE)"></div>
+              <div style="height:9px;width:34px;border-radius:6px;background:var(--inset,#EFEBDE)"></div>
+            </div>
+            <div style="height:10px;width:210px;border-radius:6px;background:var(--inset,#EFEBDE)"></div>
+            <div style="height:15px;width:96px;border-radius:20px;background:var(--inset,#EFEBDE)"></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:10px 16px 92px;border-top:1px solid var(--line,#CFC5AB);background:var(--sidebar,#FDF8E9);display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));color:var(--muted,#8A8271)">Nothing to export yet</span>
+        <span style="background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:9px;padding:6px 11px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));color:var(--muted2,#A79E8B)">Export CSV</span>
+      </div>
+    </div>
+
+    <div style="min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;padding:48px 40px 96px;text-align:center">
+      <span style="width:54px;height:54px;border-radius:50%;background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);display:grid;place-items:center;color:var(--green,#4E7A48)">
+        <svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 13v6M12 9v14M17 5v22M22 11v10M27 15v2"></path></svg>
+      </span>
+      <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(34px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16)">Robin is listening</span>
+      <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271);max-width:400px;text-wrap:pretty">Your number went live 6 minutes ago. The first call that comes in lands here with the transcript and everything Robin did about it.</span>
+      <div style="display:flex;gap:8px;margin-top:2px">
+        <button onClick="{{ testCall }}" style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:10px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Make a test call</button>
+        <a href="Vocalonix Knowledge.dc.html" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:10px 16px;text-decoration:none;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">Check the brief</a>
+      </div>
+      <div style="margin-top:22px;width:min(460px,100%);background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:18px 20px;display:flex;flex-direction:column;gap:12px;text-align:left">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--label,#9A2B2B)">While you wait</span>
+          <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted,#8A8271)">2 OF 3 DONE</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:11px">
+            <span style="width:20px;height:20px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);color:var(--green,#4E7A48)"><svg viewBox="0 0 32 32" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17.4c2 1.8 3.4 3.2 4.9 5.1 2.9-5.8 6.7-10.1 11.8-13.7"></path></svg></span>
+            <span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Calls forwarded from 0113 496 2288</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px">
+            <span style="width:20px;height:20px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);color:var(--green,#4E7A48)"><svg viewBox="0 0 32 32" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17.4c2 1.8 3.4 3.2 4.9 5.1 2.9-5.8 6.7-10.1 11.8-13.7"></path></svg></span>
+            <span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Website button switched on</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px">
+            <span style="width:20px;height:20px;flex:none;border-radius:50%;background:var(--amberbg,#FAEBDC);border:1px solid var(--amberl,#E2B98A)"></span>
+            <span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--text,#4A453C)">Opening hours &mdash; not set, so Robin won't book</span>
+            <a href="Vocalonix Configuration.dc.html" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E)">Set them</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isContacts }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Contacts - empty" style="display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:20px 26px 16px;border-bottom:1px solid var(--line,#CFC5AB);display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(30px * var(--fsd,1));color:var(--ink,#1D1A16)">Contacts</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Nobody yet &middot; 0 people</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onClick="{{ importCsv }}" style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Import a CSV</button>
+          <button onClick="{{ addPerson }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">Add someone</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;width:280px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:10px;padding:7px 11px;opacity:.6">
+          <svg viewBox="0 0 32 32" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted,#8A8271);flex:none"><circle cx="14" cy="14" r="8.4"></circle><path d="M20.4 20.6l6 6"></path></svg>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted2,#A79E8B)">Search a name or number</span>
+        </div>
+        <div style="display:flex;gap:5px">
+          <span style="border-radius:8px;padding:5px 10px;background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);color:var(--btntext,#FCFAF4);font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1))">Everyone</span>
+          <span style="border-radius:8px;padding:5px 10px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);color:var(--muted2,#A79E8B);font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1))">Patients</span>
+          <span style="border-radius:8px;padding:5px 10px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);color:var(--muted2,#A79E8B);font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1))">New enquiries</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow-y:auto;padding:22px 26px 92px;display:flex;flex-direction:column;gap:18px">
+      <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));overflow:hidden">
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 1.6fr 0.8fr;gap:14px;padding:11px 18px;border-bottom:1px solid var(--line2,#DCD4BF);background:var(--sidebar,#FDF8E9)">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Name</span>
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Number</span>
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Last wanted</span>
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271);text-align:right">Calls</span>
+        </div>
+        <div style="padding:52px 26px 56px;display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center">
+          <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(26px * var(--fsd,1));color:var(--ink,#1D1A16)">No names in here yet</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271);max-width:400px;text-wrap:pretty">Robin adds a person the moment a caller gives a name or a number &mdash; you don't have to build this list. Bring your existing one over if you'd rather not wait.</span>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button onClick="{{ importCsv }}" style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 15px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Import a CSV</button>
+            <button onClick="{{ addPerson }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:9px 15px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Add someone by hand</button>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
+        <div style="min-width:0;display:flex;flex-direction:column;gap:4px">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--label,#9A2B2B)">A CSV takes about a minute</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--text,#4A453C)">Two columns are enough: a name and a phone number. Robin then greets returning patients by name instead of asking twice.</span>
+        </div>
+        <button onClick="{{ template }}" style="flex:none;background:transparent;border:none;padding:0;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E);text-decoration:underline;text-underline-offset:3px">Download the template</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isDiary }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Bookings - empty diary" style="display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:20px 26px 14px;border-bottom:1px solid var(--line,#CFC5AB);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;align-items:baseline;gap:14px">
+        <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(30px * var(--fsd,1));color:var(--ink,#1D1A16)">Bookings</span>
+        <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--muted,#8A8271)">Thursday 30 July &middot; nothing booked</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:30px;height:30px;display:grid;place-items:center;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:9px;font-family:'Space Mono',monospace;font-size:12px;color:var(--muted,#8A8271)">&#8592;</span>
+        <span style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:9px;padding:6px 12px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Today</span>
+        <span style="width:30px;height:30px;display:grid;place-items:center;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:9px;font-family:'Space Mono',monospace;font-size:12px;color:var(--muted,#8A8271)">&#8594;</span>
+        <button onClick="{{ addBooking }}" style="margin-left:6px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:8px 14px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Add one yourself</button>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 322px;overflow:hidden">
+      <div style="position:relative;min-height:0;overflow:auto">
+        <div style="display:grid;grid-template-columns:64px repeat(4,minmax(0,1fr));min-width:700px">
+          <div style="border-bottom:1px solid var(--line2,#DCD4BF);background:var(--sidebar,#FDF8E9)"></div>
+          <div style="border-bottom:1px solid var(--line2,#DCD4BF);border-left:1px solid var(--line2,#DCD4BF);background:var(--sidebar,#FDF8E9);padding:9px 12px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Dr. Reyes</div>
+          <div style="border-bottom:1px solid var(--line2,#DCD4BF);border-left:1px solid var(--line2,#DCD4BF);background:var(--sidebar,#FDF8E9);padding:9px 12px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Dr. Odell</div>
+          <div style="border-bottom:1px solid var(--line2,#DCD4BF);border-left:1px solid var(--line2,#DCD4BF);background:var(--sidebar,#FDF8E9);padding:9px 12px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Hygienist</div>
+          <div style="border-bottom:1px solid var(--line2,#DCD4BF);border-left:1px solid var(--line2,#DCD4BF);background:var(--sidebar,#FDF8E9);padding:9px 12px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--text,#4A453C)">Room 3</div>
+          <sc-for list="{{ hours }}" as="h" hint-placeholder-count="8">
+            <div style="height:72px;border-bottom:1px dashed var(--dash,#D8CFB8);padding:5px 9px 0;text-align:right;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted2,#A79E8B)">{{ h.label }}</div>
+            <div style="height:72px;border-bottom:1px dashed var(--dash,#D8CFB8);border-left:1px solid var(--line2,#DCD4BF)"></div>
+            <div style="height:72px;border-bottom:1px dashed var(--dash,#D8CFB8);border-left:1px solid var(--line2,#DCD4BF)"></div>
+            <div style="height:72px;border-bottom:1px dashed var(--dash,#D8CFB8);border-left:1px solid var(--line2,#DCD4BF)"></div>
+            <div style="height:72px;border-bottom:1px dashed var(--dash,#D8CFB8);border-left:1px solid var(--line2,#DCD4BF)"></div>
+          </sc-for>
+        </div>
+        <div style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;padding:40px">
+          <div style="pointer-events:auto;width:min(400px,100%);background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:14px;box-shadow:0 18px 44px var(--sh2,rgba(29,26,22,0.12));padding:24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+            <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(26px * var(--fsd,1));color:var(--ink,#1D1A16)">The day is wide open</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271);text-wrap:pretty">Nothing is booked on Thursday. Robin fills this in as calls come in &mdash; it only offers the slots inside your hours, so check those first.</span>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <a href="Vocalonix Configuration.dc.html" style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 15px;text-decoration:none;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Check my hours</a>
+              <button onClick="{{ addBooking }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:9px 15px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--ink,#1D1A16)">Add one yourself</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-left:1px solid var(--line,#CFC5AB);background:var(--sidebar,#FDF8E9);padding:20px 20px 76px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;min-height:0">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Thursday at a glance</span>
+          <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(38px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16)">0</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">in the diary &middot; 8 hours free</span>
+        </div>
+        <div style="height:1px;background:var(--line2,#DCD4BF)"></div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8A8271)">Nothing to show here</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--muted,#8A8271)">Pick a booking in the diary and its details, the caller and what Robin promised will show in this panel.</span>
+        </div>
+        <div style="margin-top:auto;background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:5px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--green,#4E7A48)">Diary source</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Vocalonix is the diary. Dentrix mirrors it every 5 minutes.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isOffline }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Dashboard - agent offline" style="min-height:0;overflow-y:auto;padding:26px 30px 96px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Thursday 30 July &middot; 08:26</span>
+        <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(34px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16)">Robin isn't answering</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onClick="{{ retry }}" style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Try again now</button>
+        <button onClick="{{ divert }}" style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">Send calls to the desk</button>
+      </div>
+    </div>
+
+    <div style="background:var(--accentbg2,#FDF7F5);border:1px solid var(--accentline,#E0A9A3);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+        <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accentink,#B2544E);background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);border-radius:20px;padding:4px 9px">Off the air 14 min</span>
+        <span style="flex:1;min-width:260px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.35;color:var(--text,#4A453C)">Your phone line stopped handing calls to Robin at 08:12. Callers hear ringing and then voicemail.</span>
+      </div>
+      <div style="height:1px;background:var(--accenthair,#F3E1DD)"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted,#8A8271)">Missed since 08:12</span>
+          <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(32px * var(--fsd,1));line-height:1.05;color:var(--accentink,#B2544E)">3 calls</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Numbers kept &mdash; you can ring them back</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted,#8A8271)">Website button</span>
+          <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(32px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16)">Hidden</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Pulled itself down rather than fail on a visitor</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted,#8A8271)">Diary &amp; contacts</span>
+          <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(32px * var(--fsd,1));line-height:1.05;color:var(--green,#4E7A48)">Safe</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Everything already booked is untouched</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:18px;align-items:start">
+      <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+        <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">What we're doing about it</span>
+        <div style="display:flex;align-items:center;gap:11px;background:var(--inset2,#F2EEE1);border:1px solid var(--line,#CFC5AB);border-radius:12px;padding:12px 14px">
+          <span style="width:15px;height:15px;flex:none;border-radius:50%;border:2px solid var(--line,#CFC5AB);border-top-color:var(--accentink,#B2544E);animation:spin .8s linear infinite"></span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.35;color:var(--text,#4A453C)">Reconnecting every 30 seconds. Last try 08:25 &mdash; the phone network turned us away again.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <div style="display:flex;align-items:baseline;gap:14px;padding:10px 0;border-bottom:1px dashed var(--dash,#D8CFB8)">
+            <span style="width:52px;flex:none;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">08:12</span>
+            <span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Your number rejected our answer &mdash; error 503 from the carrier</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:14px;padding:10px 0;border-bottom:1px dashed var(--dash,#D8CFB8)">
+            <span style="width:52px;flex:none;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">08:13</span>
+            <span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Website button hidden, so nobody starts a chat that can't be answered</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:14px;padding:10px 0">
+            <span style="width:52px;flex:none;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">08:14</span>
+            <span style="flex:1;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.3;color:var(--text,#4A453C)">Texted Owner One. Nobody else on the team is set to be told.</span>
+          </div>
+        </div>
+        <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));line-height:1.35;color:var(--muted,#8A8271)">This one is on us, not on anything you changed. You are not billed for minutes while Robin is down.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div style="background:var(--card,#FCFAF4);border:1px solid var(--accentline,#E0A9A3);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+          <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Who rang while it was down</span>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--accentbg2,#FDF7F5);border:1px solid var(--accentl,#EFC9C4);border-radius:11px;padding:10px 13px">
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">+44 7700 900 482</span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">08:15 &middot; RANG 22s</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--accentbg2,#FDF7F5);border:1px solid var(--accentl,#EFC9C4);border-radius:11px;padding:10px 13px">
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">+44 113 496 2210</span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">08:19 &middot; VOICEMAIL</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--accentbg2,#FDF7F5);border:1px solid var(--accentl,#EFC9C4);border-radius:11px;padding:10px 13px">
+              <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">+44 7822 664 120</span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">08:24 &middot; RANG 9s</span>
+            </div>
+          </div>
+          <a href="Vocalonix Callbacks.dc.html" style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E)">Turn these into callbacks</a>
+        </div>
+        <div style="background:var(--soft,#F9F5EC);border:1px dashed var(--dash,#D8CFB8);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:7px">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--label,#9A2B2B)">The rest of the week</span>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.4;color:var(--text,#4A453C)">Numbers are hidden while Robin is down &mdash; a half-morning of missed calls would read as a bad week, and it isn't one.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isIntegration }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Configuration - integration disconnected" style="min-height:0;overflow-y:auto;padding:26px 30px 96px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--label,#9A2B2B)">Configuration &middot; what Robin is plugged into</span>
+        <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(34px * var(--fsd,1));line-height:1.05;color:var(--ink,#1D1A16)">Dentrix stopped letting us in</span>
+      </div>
+      <button onClick="{{ reconnect }}" style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 16px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Reconnect Dentrix</button>
+    </div>
+
+    <div style="background:var(--card,#FCFAF4);border:1px solid var(--accentline,#E0A9A3);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:20px 22px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="min-width:0;display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Dentrix &middot; practice records</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--accentink,#B2544E);background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);border-radius:20px;padding:3px 8px">DISCONNECTED 14 MIN</span>
+          </div>
+          <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));line-height:1.35;color:var(--text,#4A453C);max-width:620px;text-wrap:pretty">Dentrix refused our sign-in at 08:12 &mdash; usually the password changed or the practice licence was moved to another machine. Nothing on your side is broken.</span>
+        </div>
+        <button onClick="{{ showError }}" style="flex:none;background:transparent;border:none;padding:0;cursor:pointer;text-align:left;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E);text-decoration:underline;text-underline-offset:3px">See the error we got</button>
+      </div>
+
+      <div style="background:var(--amberbg,#FAEBDC);border:1px solid var(--amberl,#E2B98A);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:11px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber,#B4712A);background:var(--amberbg2,#FCF4EA);border:1px solid var(--amberl,#E2B98A);border-radius:20px;padding:4px 9px">2 waiting to write</span>
+          <span style="flex:1;min-width:240px;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));line-height:1.35;color:var(--text,#4A453C)">These are booked in the Vocalonix diary and held for Dentrix. They go across on their own the moment we're back in.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card,#FCFAF4);border:1px solid var(--line2,#DCD4BF);border-radius:11px;padding:10px 13px">
+            <span style="min-width:0;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">Sam Whitfield &middot; Sat 9:20 &middot; Dr. Reyes</span>
+            <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">NEW PATIENT &middot; QUEUED 08:14</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card,#FCFAF4);border:1px solid var(--line2,#DCD4BF);border-radius:11px;padding:10px 13px">
+            <span style="min-width:0;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));color:var(--ink,#1D1A16)">Priya Raman &middot; Fri 16:30 &middot; Hygienist</span>
+            <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted,#8A8271)">MOVED SLOT &middot; QUEUED 08:21</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+        <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Robin is still answering and still booking &mdash; it just can't write into Dentrix.</span>
+        <div style="display:flex;gap:8px">
+          <button onClick="{{ writeByHand }}" style="background:var(--accentbg2,#FDF7F5);border:1px solid var(--accentl,#EFC9C4);border-radius:11px;padding:9px 15px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--accentink,#B2544E)">I'll type them in myself</button>
+          <button onClick="{{ reconnect }}" style="background:var(--btnbg,#1D1A16);border:1px solid var(--btnbg,#1D1A16);border-radius:11px;padding:9px 15px;cursor:pointer;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--btntext,#FCFAF4)">Reconnect Dentrix</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:14px;box-shadow:2px 3px 0 var(--sh0,rgba(29,26,22,0.05));padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-family:var(--disp,'Gochi Hand',cursive);font-weight:var(--dispw,400);font-size:calc(22px * var(--fsd,1));color:var(--ink,#1D1A16)">Everything else</span>
+      <div style="display:flex;flex-direction:column;gap:1px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px dashed var(--dash,#D8CFB8)">
+          <div style="min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)">Text messages</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Confirmations and reminders still going out</span>
+          </div>
+          <span style="flex:none;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:20px;padding:3px 8px">CONNECTED</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px dashed var(--dash,#D8CFB8)">
+          <div style="min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)">Google Calendar</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Mirrors the diary for the two dentists</span>
+          </div>
+          <span style="flex:none;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--green,#4E7A48);background:var(--greenbg,#E8F0E0);border:1px solid var(--greenl,#A9C79F);border-radius:20px;padding:3px 8px">CONNECTED</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0">
+          <div style="min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));color:var(--ink,#1D1A16)">Card payments</span>
+            <span style="font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(16px * var(--fsb,1));color:var(--muted,#8A8271)">Never set up &mdash; Robin takes no payment on the phone</span>
+          </div>
+          <span style="flex:none;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--muted,#8A8271);background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:20px;padding:3px 8px">NOT SET UP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <div style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:8px;background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);border-radius:13px;box-shadow:0 18px 44px var(--sh2,rgba(29,26,22,0.12));padding:6px 10px">
+    <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8A8271)">State</span>
+    <div style="display:flex;gap:4px;background:var(--inset,#EFEBDE);border:1px solid var(--line2,#DCD4BF);border-radius:10px;padding:3px">
+      <button data-v="conv" onClick="{{ pick }}" style="{{ segConv }}">No conversations</button>
+      <button data-v="contacts" onClick="{{ pick }}" style="{{ segContacts }}">No contacts</button>
+      <button data-v="diary" onClick="{{ pick }}" style="{{ segDiary }}">Empty diary</button>
+      <button data-v="offline" onClick="{{ pick }}" style="{{ segOffline }}">Agent offline</button>
+      <button data-v="integration" onClick="{{ pick }}" style="{{ segIntegration }}">Integration down</button>
+    </div>
+  </div>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:74px;transform:translateX(-50%);z-index:60;background:var(--btnbg,#1D1A16);color:var(--btntext,#FCFAF4);border-radius:12px;padding:11px 18px;box-shadow:0 12px 30px var(--sh3,rgba(29,26,22,0.25));font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(17px * var(--fsb,1));animation:vxup .18s ease-out">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;conv&quot;,&quot;contacts&quot;,&quot;diary&quot;,&quot;offline&quot;,&quot;integration&quot;],&quot;default&quot;:&quot;conv&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;warm&quot;,&quot;night&quot;,&quot;ink&quot;,&quot;studio&quot;],&quot;default&quot;:&quot;warm&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;typeset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;hand&quot;,&quot;plain&quot;,&quot;editorial&quot;,&quot;grotesk&quot;],&quot;default&quot;:&quot;hand&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;}}">
+class Component extends DCLogic {
+  state = { view: null, toast: '' };
+
+  NAVBASE = "border-radius:10px;padding:8px 11px;cursor:pointer;text-align:left;text-decoration:none;display:block;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(18px * var(--fsb,1));";
+
+  componentWillUnmount(){ if (this._to) clearTimeout(this._to); }
+
+  componentDidUpdate(prev){ if (prev.state !== this.props.state) this.setState({ view: null }); }
+
+  palette(){
+    const P = {
+      warm:{ page:'#F7F3EB',card:'#FCFAF4',sidebar:'#FDF8E9',inset:'#EFEBDE',inset2:'#F2EEE1',soft:'#F9F5EC',line:'#CFC5AB',line2:'#DCD4BF',line3:'#E3DCC6',dash:'#D8CFB8',ink:'#1D1A16',text:'#4A453C',muted:'#8A8271',muted2:'#A79E8B',label:'#9A2B2B',accent:'#E9A8A3',accentl:'#EFC9C4',accentline:'#E0A9A3',accentbg:'#FBE7E4',accentbg2:'#FDF7F5',accenthair:'#F3E1DD',accentink:'#B2544E',green:'#4E7A48',greenl:'#A9C79F',greenbg:'#E8F0E0',greenink:'#3F6B3A',amber:'#B4712A',amberl:'#E2B98A',amberbg:'#FAEBDC',amberbg2:'#FCF4EA',btntext:'#FCFAF4',btnbg:'#1D1A16',sh0:'rgba(29,26,22,0.05)',sh2:'rgba(29,26,22,0.12)',sh3:'rgba(29,26,22,0.25)' },
+      night:{ page:'#16130F',card:'#201C17',sidebar:'#1B1713',inset:'#2A241E',inset2:'#262119',soft:'#1E1A15',line:'#3A322A',line2:'#453B31',line3:'#332B24',dash:'#3F362D',ink:'#F3EBDC',text:'#D6CCBA',muted:'#9A8F7C',muted2:'#7E7462',label:'#E0908A',accent:'#E9A8A3',accentl:'#6E4A46',accentline:'#7E5450',accentbg:'#382422',accentbg2:'#241A18',accenthair:'#4A312D',accentink:'#F0B4AE',green:'#8FC183',greenl:'#4E6B47',greenbg:'#24301F',greenink:'#A6D19A',amber:'#E0A567',amberl:'#6B5334',amberbg:'#332616',amberbg2:'#2A2114',btntext:'#1D1A16',btnbg:'#E9A8A3',sh0:'rgba(0,0,0,0.35)',sh2:'rgba(0,0,0,0.5)',sh3:'rgba(0,0,0,0.55)' },
+      ink:{ page:'#F6F2E9',card:'#FFFDF8',sidebar:'#F1ECDF',inset:'#EDE8DA',inset2:'#F0EBDE',soft:'#F3EFE4',line:'#D5CCB6',line2:'#E0D8C4',line3:'#DFD7C3',dash:'#D5CCB6',ink:'#201C15',text:'#4E4739',muted:'#8B8471',muted2:'#A69E88',label:'#8E3A2F',accent:'#C9705F',accentl:'#E7C0B4',accentline:'#D08E7E',accentbg:'#F7E6DF',accentbg2:'#FCF3EF',accenthair:'#EDDBD3',accentink:'#A34E3F',green:'#4A6E44',greenl:'#A8C29C',greenbg:'#E9EFDF',greenink:'#3D5E39',amber:'#A9701F',amberl:'#DDBB84',amberbg:'#F7ECD8',amberbg2:'#FBF4E7',btntext:'#FBF8F0',btnbg:'#201C15',sh0:'rgba(32,28,21,0.05)',sh2:'rgba(32,28,21,0.12)',sh3:'rgba(32,28,21,0.25)' },
+      studio:{ page:'#F5F5F3',card:'#FFFFFF',sidebar:'#FBFBFA',inset:'#EFEFEC',inset2:'#F2F2EF',soft:'#F8F8F6',line:'#E1E0DB',line2:'#E8E7E2',line3:'#E8E7E2',dash:'#DBDAD4',ink:'#14141A',text:'#4A4A52',muted:'#85858E',muted2:'#A3A3AA',label:'#B4322C',accent:'#E2564C',accentl:'#F2C4BF',accentline:'#E88A82',accentbg:'#FDECEA',accentbg2:'#FFF7F6',accenthair:'#F7DDDA',accentink:'#C33E36',green:'#2F7D4F',greenl:'#A9D3B8',greenbg:'#E9F5EE',greenink:'#256B42',amber:'#B26B12',amberl:'#EAC98F',amberbg:'#FCF3E3',amberbg2:'#FFF9F0',btntext:'#FFFFFF',btnbg:'#14141A',sh0:'rgba(20,20,26,0.04)',sh2:'rgba(20,20,26,0.10)',sh3:'rgba(20,20,26,0.22)' }
+    };
+    return P[this.props.theme] || P.warm;
+  }
+
+  type(){
+    const TS = {
+      hand:{ disp:"'Gochi Hand',cursive", dispw:'400', fontb:"'Gaegu',cursive", bodyw:'400', fsd:'1', fsb:'1' },
+      plain:{ disp:"'Gochi Hand',cursive", dispw:'400', fontb:"'Karla',sans-serif", bodyw:'400', fsd:'1', fsb:'0.86' },
+      editorial:{ disp:"'Instrument Serif',serif", dispw:'400', fontb:"'Public Sans',sans-serif", bodyw:'400', fsd:'0.95', fsb:'0.83' },
+      grotesk:{ disp:"'Bricolage Grotesque',sans-serif", dispw:'600', fontb:"'Public Sans',sans-serif", bodyw:'400', fsd:'0.86', fsb:'0.83' }
+    };
+    return TS[this.props.typeset] || TS.hand;
+  }
+
+  vars(){
+    const p = this.palette(), t = this.type(), v = { display:'contents' };
+    Object.keys(p).forEach(k => { v['--' + k] = p[k]; });
+    Object.keys(t).forEach(k => { v['--' + k] = t[k]; });
+    return v;
+  }
+
+  seg(active){
+    const b = "border-radius:8px;padding:5px 11px;cursor:pointer;white-space:nowrap;font-family:var(--fontb,'Gaegu',cursive);font-weight:var(--bodyw,400);font-size:calc(15px * var(--fsb,1));";
+    return active
+      ? b + 'background:var(--card,#FCFAF4);border:1px solid var(--line,#CFC5AB);color:var(--ink,#1D1A16)'
+      : b + 'background:transparent;border:1px solid transparent;color:var(--muted,#8A8271)';
+  }
+
+  nav(active){
+    return this.NAVBASE + (active
+      ? 'background:var(--accentbg,#FBE7E4);border:1px solid var(--accentl,#EFC9C4);color:var(--ink,#1D1A16)'
+      : 'background:transparent;border:1px solid transparent;color:var(--text,#4A453C)');
+  }
+
+  say(msg){
+    if (this._to) clearTimeout(this._to);
+    this.setState({ toast: msg });
+    this._to = setTimeout(() => this.setState({ toast:'' }), 2600);
+  }
+
+  renderVals(){
+    const v = this.state.view || this.props.state || 'conv';
+    const hours = [];
+    for (let h = 9; h <= 16; h++) hours.push({ label: h + ':00' });
+
+    return {
+      themeVars: this.vars(),
+      hours,
+      isConv: v === 'conv', isContacts: v === 'contacts', isDiary: v === 'diary',
+      isOffline: v === 'offline', isIntegration: v === 'integration',
+      sideLive: v === 'conv' || v === 'contacts' || v === 'diary',
+      sideOffline: v === 'offline',
+      sidePaused: v === 'integration',
+      navIdle: this.nav(false),
+      navDash: this.nav(v === 'offline'),
+      navConv: this.nav(v === 'conv'),
+      navContacts: this.nav(v === 'contacts'),
+      navBookings: this.nav(v === 'diary'),
+      navCallbacks: this.nav(false),
+      navConfig: this.nav(v === 'integration'),
+      navKnowledge: this.nav(false),
+      segConv: this.seg(v === 'conv'), segContacts: this.seg(v === 'contacts'),
+      segDiary: this.seg(v === 'diary'), segOffline: this.seg(v === 'offline'),
+      segIntegration: this.seg(v === 'integration'),
+      pick: e => this.setState({ view: e.currentTarget.dataset.v }),
+      hasToast: !!this.state.toast,
+      toast: this.state.toast,
+      testCall: () => this.say('Ringing your mobile so you can hear Robin\u2026'),
+      importCsv: () => this.say('Pick a CSV \u2014 name and number columns'),
+      addPerson: () => this.say('New contact form opens here'),
+      addBooking: () => this.say('Drag on the diary to place a booking'),
+      retry: () => this.say('Trying the phone line again\u2026'),
+      divert: () => this.say('Calls now ring the front desk directly'),
+      reconnect: () => this.say('Opening the Dentrix sign-in\u2026'),
+      writeByHand: () => this.say('Both bookings copied to your clipboard'),
+      template: () => this.say('contacts-template.csv downloaded'),
+      showError: () => this.say('Dentrix: 401 invalid_grant \u2014 08:12:04')
+    };
+  }
+}
+</script>
+</body>
+</html>

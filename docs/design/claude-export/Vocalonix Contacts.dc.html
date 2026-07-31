@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F7F3EB}
+  a{color:#B2544E}
+  a:hover{color:#8E3E39}
+  button{font:inherit}
+  input,textarea{font:inherit}
+  input::placeholder,textarea::placeholder{color:#A79E8B}
+  *{box-sizing:border-box}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(29,26,22,.16);border-radius:6px}
+  @keyframes vxup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div data-screen-label="Contacts" style="height:100vh;min-width:1240px;display:grid;grid-template-columns:238px 372px minmax(0,1fr);background:#F7F3EB;overflow:hidden">
+
+  <aside style="background:#FDF8E9;border-right:1px solid #E3DCC6;padding:24px 18px;display:flex;flex-direction:column;gap:24px;overflow-y:auto;overflow-x:hidden">
+    <div style="font-family:'Gochi Hand',cursive;font-size:27px;color:#1D1A16;padding-left:4px">vocalonix</div>
+    <div style="display:flex;flex-direction:column;gap:7px;position:relative">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8A8271;padding-left:4px">Workspace</div>
+      <button onClick="{{ toggleWs }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 11px;cursor:pointer;text-align:left;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16">
+        <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">&#9662;</span>
+      </button>
+      <sc-if value="{{ wsOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:100%;left:0;right:0;margin-top:5px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;box-shadow:2px 4px 0 rgba(29,26,22,0.08);padding:6px;z-index:20;display:flex;flex-direction:column;gap:2px">
+          <button onClick="{{ closeWs }}" style="display:flex;justify-content:space-between;align-items:center;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:8px;padding:7px 9px;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;text-align:left">
+            <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#4E7A48">LIVE</span>
+          </button>
+          <button onClick="{{ closeWs }}" style="display:flex;justify-content:space-between;align-items:center;background:transparent;border:1px solid transparent;border-radius:8px;padding:7px 9px;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#4A453C;text-align:left">
+            <span>Northside Vets</span><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#B4712A">DRAFT</span>
+          </button>
+        </div>
+      </sc-if>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:3px">
+      <a href="Vocalonix Dashboard.dc.html" style="{{ navIdle }}">Dashboard</a>
+      <a href="Vocalonix Conversations.dc.html" style="{{ navIdle }}">Conversations</a>
+      <button style="{{ navOn }}"><span>Contacts</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:#B2544E">{{ totalCount }}</span></button>
+      <a href="Vocalonix Bookings.dc.html" style="{{ navIdle }}">Bookings</a>
+      <a href="Vocalonix Callbacks.dc.html" style="{{ navIdle }}">Callbacks</a>
+      <a href="Vocalonix Configuration.dc.html" style="{{ navIdle }}">Configuration</a>
+      <a href="Vocalonix Knowledge.dc.html" style="{{ navIdle }}">Knowledge</a>
+      <a href="Vocalonix Settings.dc.html#team" style="{{ navIdle }}">Team</a>
+      <a href="Vocalonix Settings.dc.html#account" style="{{ navIdle }}">Account &amp; billing</a>
+      <a href="Vocalonix Settings.dc.html#notifications" style="{{ navIdle }}">Notifications</a>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <sc-if value="{{ hasConfirmQueue }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#FAEBDC;border:1px solid #E2B98A;border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:9px">
+          <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#B4712A">Confirm these</div>
+          <div style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">{{ confirmBlurb }}</div>
+          <button onClick="{{ showConfirmQueue }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:10px;padding:8px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Review</button>
+        </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:9px;border-top:1px dashed #D8CFB8;padding-top:13px">
+        <div style="width:26px;height:26px;border-radius:50%;background:#EFEBDE;border:1px solid #CFC5AB;display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand',cursive;font-size:14px;color:#4A453C">O</div>
+        <div style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Owner One</div>
+      </div>
+    </div>
+  </aside>
+
+  <div style="border-right:1px solid #CFC5AB;display:flex;flex-direction:column;background:#F7F3EB;min-height:0">
+    <div style="padding:20px 16px 12px;display:flex;flex-direction:column;gap:11px;border-bottom:1px solid #CFC5AB">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+        <div style="font-family:'Gochi Hand',cursive;font-size:28px;color:#1D1A16">Contacts</div>
+        <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#8A8271">{{ countLabel }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 12px">
+        <svg viewBox="0 0 32 32" width="14" height="14" fill="none" stroke="#8A8271" stroke-width="2" stroke-linecap="round"><circle cx="14" cy="14" r="8.4"></circle><path d="M20.4 20.6l6 6"></path></svg>
+        <input value="{{ query }}" onInput="{{ onQuery }}" placeholder="Name, number or email" style="flex:1;min-width:0;background:transparent;border:none;outline:none;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16" />
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button data-f="all" onClick="{{ pickFilter }}" style="{{ chipAll }}">Everyone</button>
+        <button data-f="confirm" onClick="{{ pickFilter }}" style="{{ chipConfirm }}">Confirm {{ confirmCount }}</button>
+        <button data-f="unnamed" onClick="{{ pickFilter }}" style="{{ chipUnnamed }}">No name {{ unnamedCount }}</button>
+        <button data-f="booked" onClick="{{ pickFilter }}" style="{{ chipBooked }}">Booked in</button>
+        <button data-f="flag" onClick="{{ pickFilter }}" style="{{ chipFlag }}">Flagged</button>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow:auto;min-height:0">
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+        <button data-id="{{ r.id }}" onClick="{{ r.pick }}" style="{{ r.style }}">
+          <span style="{{ r.avatar }}">{{ r.initials }}</span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left">
+            <span style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <span style="{{ r.nameStyle }}">{{ r.name }}</span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B;flex:none">{{ r.when }}</span>
+            </span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#8A8271;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.sub }}</span>
+            <sc-if value="{{ r.badge }}" hint-placeholder-val="{{ true }}">
+              <span style="{{ r.badgeStyle }}">{{ r.badge }}</span>
+            </sc-if>
+          </span>
+        </button>
+      </sc-for>
+      <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:34px 22px;display:flex;flex-direction:column;gap:7px;align-items:center;text-align:center">
+          <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Nobody here</span>
+          <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#8A8271">Nothing matches that. Try a number, or clear the filter.</span>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;background:#F7F3EB;min-height:0;overflow:auto">
+
+    <div style="padding:22px 26px 18px;border-bottom:1px solid #CFC5AB;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px">
+        <div style="display:flex;gap:14px;align-items:flex-start;min-width:0">
+          <span style="width:44px;height:44px;flex:none;border-radius:50%;background:#EFEBDE;border:1px solid #CFC5AB;display:grid;place-items:center;font-family:'Gochi Hand',cursive;font-size:19px;color:#4A453C">{{ selInitials }}</span>
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:0">
+            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+              <span style="font-family:'Gochi Hand',cursive;font-size:31px;line-height:1.1;color:#1D1A16">{{ selName }}</span>
+              <span style="{{ selSourceStyle }}">{{ selSource }}</span>
+            </div>
+            <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">{{ selSummary }}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;flex:none">
+          <button data-a="call" onClick="{{ act }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:10px;padding:9px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Call</button>
+          <button data-a="book" onClick="{{ act }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Book</button>
+          <button data-a="edit" onClick="{{ act }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Edit</button>
+        </div>
+      </div>
+
+      <sc-if value="{{ selNeedsConfirm }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#FAEBDC;border:1px solid #E2B98A;border-radius:12px;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:16px;animation:vxup .2s ease">
+          <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#4A453C">{{ confirmLine }}</span>
+          <div style="display:flex;gap:7px;flex:none">
+            <button onClick="{{ confirmName }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:9px;padding:7px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Spelling is right</button>
+            <button data-a="fixname" onClick="{{ act }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:7px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Fix it</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ selHasMerge }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FDF7F5;border:1px solid #E0A9A3;border-radius:12px;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#4A453C">{{ mergeLine }}</span>
+          <div style="display:flex;gap:7px;flex:none">
+            <button onClick="{{ doMerge }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:9px;padding:7px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Same person</button>
+            <button onClick="{{ dropMerge }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:7px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Not them</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <sc-for list="{{ selStats }}" as="s" hint-placeholder-count="4">
+          <div style="flex:1;min-width:118px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:10px 13px;display:flex;flex-direction:column;gap:1px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:23px;color:#1D1A16">{{ s.v }}</span>
+            <span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">{{ s.k }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 296px;gap:0">
+
+      <div style="padding:20px 26px 30px;display:flex;flex-direction:column;gap:14px;min-width:0">
+        <sc-if value="{{ selHasNext }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#FCFAF4;border:1px solid #A9C79F;border-radius:13px;padding:15px 17px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#4E7A48">Next appointment</span>
+              <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">{{ nextWhen }}</span>
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">{{ nextWhat }}</span>
+            </div>
+            <div style="display:flex;gap:7px;flex:none">
+              <button data-a="move" onClick="{{ act }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Move</button>
+              <button data-a="cancel" onClick="{{ act }}" style="background:#FCFAF4;border:1px solid #E0A9A3;border-radius:9px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E">Cancel</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Calls</span>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;color:#A79E8B">{{ callsLabel }}</span>
+        </div>
+
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+          <sc-for list="{{ calls }}" as="c" hint-placeholder-count="3">
+            <a href="Vocalonix Conversations.dc.html" target="_blank" rel="noopener" style="{{ c.style }}">
+              <span style="{{ c.dot }}"></span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271;width:52px;flex:none">{{ c.when }}</span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.25;color:#1D1A16">{{ c.title }}</span>
+                <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#8A8271;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.body }}</span>
+              </span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271;flex:none">{{ c.len }}</span>
+              <span style="font-family:'Space Mono',monospace;font-size:12px;color:#B2544E;flex:none">&nearr;</span>
+            </a>
+          </sc-for>
+          <sc-if value="{{ noCalls }}" hint-placeholder-val="{{ false }}">
+            <span style="padding:16px;font-family:'Gaegu',cursive;font-size:17px;color:#A79E8B">No calls yet.</span>
+          </sc-if>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:6px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Bookings</span>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;color:#A79E8B">{{ bookingsLabel }}</span>
+        </div>
+
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+          <sc-for list="{{ bookings }}" as="b" hint-placeholder-count="2">
+            <div style="{{ b.style }}">
+              <span style="{{ b.dot }}"></span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271;width:52px;flex:none">{{ b.when }}</span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.25;color:#1D1A16">{{ b.title }}</span>
+                <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#8A8271;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.body }}</span>
+              </span>
+              <span style="{{ b.tagStyle }}">{{ b.tag }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noBookings }}" hint-placeholder-val="{{ false }}">
+            <span style="padding:16px;font-family:'Gaegu',cursive;font-size:17px;color:#A79E8B">Never booked in.</span>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="border-left:1px solid #CFC5AB;background:#FDF8E9;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Ways to reach them</span>
+          <sc-for list="{{ channels }}" as="c" hint-placeholder-count="3">
+            <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:2px">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#A79E8B">{{ c.k }}</span>
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;word-break:break-all">{{ c.v }}</span>
+            </div>
+          </sc-for>
+          <button data-a="addchannel" onClick="{{ act }}" style="align-self:flex-start;background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E">+ Add a number or email</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Tags</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ tags }}" as="t" hint-placeholder-count="2">
+              <span style="{{ t.style }}">{{ t.label }}</span>
+            </sc-for>
+            <button data-a="addtag" onClick="{{ act }}" style="background:#FCFAF4;border:1px dashed #CFC5AB;border-radius:20px;padding:4px 10px;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">+ tag</button>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Note the agent can read</span>
+          <textarea value="{{ noteText }}" onInput="{{ onNote }}" placeholder="Anything it should know before it answers" style="min-height:96px;resize:vertical;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:11px 12px;outline:none;font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#1D1A16"></textarea>
+          <button onClick="{{ saveNote }}" style="align-self:flex-start;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:7px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Save note</button>
+        </div>
+
+        <div style="margin-top:auto;display:flex;flex-direction:column;gap:5px;border-top:1px dashed #D8CFB8;padding-top:13px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B">{{ provenance }}</span>
+          <div style="display:flex;gap:12px">
+            <button data-a="export" onClick="{{ act }}" style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Export</button>
+            <button data-a="delete" onClick="{{ act }}" style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E">Delete contact</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ noSelection }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;justify-content:center;padding:40px">
+      <div style="max-width:340px;display:flex;flex-direction:column;gap:8px;text-align:center">
+        <span style="font-family:'Gochi Hand',cursive;font-size:26px;color:#1D1A16">Pick somebody</span>
+        <span style="font-family:'Gaegu',cursive;font-size:18px;line-height:1.35;color:#8A8271">Every number that has ever rung you is in this list, named or not.</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:60;background:#1D1A16;color:#FCFAF4;border-radius:12px;padding:11px 18px;box-shadow:0 10px 28px rgba(29,26,22,.24);font-family:'Gaegu',cursive;font-size:17px">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { sel: 'k1', query: '', filter: 'all', wsOpen: false, toast: '', confirmed: [], merged: [], notes: {}, draft: null };
+
+  NAVBASE = "border-radius:10px;padding:8px 11px;cursor:pointer;text-align:left;text-decoration:none;display:block;font-family:'Gaegu',cursive;font-size:18px;";
+
+  PEOPLE = [
+    { id:'k1', name:'Marcus Bell', src:'agent', confirm:true, when:'21:14', sub:'Cracked filling \u2014 booked Saturday',
+      phone:'+44 7700 900 482', email:'m.bell@\u200bmailbox.com', web:'Website visitor \u00b7 3 sessions',
+      visits:2, noShows:0, spend:'\u00a3230', since:'Mar 2025',
+      next:{ when:'Sat 9:20am', what:'Emergency appointment \u00b7 Dr. Reyes \u00b7 20 min' },
+      tags:['Denplan'], merge:'A website visitor from 20:02 gave the same email. Same person?',
+      note:'Nervous patient \u2014 prefers morning slots and a bit of warning about needles.',
+      prov:'Name heard on a call, 28 Jul 21:15',
+      tl:[
+        { kind:'call', when:'21:14', title:'Cracked filling, wanted Saturday', body:'Booked the emergency slot and learned his name mid-call.', len:'1:48' },
+        { kind:'call', when:'12 Apr', title:'Asked about whitening prices', body:'Answered, no booking taken.', len:'0:52' },
+        { kind:'book', when:'Sat', title:'Emergency appointment', body:'9:20am \u00b7 Dr. Reyes \u00b7 20 min', tag:'upcoming' },
+        { kind:'book', when:'19 Mar', title:'Check-up and clean', body:'\u00a3145 \u00b7 Dr. Reyes', tag:'done' }
+      ] },
+    { id:'k2', name:'Priya Raman', src:'sync', confirm:false, when:'19:47', sub:'Rebooked hygiene \u2014 Friday 4:30',
+      phone:'+44 113 496 2210', email:'praman@\u200bwork.co.uk', web:'\u2014',
+      visits:9, noShows:1, spend:'\u00a3840', since:'Jan 2023',
+      next:{ when:'Fri 4:30pm', what:'Hygiene \u00b7 Aleks \u00b7 30 min' },
+      tags:['Plan member','Regular'], merge:null,
+      note:'Books hygiene every six months, always Friday afternoons.',
+      prov:'Name from Dentrix \u00b7 canonical',
+      tl:[
+        { kind:'call', when:'19:47', title:'Rebooking a missed hygiene visit', body:'Apologised for the miss, the agent waived the fee under your rule.', len:'2:06' },
+        { kind:'call', when:'12 Jan', title:'Moved her check-up a week later', body:'Rescheduled without needing anyone.', len:'0:44' },
+        { kind:'book', when:'Fri', title:'Hygiene', body:'4:30pm \u00b7 Aleks \u00b7 30 min', tag:'upcoming' },
+        { kind:'book', when:'14 Jul', title:'Hygiene', body:'11:00 \u00b7 Aleks \u00b7 did not arrive', tag:'missed' },
+        { kind:'book', when:'12 Jan', title:'Check-up and clean', body:'\u00a3145 \u00b7 Dr. Reyes', tag:'done' }
+      ] },
+    { id:'k3', name:'Sarah (heard)', src:'agent', confirm:true, when:'17:55', sub:'Invisalign quote \u2014 callback promised',
+      phone:'\u2014', email:'\u2014', web:'Website visitor \u00b7 1 session',
+      visits:0, noShows:0, spend:'\u2014', since:'Today',
+      next:null, tags:['New'], merge:null,
+      note:'',
+      prov:'Name heard on a call, spelling unconfirmed',
+      tl:[
+        { kind:'call', when:'17:55', title:'What does Invisalign cost?', body:'Over your quote limit \u2014 a callback was promised. Name heard, spelling unsure.', len:'3:12' }
+      ] },
+    { id:'k4', name:'+44 7900 812 004', src:null, confirm:false, when:'18:30', sub:'Unhappy about a crown \u2014 needs you', unnamed:true,
+      phone:'+44 7900 812 004', email:'\u2014', web:'\u2014',
+      visits:1, noShows:0, spend:'\u00a3620', since:'Jun 2026',
+      next:null, tags:['Complaint'], merge:null,
+      note:'',
+      prov:'No name yet \u00b7 caller ID only',
+      tl:[
+        { kind:'call', when:'18:30', title:'Unhappy about a crown', body:'Handed over. The agent promised a call today \u2014 nobody has rung back.', len:'2:41', flag:true },
+        { kind:'book', when:'19 Jun', title:'Crown fitted', body:'\u00a3620 \u00b7 Dr. Reyes', tag:'done' }
+      ] },
+    { id:'k5', name:'Tom Whitaker', src:'visitor', confirm:false, when:'11:08', sub:'Whitening \u2014 Thursday 6:30pm',
+      phone:'+44 7822 664 120', email:'tomw@\u200bmail.com', web:'Website visitor \u00b7 2 sessions',
+      visits:3, noShows:0, spend:'\u00a3465', since:'Sep 2024',
+      next:{ when:'Thu 6:30pm', what:'Whitening \u00b7 Dr. Osei \u00b7 45 min' },
+      tags:['Evenings only'], merge:null,
+      note:'Only ever books after work. Do not offer daytime slots.',
+      prov:'Name given in the website widget',
+      tl:[
+        { kind:'call', when:'11:08', title:'Whitening, wanted a Thursday evening', body:'Gave his name in the widget, so the agent greeted him by it.', len:'1:29' },
+        { kind:'book', when:'Thu', title:'Whitening', body:'6:30pm \u00b7 Dr. Osei \u00b7 \u00a3320 deposit paid', tag:'upcoming' },
+        { kind:'book', when:'3 Feb', title:'Check-up', body:'\u00a3145 \u00b7 Dr. Osei', tag:'done' }
+      ] },
+    { id:'k6', name:'Website visitor', src:null, confirm:false, when:'20:02', sub:'Denplan and the price of a clean', unnamed:true,
+      phone:'\u2014', email:'m.bell@\u200bmailbox.com', web:'Website visitor \u00b7 1 session',
+      visits:0, noShows:0, spend:'\u2014', since:'Today',
+      next:null, tags:[], merge:'Shares an email with Marcus Bell. Same person?',
+      note:'',
+      prov:'No name yet \u00b7 web session only',
+      tl:[
+        { kind:'call', when:'20:02', title:'Denplan and the price of a clean', body:'Answered, no booking taken.', len:'1:04' }
+      ] },
+    { id:'k7', name:'Ade Fashola', src:'sync', confirm:false, when:'2 days', sub:'Six-month check-up due',
+      phone:'+44 7411 220 091', email:'\u2014', web:'\u2014',
+      visits:6, noShows:0, spend:'\u00a3710', since:'Feb 2022',
+      next:null, tags:['Plan member'], merge:null,
+      note:'',
+      prov:'Name from Dentrix \u00b7 canonical',
+      tl:[
+        { kind:'call', when:'2 days', title:'Running twenty minutes late', body:'Message passed to the front desk.', len:'0:38' },
+        { kind:'book', when:'8 Feb', title:'Check-up', body:'\u00a3145 \u00b7 Dr. Reyes', tag:'done' }
+      ] },
+    { id:'k8', name:'Unknown caller', src:null, confirm:false, when:'16:20', sub:'Silence, hung up after 4 seconds', unnamed:true, flag:true,
+      phone:'Withheld', email:'\u2014', web:'\u2014',
+      visits:0, noShows:0, spend:'\u2014', since:'Today',
+      next:null, tags:['Blocked'], merge:null,
+      note:'Third silent call this week from a withheld number.',
+      prov:'No caller ID',
+      tl:[
+        { kind:'call', when:'16:20', title:'Silence, hung up after 4 seconds', body:'Treated as spam. Not counted against your minutes.', len:'0:04', flag:true }
+      ] }
+  ];
+
+  say(msg){
+    if (this._to) clearTimeout(this._to);
+    this.setState({ toast: msg });
+    this._to = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+  componentWillUnmount(){ if (this._to) clearTimeout(this._to); }
+
+  initials(p){
+    if (p.unnamed) return '?';
+    return p.name.split(' ').filter(w => /^[A-Za-z]/.test(w)).slice(0,2).map(w => w[0].toUpperCase()).join('') || '?';
+  }
+  needsConfirm(p){ return !!p.confirm && this.state.confirmed.indexOf(p.id) < 0; }
+  hasMerge(p){ return !!p.merge && this.state.merged.indexOf(p.id) < 0; }
+
+  renderVals(){
+    const st = this.state;
+    const q = st.query.trim().toLowerCase();
+    const people = this.PEOPLE;
+
+    const match = p => {
+      if (q && (p.name + ' ' + p.phone + ' ' + p.email).toLowerCase().indexOf(q) < 0) return false;
+      if (st.filter === 'confirm') return this.needsConfirm(p);
+      if (st.filter === 'unnamed') return !!p.unnamed;
+      if (st.filter === 'booked') return !!p.next;
+      if (st.filter === 'flag') return (p.tags || []).some(t => t === 'Blocked' || t === 'Complaint');
+      return true;
+    };
+    const list = people.filter(match);
+    const sel = people.find(p => p.id === st.sel) || null;
+    const selVisible = sel && list.indexOf(sel) >= 0 ? sel : (list.length ? list[0] : null);
+
+    const chip = on => 'border-radius:8px;padding:5px 10px;cursor:pointer;font-family:\'Gaegu\',cursive;font-size:15px;' +
+      (on ? 'background:#1D1A16;border:1px solid #1D1A16;color:#FCFAF4' : 'background:#FCFAF4;border:1px solid #CFC5AB;color:#4A453C');
+
+    const SRC = {
+      agent: ['HEARD ON A CALL', '#B4712A', '#FCF0E2', '#E5C79B'],
+      visitor: ['GAVE THEIR NAME', '#4E7A48', '#E8F0E0', '#A9C79F'],
+      sync: ['FROM DENTRIX', '#4A453C', '#F1EDE1', '#DCD4BF']
+    };
+    const srcChip = s => {
+      const d = SRC[s];
+      if (!d) return null;
+      return { label: d[0], style: 'font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.07em;color:' + d[1] + ';background:' + d[2] + ';border:1px solid ' + d[3] + ';border-radius:20px;padding:3px 8px' };
+    };
+
+    const rows = list.map(p => {
+      const on = selVisible && p.id === selVisible.id;
+      const warn = this.needsConfirm(p);
+      let badge = null, badgeStyle = '';
+      const bs = (c, bg, bd) => 'align-self:flex-start;font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.07em;color:' + c + ';background:' + bg + ';border:1px solid ' + bd + ';border-radius:20px;padding:3px 8px';
+      if (warn) { badge = 'CONFIRM SPELLING'; badgeStyle = bs('#B4712A', '#FCF0E2', '#E5C79B'); }
+      else if (this.hasMerge(p)) { badge = 'POSSIBLE DUPLICATE'; badgeStyle = bs('#B2544E', '#FBE7E4', '#EFC9C4'); }
+      else if (p.next) { badge = 'BOOKED ' + p.next.when.toUpperCase(); badgeStyle = bs('#4E7A48', '#E8F0E0', '#A9C79F'); }
+      else if (p.tags && p.tags.indexOf('Blocked') >= 0) { badge = 'BLOCKED'; badgeStyle = bs('#8A8271', '#EFEBDE', '#DCD4BF'); }
+      return {
+        id: p.id,
+        name: p.name,
+        sub: p.sub,
+        when: p.when,
+        initials: this.initials(p),
+        badge, badgeStyle,
+        nameStyle: 'font-family:\'Gaegu\',cursive;font-size:18px;color:' + (p.unnamed ? '#8A8271' : '#1D1A16') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+        avatar: 'width:32px;height:32px;flex:none;border-radius:50%;display:grid;place-items:center;font-family:\'Gochi Hand\',cursive;font-size:15px;color:#4A453C;background:' + (on ? '#FCFAF4' : '#EFEBDE') + ';border:1px solid #CFC5AB',
+        style: 'width:100%;display:flex;gap:11px;align-items:flex-start;padding:12px 16px;cursor:pointer;text-align:left;border:none;border-bottom:1px solid #DCD4BF;border-left:3px solid ' + (on ? '#B2544E' : 'transparent') + ';background:' + (on ? '#FDF7F5' : 'transparent'),
+        pick: () => this.setState({ sel: p.id, draft: null })
+      };
+    });
+
+    const out = {
+      navOn: this.NAVBASE + 'display:flex;justify-content:space-between;align-items:center;background:#FBE7E4;border:1px solid #EFC9C4;color:#1D1A16',
+      navIdle: this.NAVBASE + 'background:transparent;border:1px solid transparent;color:#4A453C',
+      wsOpen: st.wsOpen,
+      toggleWs: () => this.setState(s => ({ wsOpen: !s.wsOpen })),
+      closeWs: () => this.setState({ wsOpen: false }),
+      navSoon: e => this.say(e.currentTarget.dataset.name + ' \u2014 designed in the next pass'),
+
+      totalCount: people.length,
+      countLabel: list.length === people.length ? people.length + ' PEOPLE' : list.length + ' OF ' + people.length,
+      confirmCount: people.filter(p => this.needsConfirm(p)).length,
+      unnamedCount: people.filter(p => p.unnamed).length,
+      hasConfirmQueue: people.filter(p => this.needsConfirm(p)).length > 0,
+      confirmBlurb: people.filter(p => this.needsConfirm(p)).length + ' names the agent heard but couldn\u2019t check.',
+      showConfirmQueue: () => this.setState({ filter: 'confirm', query: '' }),
+
+      query: st.query,
+      onQuery: e => this.setState({ query: e.target.value }),
+      pickFilter: e => this.setState({ filter: e.currentTarget.dataset.f }),
+      chipAll: chip(st.filter === 'all'),
+      chipConfirm: chip(st.filter === 'confirm'),
+      chipUnnamed: chip(st.filter === 'unnamed'),
+      chipBooked: chip(st.filter === 'booked'),
+      chipFlag: chip(st.filter === 'flag'),
+
+      rows,
+      noRows: rows.length === 0,
+      hasSel: !!selVisible,
+      noSelection: !selVisible,
+      hasToast: !!st.toast,
+      toast: st.toast,
+      act: e => {
+        const A = { call:'Dialling\u2026', book:'Booking flow \u2014 designed in the next pass', edit:'Edit contact \u2014 next pass', fixname:'Rename \u2014 next pass', move:'Reschedule \u2014 next pass', cancel:'Cancel \u2014 next pass', open:'Opens the conversation', addchannel:'Add a channel \u2014 next pass', addtag:'Tag picker \u2014 next pass', export:'Contact exported as CSV', delete:'Delete needs a confirm step \u2014 next pass' };
+        this.say(A[e.currentTarget.dataset.a] || 'Next pass');
+      }
+    };
+
+    if (!selVisible) return out;
+
+    const p = selVisible;
+    const src = srcChip(p.src);
+    const noteVal = st.draft !== null && st.sel === p.id ? st.draft : (st.notes[p.id] !== undefined ? st.notes[p.id] : p.note);
+    const TAGC = { Blocked:['#8A8271','#EFEBDE','#DCD4BF'], Complaint:['#B2544E','#FBE7E4','#EFC9C4'], New:['#4E7A48','#E8F0E0','#A9C79F'] };
+
+    out.selName = p.name;
+    out.selInitials = this.initials(p);
+    out.selSource = src ? src.label : 'NO NAME YET';
+    out.selSourceStyle = src ? src.style : 'font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.07em;color:#8A8271;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:20px;padding:3px 8px';
+    out.selSummary = p.visits + (p.visits === 1 ? ' visit' : ' visits') + ' \u00b7 known since ' + p.since + ' \u00b7 last heard from ' + p.when;
+    out.selNeedsConfirm = this.needsConfirm(p);
+    out.confirmLine = 'The agent heard this name but couldn\u2019t check it against anything. Keep it as \u201c' + p.name + '\u201d?';
+    out.confirmName = () => { this.setState(s => ({ confirmed: s.confirmed.concat([p.id]) })); this.say('Name confirmed'); };
+    out.selHasMerge = this.hasMerge(p);
+    out.mergeLine = p.merge || '';
+    out.doMerge = () => { this.setState(s => ({ merged: s.merged.concat([p.id]) })); this.say('Merged \u2014 history joined up'); };
+    out.dropMerge = () => { this.setState(s => ({ merged: s.merged.concat([p.id]) })); this.say('Kept separate'); };
+    out.selStats = [
+      { k: 'visits', v: p.visits },
+      { k: 'no-shows', v: p.noShows },
+      { k: 'spent', v: p.spend },
+      { k: 'first seen', v: p.since }
+    ];
+    out.selHasNext = !!p.next;
+    out.nextWhen = p.next ? p.next.when : '';
+    out.nextWhat = p.next ? p.next.what : '';
+    const rowBase = 'display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid #DCD4BF;text-decoration:none;';
+    const dot = c => 'width:7px;height:7px;border-radius:50%;flex:none;display:block;background:' + c;
+    const callList = p.tl.filter(e => e.kind === 'call');
+    const bookList = p.tl.filter(e => e.kind === 'book');
+    const TAG = { upcoming:['BOOKED','#4E7A48','#E8F0E0','#A9C79F'], done:['DONE','#8A8271','#EFEBDE','#DCD4BF'], missed:['MISSED','#B2544E','#FBE7E4','#EFC9C4'] };
+
+    out.callsLabel = callList.length + (callList.length === 1 ? ' call' : ' calls');
+    out.noCalls = callList.length === 0;
+    out.calls = callList.map((e, i) => ({
+      title: e.title, body: e.body, when: e.when, len: e.len || '',
+      dot: dot(e.flag ? '#B2544E' : '#8A8271'),
+      style: rowBase + 'cursor:pointer;background:' + (i % 2 ? '#FCFAF4' : '#FDFBF5')
+    }));
+
+    out.bookingsLabel = bookList.length + (bookList.length === 1 ? ' booking' : ' bookings');
+    out.noBookings = bookList.length === 0;
+    out.bookings = bookList.map((e, i) => {
+      const t = TAG[e.tag] || TAG.done;
+      return {
+        title: e.title, body: e.body, when: e.when, tag: t[0],
+        dot: dot(t[1]),
+        tagStyle: 'flex:none;font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:.07em;color:' + t[1] + ';background:' + t[2] + ';border:1px solid ' + t[3] + ';border-radius:20px;padding:3px 8px',
+        style: rowBase + 'background:' + (i % 2 ? '#FCFAF4' : '#FDFBF5')
+      };
+    });
+    out.channels = [
+      { k: 'phone', v: p.phone },
+      { k: 'email', v: p.email },
+      { k: 'web', v: p.web }
+    ].filter(c => c.v && c.v !== '\u2014');
+    out.tags = (p.tags || []).map(t => {
+      const c = TAGC[t] || ['#4A453C', '#F9F5EC', '#DCD4BF'];
+      return { label: t, style: 'font-family:\'Gaegu\',cursive;font-size:15px;color:' + c[0] + ';background:' + c[1] + ';border:1px solid ' + c[2] + ';border-radius:20px;padding:4px 11px' };
+    });
+    out.noteText = noteVal;
+    out.onNote = e => this.setState({ draft: e.target.value });
+    out.saveNote = () => {
+      this.setState(s => { const n = Object.assign({}, s.notes); n[p.id] = s.draft !== null ? s.draft : noteVal; return { notes: n, draft: null }; });
+      this.say('Note saved \u2014 the agent will read it next time');
+    };
+    out.provenance = p.prov;
+    return out;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#EDE9E0;font-family:system-ui,sans-serif}
+  a{color:#B2544E}
+  a:hover{color:#8E3E39}
+  button{font:inherit}
+  .dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+  .dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+  .dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+  .dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+  .dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+  .dv-fcap{font:400 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(0,0,0,.4);margin:2px 0 0}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Best of both &mdash; <a class="dv-oid" href="#1b">1b</a>&rsquo;s map, <a class="dv-oid" href="#1a">1a</a>&rsquo;s one big question</span></div>
+<div class="dv-opts">
+
+  <div class="dv-opt" id="2a">
+    <div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Rail stays, but folded to the phase you&rsquo;re in &middot; one question owns the screen &middot; salon</div>
+
+    <div class="dv-card" style="width:1180px">
+      <div style="background:#F7F3EB;display:grid;grid-template-columns:262px minmax(0,1fr);height:915px">
+
+        <div style="background:#FDF8E9;border-right:1px solid #CFC5AB;padding:20px 16px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#FBE7E4;border:1px solid #EFC9C4;font-family:'Gochi Hand',cursive;font-size:14px;color:#B2544E">F</span>
+            <div style="display:flex;flex-direction:column">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Studio Fen</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Salon &middot; Bristol</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Step 2 of 12</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#A79E8B">3 MIN LEFT</span>
+            </div>
+            <span style="height:5px;border-radius:3px;background:#EFEBDE;display:block;overflow:hidden"><span style="display:block;height:100%;width:16%;background:#1D1A16;border-radius:3px"></span></span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 8px">
+              <span style="width:16px;height:16px;flex:none;display:grid;place-items:center;border-radius:50%;background:#1D1A16;font-family:'Space Mono',monospace;font-size:8px;color:#FCFAF4">1</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#1D1A16">The basics</span>
+              <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;color:#A79E8B">1/4</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;padding:7px 8px 7px 32px">
+              <span style="width:15px;height:15px;flex:none;display:grid;place-items:center;border-radius:50%;background:#E8F0E0;border:1px solid #A9C79F;color:#4E7A48"><svg viewBox="0 0 32 32" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17.4c2 1.8 3.4 3.2 4.9 5.1 2.9-5.8 6.7-10.1 11.8-13.7"/></svg></span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Business basics</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;padding:7px 8px 7px 32px;border-radius:9px;background:#FCFAF4;border:1px solid #E0A9A3;box-shadow:1px 2px 0 rgba(29,26,22,.05)">
+              <span style="width:15px;height:15px;flex:none;border-radius:50%;background:#FBE7E4;border:1px solid #E0A9A3;display:block"></span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Opening hours</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;padding:7px 8px 7px 32px">
+              <span style="width:15px;height:15px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Services &amp; prices</span>
+              <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.06em;color:#4E7A48">9 FOUND</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;padding:7px 8px 7px 32px">
+              <span style="width:15px;height:15px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Payment &amp; deposits</span>
+            </div>
+
+            <div style="height:1px;background:#DCD4BF;margin:8px 8px"></div>
+
+            <div style="display:flex;align-items:center;gap:8px;padding:8px">
+              <span style="width:16px;height:16px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid #CFC5AB;font-family:'Space Mono',monospace;font-size:8px;color:#8A8271">2</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">What it says</span>
+              <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;color:#A79E8B">3</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px">
+              <span style="width:16px;height:16px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid #CFC5AB;font-family:'Space Mono',monospace;font-size:8px;color:#8A8271">3</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Plumbing</span>
+              <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;color:#A79E8B">3</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px">
+              <span style="width:16px;height:16px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid #CFC5AB;font-family:'Space Mono',monospace;font-size:8px;color:#8A8271">4</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Before you go live</span>
+              <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;color:#A79E8B">2</span>
+            </div>
+          </div>
+
+          <div style="margin-top:auto;display:flex;flex-direction:column;gap:9px">
+            <div style="background:#FCFAF4;border:1px dashed #CFC5AB;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#9A2B2B">Test call unlocks at step 5</span>
+              <span style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.3;color:#8A8271">Three more and you can ring your own agent.</span>
+            </div>
+            <span style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.3;color:#8A8271">Leave any time &mdash; it all saves as you type.</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:16px 30px;border-bottom:1px solid #CFC5AB;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#4E7A48;background:#E8F0E0;border:1px solid #A9C79F;border-radius:20px;padding:4px 9px">SAVED JUST NOW</span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Pulled from your Google listing</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Skip this step</button>
+              <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Save &amp; finish later</button>
+            </div>
+          </div>
+
+          <div style="flex:1;display:flex;justify-content:center;padding:38px 30px 24px;overflow:hidden">
+            <div style="width:100%;max-width:700px;display:flex;flex-direction:column;gap:22px;flex:none">
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9A2B2B">The basics &middot; question two</div>
+                <div style="font-family:'Gochi Hand',cursive;font-size:42px;line-height:1.05;color:#1D1A16">When are you open?</div>
+                <div style="font-family:'Gaegu',cursive;font-size:19px;line-height:1.4;color:#4A453C;max-width:560px;text-wrap:pretty">Fix anything that&rsquo;s changed. Your agent will never book outside these hours &mdash; it offers the next slot instead.</div>
+              </div>
+
+              <div style="flex:none;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,.05)">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid #DCD4BF;background:#F9F5EC">
+                  <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Your week</span>
+                  <button style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Copy Tuesday to all</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#EFEBDE;border:1px solid #CFC5AB"><span style="width:14px;height:14px;border-radius:50%;background:#A79E8B;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271;width:92px">Monday</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#A79E8B">Closed</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:92px">Tuesday</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">18:00</span>
+                  <button style="margin-left:auto;background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#B2544E">+ Split for lunch</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:92px">Wednesday</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">18:00</span>
+                </div>
+                <div style="padding:10px 16px;border-bottom:1px solid #DCD4BF;display:flex;flex-direction:column;gap:7px;background:#FDF7F5">
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                    <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:92px">Thursday</span>
+                    <span style="background:#FCFAF4;border:1px solid #E0A9A3;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                    <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                    <span style="background:#FCFAF4;border:1px solid #E0A9A3;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">20:00</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#B2544E;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:20px;padding:3px 8px">LATE NIGHT</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;padding-left:46px">
+                    <span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">Closed for lunch</span>
+                    <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:4px 9px;font-family:'Space Mono',monospace;font-size:11px;color:#4A453C">13:00</span>
+                    <span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">to</span>
+                    <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:4px 9px;font-family:'Space Mono',monospace;font-size:11px;color:#4A453C">13:45</span>
+                    <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">Remove</button>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:92px">Friday</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">18:00</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:92px">Saturday</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">16:00</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 16px">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#EFEBDE;border:1px solid #CFC5AB"><span style="width:14px;height:14px;border-radius:50%;background:#A79E8B;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271;width:92px">Sunday</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#A79E8B">Closed</span>
+                </div>
+              </div>
+
+              <div style="flex:none;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:11px">
+                <div style="background:#FDF8E9;border:1px solid #CFC5AB;border-radius:13px;padding:14px;display:flex;flex-direction:column;gap:8px">
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#9A2B2B">So it will say</div>
+                  <div style="background:#FBE7E4;border:1px solid #EFC9C4;border-radius:13px 13px 13px 4px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#4A453C">&ldquo;We&rsquo;re open till eight on Thursdays &mdash; I could fit you in at 6:30 if that&rsquo;s easier after work?&rdquo;</div>
+                </div>
+                <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:13px;padding:14px;display:flex;flex-direction:column;gap:8px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                    <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Closures</div>
+                    <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#B2544E">+ Add</button>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 10px;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Aug 25</span>
+                    <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 10px;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Dec 24 &ndash; Jan 2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:14px 30px;border-top:1px solid #CFC5AB;background:#FDF8E9;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">&larr; Business basics</button>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Press Enter to continue</span>
+              <button style="background:#1D1A16;border:1px solid #1D1A16;border-radius:11px;padding:12px 24px;cursor:pointer;font-family:'Gaegu',cursive;font-size:18px;color:#FCFAF4">Save &amp; next: services</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="dv-fcap">Sample step &mdash; opening hours</p>
+  </div>
+
+</div>
+<p class="dv-next">Try next: &ldquo;build <a class="dv-oid" href="#2a">2a</a> out for all 12 steps&rdquo; &middot; &ldquo;show <a class="dv-oid" href="#2a">2a</a>&rsquo;s first screen too&rdquo; &middot; &ldquo;make the rail collapse to icons instead&rdquo;</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Onboarding &mdash; first two screens, two directions</span></div>
+<div class="dv-opts">
+
+  <div class="dv-opt" id="1a">
+    <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>The interview &middot; one question per screen, numbered step bar &middot; dental</div>
+
+    <div class="dv-card" style="width:1180px">
+      <div style="background:#F7F3EB;display:flex;flex-direction:column;height:740px">
+        <div style="padding:18px 34px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #CFC5AB">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">vocalonix</div>
+            <div style="display:flex;align-items:center;gap:7px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:20px;padding:4px 11px 4px 5px">
+              <span style="width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:#FBE7E4;border:1px solid #EFC9C4;font-family:'Gochi Hand',cursive;font-size:12px;color:#B2544E">A</span>
+              <span style="font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Acme Dental</span>
+            </div>
+          </div>
+          <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Save &amp; finish later</button>
+        </div>
+
+        <div style="padding:16px 34px;display:flex;flex-direction:column;gap:9px;border-bottom:1px solid #DCD4BF;background:#FDF8E9">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:baseline;gap:18px">
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#1D1A16">1 &middot; Basics</span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B">2 &middot; Answers</span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B">3 &middot; Voice</span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B">4 &middot; Go live</span>
+            </div>
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;color:#8A8271">STEP 1 OF 12 &middot; ABOUT 4 MINUTES LEFT</span>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="display:flex;gap:3px;flex:4"><span style="flex:1;height:5px;border-radius:3px;background:#1D1A16;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#DCD4BF;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#DCD4BF;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#DCD4BF;display:block"></span></div>
+            <div style="display:flex;gap:3px;flex:2"><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span></div>
+            <div style="display:flex;gap:3px;flex:2"><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span></div>
+            <div style="display:flex;gap:3px;flex:4"><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span></div>
+          </div>
+        </div>
+
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:34px">
+          <div style="width:100%;max-width:660px;display:flex;flex-direction:column;gap:26px">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9A2B2B">Where should we start from?</div>
+              <div style="font-family:'Gochi Hand',cursive;font-size:44px;line-height:1.05;color:#1D1A16">Let&rsquo;s not make you type all this</div>
+              <div style="font-family:'Gaegu',cursive;font-size:20px;line-height:1.45;color:#4A453C;text-wrap:pretty">Give us your website and we&rsquo;ll read your hours, services and prices off it. You confirm; we fill the rest.</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="display:flex;gap:9px">
+                <div style="flex:1;display:flex;align-items:center;background:#FCFAF4;border:1px solid #E0A9A3;border-radius:12px;box-shadow:0 0 0 3px #FBE7E4;padding:0 15px">
+                  <span style="font-family:'Space Mono',monospace;font-size:13px;color:#A79E8B">https://</span>
+                  <span style="flex:1;padding:14px 8px;font-family:'Gaegu',cursive;font-size:20px;color:#1D1A16">acmedental.com</span>
+                  <span style="width:2px;height:22px;background:#B2544E;display:block"></span>
+                </div>
+                <button style="background:#1D1A16;border:1px solid #1D1A16;border-radius:12px;padding:14px 24px;cursor:pointer;font-family:'Gaegu',cursive;font-size:19px;color:#FCFAF4;white-space:nowrap">Read my site</button>
+              </div>
+              <div style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">We only read pages anyone can see. Nothing is published or changed.</div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="flex:1;height:1px;background:#DCD4BF"></div>
+              <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B">or start another way</div>
+              <div style="flex:1;height:1px;background:#DCD4BF"></div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px">
+              <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:13px;box-shadow:2px 3px 0 rgba(29,26,22,.05);padding:16px;display:flex;flex-direction:column;gap:9px">
+                <span style="color:#9A2B2B"><svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.2 8.4c.1-1.6 1-2.4 2.6-2.5 3.1-.3 13.5-.3 16.6 0 1.6.1 2.5.9 2.6 2.5.2 2.6.2 13.2 0 15.6-.1 1.6-1 2.4-2.6 2.5-3.1.3-13.5.3-16.6 0-1.6-.1-2.5-.9-2.6-2.5-.2-2.4-.2-13 0-15.6Z"/><path d="M5.4 12.6c6.9.3 19.4.2 21.4 0M12.4 12.9c-.2 4.6-.2 9.3 0 13.6"/></svg></span>
+                <div style="font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">Dental template</div>
+                <div style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.35;color:#8A8271">Standard treatments and prices, ready to edit.</div>
+              </div>
+              <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:13px;box-shadow:2px 3px 0 rgba(29,26,22,.05);padding:16px;display:flex;flex-direction:column;gap:9px">
+                <span style="color:#9A2B2B"><svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.6c.1-1.7 1-2.6 2.7-2.7 3.2-.3 13.6-.3 16.8 0 1.7.1 2.6 1 2.7 2.7.2 2.7.2 12.3 0 14.8-.1 1.7-1 2.6-2.7 2.7-3.2.3-13.6.3-16.8 0-1.7-.1-2.6-1-2.7-2.7-.2-2.5-.2-12.1 0-14.8Z"/><path d="M10.6 4.4v5M21.4 4.4v5M5.2 14.2c7 .3 19.6.2 21.6 0"/><path d="M11 19.2h.1M16 19.2h.1M21 19.2h.1M11 23h.1M16 23h.1"/></svg></span>
+                <div style="font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">Import from Dentrix</div>
+                <div style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.35;color:#8A8271">Pull hours, providers and open slots.</div>
+              </div>
+              <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:13px;box-shadow:2px 3px 0 rgba(29,26,22,.05);padding:16px;display:flex;flex-direction:column;gap:9px">
+                <span style="color:#9A2B2B"><svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.6 6.4c.1-1.4.9-2.1 2.3-2.2 2.4-.2 5.6-.2 7.4-.1.9 0 1.6.4 2.2 1 1.4 1.4 3.4 3.5 4.6 4.9.5.6.8 1.2.8 2 .1 3.6.1 10.6-.1 13.6-.1 1.4-.9 2.1-2.3 2.2-3.1.3-9.6.3-12.6 0-1.4-.1-2.2-.8-2.3-2.2-.2-2.9-.2-16.3 0-19.2Z"/><path d="M18.4 4.4c-.2 2 .1 4.4.5 4.9.5.5 3 .7 5.2.5"/><path d="M16 21.6v-7M13 17.4c1-1 2-2 3-2.8 1 .8 2 1.8 3 2.8"/></svg></span>
+                <div style="font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">Upload a price list</div>
+                <div style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.35;color:#8A8271">PDF or spreadsheet. We&rsquo;ll read it out.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:16px 34px;border-top:1px solid #CFC5AB;background:#FDF8E9;display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">I&rsquo;ll type it all myself</button>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Press Enter to continue</span>
+            <button style="background:#1D1A16;border:1px solid #1D1A16;border-radius:11px;padding:12px 26px;cursor:pointer;font-family:'Gaegu',cursive;font-size:18px;color:#FCFAF4">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="dv-fcap">Screen 1 &mdash; where to start from</p>
+
+    <div class="dv-card" style="width:1180px">
+      <div style="background:#F7F3EB;display:flex;flex-direction:column;height:740px">
+        <div style="padding:18px 34px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #CFC5AB">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">vocalonix</div>
+            <div style="display:flex;align-items:center;gap:7px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:20px;padding:4px 11px 4px 5px">
+              <span style="width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:#FBE7E4;border:1px solid #EFC9C4;font-family:'Gochi Hand',cursive;font-size:12px;color:#B2544E">A</span>
+              <span style="font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Acme Dental</span>
+            </div>
+          </div>
+          <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Save &amp; finish later</button>
+        </div>
+
+        <div style="padding:16px 34px;display:flex;flex-direction:column;gap:9px;border-bottom:1px solid #DCD4BF;background:#FDF8E9">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:baseline;gap:18px">
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#1D1A16">1 &middot; Basics</span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B">2 &middot; Answers</span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B">3 &middot; Voice</span>
+              <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B">4 &middot; Go live</span>
+            </div>
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;color:#8A8271">STEP 2 OF 12 &middot; ABOUT 3 MINUTES LEFT</span>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="display:flex;gap:3px;flex:4"><span style="flex:1;height:5px;border-radius:3px;background:#1D1A16;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#1D1A16;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#DCD4BF;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#DCD4BF;display:block"></span></div>
+            <div style="display:flex;gap:3px;flex:2"><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span></div>
+            <div style="display:flex;gap:3px;flex:2"><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span></div>
+            <div style="display:flex;gap:3px;flex:4"><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span><span style="flex:1;height:5px;border-radius:3px;background:#EFEBDE;display:block"></span></div>
+          </div>
+        </div>
+
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:30px 34px">
+          <div style="width:100%;max-width:660px;display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#E8F0E0;border:1px solid #A9C79F;color:#4E7A48"><svg viewBox="0 0 32 32" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17.4c2 1.8 3.4 3.2 4.9 5.1 2.9-5.8 6.7-10.1 11.8-13.7"/></svg></span>
+                <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#4E7A48">Read acmedental.com in 6 seconds</div>
+              </div>
+              <div style="font-family:'Gochi Hand',cursive;font-size:40px;line-height:1.05;color:#1D1A16">Did we get this right?</div>
+              <div style="font-family:'Gaegu',cursive;font-size:19px;line-height:1.4;color:#4A453C">Tap anything to fix it. One thing needs your eyes.</div>
+            </div>
+
+            <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,.05);overflow:hidden">
+              <div style="padding:14px 18px;border-bottom:1px solid #DCD4BF;display:flex;align-items:center;justify-content:space-between;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Practice name</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:20px;color:#1D1A16">Acme Dental</span>
+                </div>
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#A79E8B">FROM PAGE TITLE</span>
+              </div>
+              <div style="padding:14px 18px;border-bottom:1px solid #DCD4BF;display:flex;align-items:center;justify-content:space-between;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Address</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:20px;color:#1D1A16">14 Blenheim Terrace, Leeds LS2 9HZ</span>
+                </div>
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#A79E8B">FROM /CONTACT</span>
+              </div>
+              <div style="padding:14px 18px;border-bottom:1px solid #DCD4BF;display:flex;align-items:center;justify-content:space-between;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Phone on the site</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:20px;color:#1D1A16">0113 496 2210</span>
+                </div>
+                <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#A79E8B">FROM FOOTER</span>
+              </div>
+              <div style="padding:14px 18px;background:#FCF4EA;display:flex;align-items:center;justify-content:space-between;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#B4712A">Timezone &mdash; we guessed</span>
+                  <div style="display:flex;gap:6px">
+                    <span style="background:#1D1A16;border:1px solid #1D1A16;border-radius:8px;padding:6px 12px;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Europe/London</span>
+                    <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:6px 12px;font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Something else</span>
+                  </div>
+                </div>
+                <span style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.3;color:#B4712A;max-width:180px;text-align:right">Wrong timezone books people at 3am.</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#4E7A48;background:#E8F0E0;border:1px solid #A9C79F;border-radius:20px;padding:3px 9px">ALSO FOUND</span>
+              7 services with prices, opening hours, and two insurers &mdash; coming up next.
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:16px 34px;border-top:1px solid #CFC5AB;background:#FDF8E9;display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">&larr; Back</button>
+          <button style="background:#1D1A16;border:1px solid #1D1A16;border-radius:11px;padding:12px 26px;cursor:pointer;font-family:'Gaegu',cursive;font-size:18px;color:#FCFAF4">Looks right, next</button>
+        </div>
+      </div>
+    </div>
+    <p class="dv-fcap">Screen 2 &mdash; confirm what we read</p>
+  </div>
+
+  <div class="dv-opt" id="1b">
+    <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>The workbench &middot; all steps in a left rail, do them in any order &middot; salon</div>
+
+    <div class="dv-card" style="width:1180px">
+      <div style="background:#F7F3EB;display:grid;grid-template-columns:300px minmax(0,1fr);height:880px">
+        <div style="background:#FDF8E9;border-right:1px solid #CFC5AB;padding:20px 18px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#FBE7E4;border:1px solid #EFC9C4;font-family:'Gochi Hand',cursive;font-size:14px;color:#B2544E">F</span>
+            <div style="display:flex;flex-direction:column">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Studio Fen</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Salon &middot; Bristol</span>
+            </div>
+          </div>
+
+          <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <span style="font-family:'Gochi Hand',cursive;font-size:19px;color:#1D1A16">1 of 12 done</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:#8A8271">8%</span>
+            </div>
+            <span style="height:6px;border-radius:3px;background:#EFEBDE;display:block;overflow:hidden"><span style="display:block;height:100%;width:8%;background:#4E7A48;border-radius:3px"></span></span>
+            <span style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.3;color:#8A8271">Four steps and you can take a test call.</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:3px;overflow:hidden">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A79E8B;padding:6px 8px">The basics</div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px;background:transparent">
+              <span style="width:17px;height:17px;flex:none;display:grid;place-items:center;border-radius:50%;background:#E8F0E0;border:1px solid #A9C79F;color:#4E7A48"><svg viewBox="0 0 32 32" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17.4c2 1.8 3.4 3.2 4.9 5.1 2.9-5.8 6.7-10.1 11.8-13.7"/></svg></span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271;text-decoration:line-through">Business basics</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px;background:#FCFAF4;border:1px solid #E0A9A3;box-shadow:1px 2px 0 rgba(29,26,22,.05)">
+              <span style="width:17px;height:17px;flex:none;border-radius:50%;background:#FBE7E4;border:1px solid #E0A9A3;display:block"></span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Opening hours</span>
+              <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.08em;color:#B2544E">NOW</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Services &amp; prices</span><span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.08em;color:#4E7A48">9 FOUND</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Payment &amp; deposits</span></div>
+
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A79E8B;padding:10px 8px 6px">What it says</div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Greeting script</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Voice &amp; manner</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">When to fetch a human</span></div>
+
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A79E8B;padding:10px 8px 6px">Plumbing</div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Diary &amp; calendar</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Phone number</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Website button</span></div>
+
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A79E8B;padding:10px 8px 6px">Before you go live</div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Take a test call</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Invite the team</span></div>
+          </div>
+
+          <div style="margin-top:auto;font-family:'Gaegu',cursive;font-size:15px;line-height:1.35;color:#8A8271">Leave whenever you like. Everything saves as you type.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:18px 30px;border-bottom:1px solid #CFC5AB;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">The basics &nbsp;/&nbsp; <span style="color:#1D1A16">Opening hours</span></div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#4E7A48;background:#E8F0E0;border:1px solid #A9C79F;border-radius:20px;padding:4px 9px">SAVED JUST NOW</span>
+              <button style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">Skip for now</button>
+            </div>
+          </div>
+
+          <div style="flex:1;padding:26px 30px;display:flex;flex-direction:column;gap:22px;overflow:hidden">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="font-family:'Gochi Hand',cursive;font-size:34px;line-height:1.05;color:#1D1A16">When are you open?</div>
+                <div style="font-family:'Gaegu',cursive;font-size:18px;line-height:1.4;color:#4A453C;max-width:460px">We pulled these off your Google listing. Fix anything that&rsquo;s changed &mdash; the agent will never book outside these hours.</div>
+              </div>
+              <button style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#4A453C;white-space:nowrap">Copy Tuesday to all</button>
+            </div>
+
+            <div style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start;align-content:start">
+              <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,.05);overflow:hidden">
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#EFEBDE;border:1px solid #CFC5AB"><span style="width:14px;height:14px;border-radius:50%;background:#A79E8B;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271;width:86px">Monday</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#A79E8B">Closed</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:86px">Tuesday</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">18:00</span>
+                  <button style="margin-left:auto;background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#B2544E">+ Split for lunch</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:86px">Wednesday</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">18:00</span>
+                </div>
+                <div style="padding:11px 16px;border-bottom:1px solid #DCD4BF;display:flex;flex-direction:column;gap:8px;background:#FDF7F5">
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                    <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:86px">Thursday</span>
+                    <span style="background:#FCFAF4;border:1px solid #E0A9A3;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                    <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                    <span style="background:#FCFAF4;border:1px solid #E0A9A3;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">20:00</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#B2544E;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:20px;padding:3px 8px">LATE NIGHT</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:12px;padding-left:46px">
+                    <span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">Closed for lunch</span>
+                    <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:4px 9px;font-family:'Space Mono',monospace;font-size:11px;color:#4A453C">13:00</span>
+                    <span style="font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">to</span>
+                    <span style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:8px;padding:4px 9px;font-family:'Space Mono',monospace;font-size:11px;color:#4A453C">13:45</span>
+                    <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#8A8271">Remove</button>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:86px">Friday</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">18:00</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #DCD4BF">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#4E7A48;border:1px solid #4E7A48"><span style="width:14px;height:14px;border-radius:50%;background:#FCFAF4;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;width:86px">Saturday</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">09:00</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">to</span>
+                  <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 11px;font-family:'Space Mono',monospace;font-size:12px;color:#1D1A16">16:00</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 16px">
+                  <span style="width:34px;height:20px;flex:none;border-radius:12px;padding:2px;box-sizing:border-box;display:flex;justify-content:flex-end;background:#EFEBDE;border:1px solid #CFC5AB"><span style="width:14px;height:14px;border-radius:50%;background:#A79E8B;display:block"></span></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271;width:86px">Sunday</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#A79E8B">Closed</span>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="background:#FDF8E9;border:1px solid #CFC5AB;border-radius:13px;padding:15px;display:flex;flex-direction:column;gap:9px">
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#9A2B2B">So it will say</div>
+                  <div style="background:#FBE7E4;border:1px solid #EFC9C4;border-radius:13px 13px 13px 4px;padding:10px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.35;color:#4A453C">&ldquo;We&rsquo;re open till eight on Thursdays &mdash; I could fit you in at 6:30 if that&rsquo;s easier after work?&rdquo;</div>
+                </div>
+
+                <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:13px;padding:15px;display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                    <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Closures</div>
+                    <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#B2544E">+ Add</button>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 10px;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Aug 25 &mdash; bank holiday</span>
+                    <span style="background:#F9F5EC;border:1px solid #CFC5AB;border-radius:8px;padding:5px 10px;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C">Dec 24 &ndash; Jan 2</span>
+                  </div>
+                  <div style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.35;color:#8A8271">On closed days it still answers &mdash; it just books you for when you&rsquo;re back.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:14px 30px;border-top:1px solid #CFC5AB;background:#FDF8E9;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">&larr; Business basics</button>
+            <button style="background:#1D1A16;border:1px solid #1D1A16;border-radius:11px;padding:12px 24px;cursor:pointer;font-family:'Gaegu',cursive;font-size:18px;color:#FCFAF4">Save &amp; next: services</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="dv-fcap">Screen 2 in the flow &mdash; opening hours, rail always visible</p>
+
+    <div class="dv-card" style="width:1180px">
+      <div style="background:#F7F3EB;display:grid;grid-template-columns:300px minmax(0,1fr);height:740px">
+        <div style="background:#FDF8E9;border-right:1px solid #CFC5AB;padding:20px 18px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#FBE7E4;border:1px solid #EFC9C4;font-family:'Gochi Hand',cursive;font-size:14px;color:#B2544E">F</span>
+            <div style="display:flex;flex-direction:column">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Studio Fen</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Salon &middot; Bristol</span>
+            </div>
+          </div>
+          <div style="background:#FCFAF4;border:1px dashed #CFC5AB;border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-family:'Gochi Hand',cursive;font-size:19px;color:#1D1A16">Nothing done yet</div>
+            <span style="height:6px;border-radius:3px;background:#EFEBDE;display:block"></span>
+            <span style="font-family:'Gaegu',cursive;font-size:15px;line-height:1.3;color:#8A8271">Twelve small things. Most people finish in seven minutes.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;opacity:.5">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A79E8B;padding:6px 8px">The basics</div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Business basics</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Opening hours</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Services &amp; prices</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Payment &amp; deposits</span></div>
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A79E8B;padding:10px 8px 6px">What it says</div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Greeting script</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Voice &amp; manner</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">When to fetch a human</span></div>
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A79E8B;padding:10px 8px 6px">Plumbing</div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Diary &amp; calendar</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px"><span style="width:17px;height:17px;flex:none;border-radius:50%;border:1px dashed #CFC5AB;display:block"></span><span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Phone number</span></div>
+          </div>
+          <div style="margin-top:auto;font-family:'Gaegu',cursive;font-size:15px;line-height:1.35;color:#8A8271">The list unlocks as soon as we know who you are.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:18px 30px;border-bottom:1px solid #CFC5AB;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Setting up &nbsp;/&nbsp; <span style="color:#1D1A16">Start from something</span></div>
+            <button style="background:none;border:none;padding:0;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#8A8271">Save &amp; finish later</button>
+          </div>
+
+          <div style="flex:1;padding:34px 30px;display:flex;flex-direction:column;gap:24px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9A2B2B">First things first</div>
+              <div style="font-family:'Gochi Hand',cursive;font-size:36px;line-height:1.05;color:#1D1A16">Pick a starting point</div>
+              <div style="font-family:'Gaegu',cursive;font-size:18px;line-height:1.4;color:#4A453C;max-width:520px">Any of these fills in most of the list on the left. You&rsquo;ll get to check every word before it says any of it out loud.</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:11px;max-width:640px">
+              <div style="background:#FCFAF4;border:1px solid #E0A9A3;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,.05);padding:18px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;gap:11px">
+                  <span style="width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:50%;background:#FBE7E4;border:1px solid #EFC9C4;color:#B2544E"><svg viewBox="0 0 32 32" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4.2c6.6 0 11.9 5.3 11.9 11.8S22.6 27.8 16 27.8 4.1 22.5 4.1 16 9.4 4.2 16 4.2Z"/><path d="M4.6 12.6c7.3.4 15.4.3 22.8 0M4.6 19.6c7.3-.4 15.4-.3 22.8 0"/><path d="M15.6 4.4c-4.2 6.9-4.3 16.2 0 23.2M16.4 4.4c4.3 6.9 4.2 16.2 0 23.2"/></svg></span>
+                  <div style="display:flex;flex-direction:column;gap:2px">
+                    <div style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Read my website</div>
+                    <div style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Fastest &mdash; usually fills eight of the twelve steps.</div>
+                  </div>
+                  <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:#B2544E;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:20px;padding:4px 9px">RECOMMENDED</span>
+                </div>
+                <div style="display:flex;gap:9px">
+                  <div style="flex:1;display:flex;align-items:center;background:#F9F5EC;border:1px solid #CFC5AB;border-radius:11px;padding:0 14px">
+                    <span style="font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B">https://</span>
+                    <span style="flex:1;padding:12px 8px;font-family:'Gaegu',cursive;font-size:18px;color:#A79E8B">studiofen.co.uk</span>
+                  </div>
+                  <button style="background:#1D1A16;border:1px solid #1D1A16;border-radius:11px;padding:12px 20px;cursor:pointer;font-family:'Gaegu',cursive;font-size:18px;color:#FCFAF4;white-space:nowrap">Read it</button>
+                </div>
+              </div>
+
+              <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px">
+                <span style="width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;background:#EFEBDE;border:1px solid #DCD4BF;color:#4A453C"><svg viewBox="0 0 32 32" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.6c.1-1.7 1-2.6 2.7-2.7 3.2-.3 13.6-.3 16.8 0 1.7.1 2.6 1 2.7 2.7.2 2.7.2 12.3 0 14.8-.1 1.7-1 2.6-2.7 2.7-3.2.3-13.6.3-16.8 0-1.7-.1-2.6-1-2.7-2.7-.2-2.5-.2-12.1 0-14.8Z"/><path d="M10.6 4.4v5M21.4 4.4v5M5.2 14.2c7 .3 19.6.2 21.6 0"/></svg></span>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <div style="font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">Connect my booking system</div>
+                  <div style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Fresha, Treatwell, Square or Google Calendar.</div>
+                </div>
+                <button style="margin-left:auto;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 15px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16;white-space:nowrap">Choose</button>
+              </div>
+
+              <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px">
+                <span style="width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;background:#EFEBDE;border:1px solid #DCD4BF;color:#4A453C"><svg viewBox="0 0 32 32" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.6 6.4c.1-1.4.9-2.1 2.3-2.2 2.4-.2 5.6-.2 7.4-.1.9 0 1.6.4 2.2 1 1.4 1.4 3.4 3.5 4.6 4.9.5.6.8 1.2.8 2 .1 3.6.1 10.6-.1 13.6-.1 1.4-.9 2.1-2.3 2.2-3.1.3-9.6.3-12.6 0-1.4-.1-2.2-.8-2.3-2.2-.2-2.9-.2-16.3 0-19.2Z"/><path d="M18.4 4.4c-.2 2 .1 4.4.5 4.9.5.5 3 .7 5.2.5M16 21.6v-7M13 17.4c1-1 2-2 3-2.8 1 .8 2 1.8 3 2.8"/></svg></span>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <div style="font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">Upload my price list</div>
+                  <div style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Drop a PDF, menu photo or spreadsheet.</div>
+                </div>
+                <button style="margin-left:auto;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 15px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16;white-space:nowrap">Upload</button>
+              </div>
+
+              <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px">
+                <span style="width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;background:#EFEBDE;border:1px solid #DCD4BF;color:#4A453C"><svg viewBox="0 0 32 32" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.2 8.4c.1-1.6 1-2.4 2.6-2.5 3.1-.3 13.5-.3 16.6 0 1.6.1 2.5.9 2.6 2.5.2 2.6.2 13.2 0 15.6-.1 1.6-1 2.4-2.6 2.5-3.1.3-13.5.3-16.6 0-1.6-.1-2.5-.9-2.6-2.5-.2-2.4-.2-13 0-15.6Z"/><path d="M5.4 12.6c6.9.3 19.4.2 21.4 0M12.4 12.9c-.2 4.6-.2 9.3 0 13.6"/></svg></span>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <div style="font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">Use the salon template</div>
+                  <div style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Cuts, colour, lashes and the usual questions.</div>
+                </div>
+                <button style="margin-left:auto;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 15px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16;white-space:nowrap">Use it</button>
+              </div>
+            </div>
+
+            <button style="align-self:flex-start;background:none;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">Start from a blank brief instead</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="dv-fcap">Screen 1 &mdash; same shortcuts, rail visible from the very first breath</p>
+  </div>
+
+</div>
+<p class="dv-next">Try next: &ldquo;build out <a class="dv-oid" href="#1a">1a</a> for all 12 steps&rdquo; &middot; &ldquo;keep <a class="dv-oid" href="#1b">1b</a>&rsquo;s rail but use <a class="dv-oid" href="#1a">1a</a>&rsquo;s big centred questions&rdquo; &middot; &ldquo;show the test-call screen in both&rdquo;</p>
+</section>
+
+</x-dc>
+</body>
+</html>

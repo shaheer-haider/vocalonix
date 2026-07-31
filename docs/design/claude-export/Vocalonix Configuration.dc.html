@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F7F3EB}
+  a{color:#B2544E}
+  a:hover{color:#8E3E39}
+  button{font:inherit}
+  input,textarea{font:inherit}
+  *{box-sizing:border-box}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(29,26,22,.16);border-radius:6px}
+  @keyframes vxup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes vxin{from{opacity:0}to{opacity:1}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes vxbar{0%,100%{transform:scaleY(.28)}50%{transform:scaleY(1)}}
+</style>
+</helmet>
+
+<div data-screen-label="Configuration" style="height:100vh;min-width:1280px;display:grid;grid-template-columns:238px minmax(0,1fr) 322px;background:#F7F3EB;overflow:hidden">
+
+  <aside style="background:#FDF8E9;border-right:1px solid #E3DCC6;padding:24px 18px;display:flex;flex-direction:column;gap:24px;overflow-y:auto;overflow-x:hidden">
+    <div style="font-family:'Gochi Hand',cursive;font-size:27px;color:#1D1A16;padding-left:4px">vocalonix</div>
+    <div style="display:flex;flex-direction:column;gap:7px;position:relative">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8A8271;padding-left:4px">Workspace</div>
+      <button onClick="{{ toggleWs }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 11px;cursor:pointer;text-align:left;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16">
+        <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">&#9662;</span>
+      </button>
+      <sc-if value="{{ wsOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:100%;left:0;right:0;margin-top:5px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;box-shadow:2px 4px 0 rgba(29,26,22,0.08);padding:6px;z-index:20;display:flex;flex-direction:column;gap:2px">
+          <button onClick="{{ closeWs }}" style="display:flex;justify-content:space-between;align-items:center;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:8px;padding:7px 9px;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;text-align:left">
+            <span>Acme Dental</span><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#4E7A48">LIVE</span>
+          </button>
+          <button onClick="{{ closeWs }}" style="display:flex;justify-content:space-between;align-items:center;background:transparent;border:1px solid transparent;border-radius:8px;padding:7px 9px;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#4A453C;text-align:left">
+            <span>Northside Vets</span><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#B4712A">DRAFT</span>
+          </button>
+        </div>
+      </sc-if>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:3px">
+      <a href="Vocalonix Dashboard.dc.html" style="{{ navIdle }}">Dashboard</a>
+      <a href="Vocalonix Conversations.dc.html" style="{{ navIdle }}">Conversations</a>
+      <a href="Vocalonix Contacts.dc.html" style="{{ navIdle }}">Contacts</a>
+      <a href="Vocalonix Bookings.dc.html" style="{{ navIdle }}">Bookings</a>
+      <a href="Vocalonix Callbacks.dc.html" style="{{ navIdle }}">Callbacks</a>
+      <button style="{{ navOn }}"><span>Configuration</span><span style="{{ navCountStyle }}">{{ navCount }}</span></button>
+      <a href="Vocalonix Knowledge.dc.html" style="{{ navIdle }}">Knowledge</a>
+      <a href="Vocalonix Settings.dc.html#team" style="{{ navIdle }}">Team</a>
+      <a href="Vocalonix Settings.dc.html#account" style="{{ navIdle }}">Account &amp; billing</a>
+      <a href="Vocalonix Settings.dc.html#notifications" style="{{ navIdle }}">Notifications</a>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <div style="background:#F9F5EC;border:1px dashed #D8CFB8;border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#9A2B2B">Editing the draft</div>
+        <div style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">Nothing here reaches a caller until you republish.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;border-top:1px dashed #D8CFB8;padding-top:13px">
+        <div style="width:26px;height:26px;border-radius:50%;background:#EFEBDE;border:1px solid #CFC5AB;display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand',cursive;font-size:14px;color:#4A453C">O</div>
+        <div style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">Owner One</div>
+      </div>
+    </div>
+  </aside>
+
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid #CFC5AB">
+
+    <div style="padding:20px 26px 0;display:flex;flex-direction:column;gap:14px;border-bottom:1px solid #CFC5AB">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <span style="font-family:'Gochi Hand',cursive;font-size:28px;color:#1D1A16">Configuration</span>
+          <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">{{ headNote }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <button onClick="{{ testAgent }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:9px 14px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16" style-hover="border-color:#B2544E">Test the agent</button>
+          <button onClick="{{ publishClick }}" style="{{ pubBtnStyle }}">{{ pubBtnLabel }}</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:2px">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6">
+          <button data-t="{{ t.k }}" onClick="{{ pickTab }}" style="{{ t.style }}">{{ t.k }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow:auto;padding:20px 26px 40px;display:flex;flex-direction:column;gap:16px">
+
+      <sc-if value="{{ isBiz }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:16px;animation:vxin .16s ease">
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Who you are</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">The agent says these out loud, so spell them how you'd say them.</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Business name</span>
+              <input data-k="bizName" value="{{ cfg.bizName }}" onChange="{{ setField }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">What kind of business</span>
+              <input data-k="trading" value="{{ cfg.trading }}" onChange="{{ setField }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Number the agent answers</span>
+              <input data-k="phone" value="{{ cfg.phone }}" onChange="{{ setField }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:10px 12px;font-family:'Space Mono',monospace;font-size:14px;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Timezone</span>
+              <button onClick="{{ pickTz }}" style="display:flex;align-items:center;justify-content:space-between;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px;cursor:pointer;text-align:left;width:100%">
+                <span style="font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16">{{ cfg.tz }}</span>
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#8A8271">&#9662;</span>
+              </button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Address</span>
+              <input data-k="addr" value="{{ cfg.addr }}" onChange="{{ setField }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Website</span>
+              <input data-k="site" value="{{ cfg.site }}" onChange="{{ setField }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E">
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">What you do, in your words</span>
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">{{ aboutCount }}</span>
+          </div>
+          <textarea data-k="about" value="{{ cfg.about }}" onChange="{{ setField }}" style="min-height:96px;resize:vertical;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:11px 13px;font-family:'Gaegu',cursive;font-size:18px;line-height:1.4;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E"></textarea>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Read before every call. Two or three sentences beat a page &mdash; anything longer belongs in Knowledge.</span>
+        </div>
+
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+          <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Where you are</span>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ locations }}" as="l" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#FDFBF6;border:1px solid #DCD4BF;border-radius:11px;padding:11px 13px">
+                <span style="display:flex;flex-direction:column;gap:1px">
+                  <span style="font-family:'Gaegu',cursive;font-size:18px;line-height:1.2;color:#1D1A16">{{ l.name }}</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#8A8271">{{ l.sub }}</span>
+                </span>
+                <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">{{ l.num }}</span>
+              </div>
+            </sc-for>
+            <button onClick="{{ addLocation }}" style="align-self:flex-start;background:transparent;border:1px dashed #D8CFB8;border-radius:11px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#4A453C" style-hover="border-color:#B2544E">Add a location</button>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isAgent }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:16px;animation:vxin .16s ease">
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Voice</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">A new voice takes effect on the next call, never mid-call.</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+            <sc-for list="{{ voices }}" as="v" hint-placeholder-count="4">
+              <div style="{{ v.cardStyle }}">
+                <button data-v="{{ v.id }}" onClick="{{ pickVoice }}" style="background:none;border:none;padding:0;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px">
+                  <span style="font-family:'Gochi Hand',cursive;font-size:21px;color:#1D1A16">{{ v.name }}</span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">{{ v.desc }}</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">{{ v.meta }}</span>
+                </button>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px dashed #D8CFB8;padding-top:9px">
+                  <button data-v="{{ v.id }}" onClick="{{ playVoice }}" style="{{ v.playStyle }}">{{ v.playLabel }}</button>
+                  <div style="display:flex;align-items:flex-end;gap:2px;height:16px">
+                    <sc-for list="{{ v.bars }}" as="b" hint-placeholder-count="5">
+                      <span style="{{ b.style }}"></span>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start">
+          <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Greeting</span>
+            <textarea data-k="greeting" value="{{ cfg.greeting }}" onChange="{{ setField }}" style="min-height:70px;resize:vertical;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:11px 13px;font-family:'Gaegu',cursive;font-size:18px;line-height:1.4;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E"></textarea>
+            <button data-k="useName" onClick="{{ toggleField }}" style="display:flex;align-items:center;gap:10px;background:transparent;border:none;padding:0;cursor:pointer;text-align:left">
+              <span style="{{ useNameBox }}">{{ useNameTick }}</span>
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Use the caller's name when Contacts already knows it</span>
+            </button>
+            <div style="background:#F9F5EC;border:1px dashed #D8CFB8;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">How it lands</span>
+              <span style="align-self:flex-start;max-width:88%;background:#FBE7E4;border:1px solid #EFC9C4;border-radius:12px 12px 12px 4px;padding:8px 12px;font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#4A453C">{{ greetPreview }}</span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">{{ greetNote }}</span>
+            </div>
+          </div>
+
+          <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:16px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Manner</span>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Warmth</span>
+              <div style="display:flex;gap:4px;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:10px;padding:3px">
+                <sc-for list="{{ warmthSegs }}" as="s" hint-placeholder-count="3">
+                  <button data-k="warmth" data-v="{{ s.v }}" onClick="{{ setPick }}" style="{{ s.style }}">{{ s.v }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Answer length</span>
+              <div style="display:flex;gap:4px;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:10px;padding:3px">
+                <sc-for list="{{ lengthSegs }}" as="s" hint-placeholder-count="3">
+                  <button data-k="length" data-v="{{ s.v }}" onClick="{{ setPick }}" style="{{ s.style }}">{{ s.v }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <button data-k="interrupt" onClick="{{ toggleField }}" style="display:flex;align-items:center;gap:10px;background:transparent;border:none;padding:0;cursor:pointer;text-align:left">
+              <span style="{{ interruptBox }}">{{ interruptTick }}</span>
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Let callers interrupt mid-sentence</span>
+            </button>
+            <div style="display:flex;flex-direction:column;gap:7px;border-top:1px dashed #D8CFB8;padding-top:13px">
+              <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Languages</span>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <sc-for list="{{ langs }}" as="l" hint-placeholder-count="3">
+                  <span style="{{ l.style }}">{{ l.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">When to hand over</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Read top to bottom. The first rule that matches wins.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+              <div style="{{ r.rowStyle }}">
+                <span style="font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B;width:16px;flex:none;padding-top:11px">{{ r.n }}</span>
+                <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271;flex:none;padding-top:10px">If</span>
+                <input data-i="{{ r.i }}" value="{{ r.when }}" onChange="{{ setRuleWhen }}" style="flex:1;min-width:0;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 11px;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;outline:none" style-focus="border-color:#B2544E">
+                <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271;flex:none;padding-top:10px">then</span>
+                <button data-i="{{ r.i }}" onClick="{{ cycleRule }}" style="{{ r.thenStyle }}">{{ r.then }}</button>
+                <button data-i="{{ r.i }}" onClick="{{ toggleRule }}" style="{{ r.onStyle }}">{{ r.onLabel }}</button>
+                <button data-i="{{ r.i }}" onClick="{{ dropRule }}" style="flex:none;background:none;border:none;padding:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B" style-hover="color:#B2544E">&#10005;</button>
+              </div>
+            </sc-for>
+            <button onClick="{{ addRule }}" style="align-self:flex-start;background:transparent;border:1px dashed #D8CFB8;border-radius:11px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#4A453C" style-hover="border-color:#B2544E">Add a rule</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;border-top:1px dashed #D8CFB8;padding-top:13px">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#9A2B2B">Never, whatever is asked</span>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ nevers }}" as="n" hint-placeholder-count="3">
+                <span style="display:flex;align-items:center;gap:7px;background:#FDF7F5;border:1px solid #EFC9C4;border-radius:20px;padding:5px 8px 5px 12px;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E">
+                  {{ n.v }}
+                  <button data-i="{{ n.i }}" onClick="{{ dropNever }}" style="background:none;border:none;padding:0 2px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;color:#B2544E">&#10005;</button>
+                </span>
+              </sc-for>
+              <button onClick="{{ addNever }}" style="background:transparent;border:1px dashed #D8CFB8;border-radius:20px;padding:5px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#4A453C" style-hover="border-color:#B2544E">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isHours }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:16px;animation:vxin .16s ease">
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Opening hours</span>
+            <button onClick="{{ copyDown }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:6px 12px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16" style-hover="border-color:#B2544E">Copy Monday to Tue&ndash;Fri</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ hourRows }}" as="h" hint-placeholder-count="7">
+              <div style="{{ h.rowStyle }}">
+                <span style="font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16;width:104px;flex:none">{{ h.d }}</span>
+                <button data-i="{{ h.i }}" onClick="{{ toggleDay }}" style="{{ h.openStyle }}">{{ h.openLabel }}</button>
+                <sc-if value="{{ h.on }}" hint-placeholder-val="{{ true }}">
+                  <span style="display:flex;align-items:center;gap:7px">
+                    <input data-i="{{ h.i }}" data-w="from" value="{{ h.from }}" onChange="{{ setHour }}" style="width:74px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:7px 9px;font-family:'Space Mono',monospace;font-size:13px;color:#1D1A16;outline:none;text-align:center" style-focus="border-color:#B2544E">
+                    <span style="font-family:'Space Mono',monospace;font-size:11px;color:#A79E8B">&#8594;</span>
+                    <input data-i="{{ h.i }}" data-w="to" value="{{ h.to }}" onChange="{{ setHour }}" style="width:74px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:7px 9px;font-family:'Space Mono',monospace;font-size:13px;color:#1D1A16;outline:none;text-align:center" style-focus="border-color:#B2544E">
+                  </span>
+                </sc-if>
+                <sc-if value="{{ h.off }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;color:#A79E8B">Shut &mdash; the agent still answers and takes a message</span>
+                </sc-if>
+                <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:#A79E8B">{{ h.span }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Hours are context, not a diary. Bookable slots live in <a href="Vocalonix Bookings.dc.html">Bookings &rarr; Setup</a>.</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start">
+          <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Days you're shut</span>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <sc-for list="{{ closures }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;background:#FDFBF6;border:1px solid #DCD4BF;border-radius:11px;padding:10px 12px">
+                  <span style="font-family:'Space Mono',monospace;font-size:12px;color:#4A453C;width:96px;flex:none">{{ c.when }}</span>
+                  <span style="flex:1;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">{{ c.what }}</span>
+                  <button data-i="{{ c.i }}" onClick="{{ dropClosure }}" style="background:none;border:none;padding:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;color:#A79E8B" style-hover="color:#B2544E">&#10005;</button>
+                </div>
+              </sc-for>
+              <button onClick="{{ addClosure }}" style="align-self:flex-start;background:transparent;border:1px dashed #D8CFB8;border-radius:11px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#4A453C" style-hover="border-color:#B2544E">Add a closure</button>
+            </div>
+          </div>
+          <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">After hours</span>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ oohSegs }}" as="s" hint-placeholder-count="3">
+                <button data-k="oohMode" data-v="{{ s.v }}" onClick="{{ setPick }}" style="{{ s.style }}">
+                  <span style="{{ s.dotStyle }}"></span>
+                  <span style="display:flex;flex-direction:column;gap:1px;text-align:left">
+                    <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.2;color:#1D1A16">{{ s.v }}</span>
+                    <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#8A8271">{{ s.sub }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;border-top:1px dashed #D8CFB8;padding-top:12px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">If it sounds urgent</span>
+              <textarea data-k="oohLine" value="{{ cfg.oohLine }}" onChange="{{ setField }}" style="min-height:62px;resize:vertical;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:10px 12px;font-family:'Gaegu',cursive;font-size:17px;line-height:1.4;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isWidget }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:16px;animation:vxin .16s ease">
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Put it on your site</span>
+            <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Paste once, at the end of the page. It never needs changing again.</span>
+          </div>
+          <div style="position:relative;background:#F1EDE1;border:1px solid #DCD4BF;border-radius:12px;padding:14px 16px">
+            <pre style="margin:0;white-space:pre-wrap;word-break:break-all;font-family:'Space Mono',monospace;font-size:12px;line-height:1.7;color:#4A453C">{{ embed }}</pre>
+            <button onClick="{{ copyEmbed }}" style="{{ copyStyle }}">{{ copyLabel }}</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px dashed #D8CFB8;padding-top:13px">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Embed token</span>
+            <span style="font-family:'Space Mono',monospace;font-size:13px;color:#1D1A16;background:#F1EDE1;border:1px solid #DCD4BF;border-radius:8px;padding:6px 10px">{{ tokenText }}</span>
+            <button onClick="{{ toggleToken }}" style="background:transparent;border:none;padding:4px 2px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E;text-decoration:underline">{{ tokenAction }}</button>
+            <button onClick="{{ revoke }}" style="margin-left:auto;background:#FDF7F5;border:1px solid #EFC9C4;border-radius:10px;padding:7px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E" style-hover="border-color:#B2544E">Revoke and reissue</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start">
+          <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Where it may load</span>
+            <textarea data-k="domains" value="{{ cfg.domains }}" onChange="{{ setField }}" style="min-height:88px;resize:vertical;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:10px 12px;font-family:'Space Mono',monospace;font-size:13px;line-height:1.7;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E"></textarea>
+            <span style="{{ domainNoteStyle }}">{{ domainNote }}</span>
+          </div>
+          <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+            <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Before the call connects</span>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ askSegs }}" as="s" hint-placeholder-count="3">
+                <button data-k="askName" data-v="{{ s.v }}" onClick="{{ setPick }}" style="{{ s.style }}">
+                  <span style="{{ s.dotStyle }}"></span>
+                  <span style="display:flex;flex-direction:column;gap:1px;text-align:left">
+                    <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.2;color:#1D1A16">{{ s.v }}</span>
+                    <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#8A8271">{{ s.sub }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;border-top:1px dashed #D8CFB8;padding-top:12px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Consent line under the field</span>
+              <input data-k="consent" value="{{ cfg.consent }}" onChange="{{ setField }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E">
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isLook }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start;animation:vxin .16s ease">
+        <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:14px;box-shadow:2px 3px 0 rgba(29,26,22,0.05);padding:20px 22px;display:flex;flex-direction:column;gap:16px">
+          <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Appearance</span>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Accent</span>
+            <div style="display:flex;gap:9px;flex-wrap:wrap">
+              <sc-for list="{{ accents }}" as="a" hint-placeholder-count="4">
+                <button data-k="accent" data-v="{{ a.v }}" onClick="{{ setPick }}" style="{{ a.style }}">
+                  <span style="{{ a.swatch }}"></span>
+                  <span style="font-family:'Gaegu',cursive;font-size:16px;color:#4A453C">{{ a.name }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Launcher shape</span>
+              <div style="display:flex;gap:4px;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:10px;padding:3px">
+                <sc-for list="{{ shapeSegs }}" as="s" hint-placeholder-count="3">
+                  <button data-k="shape" data-v="{{ s.v }}" onClick="{{ setPick }}" style="{{ s.style }}">{{ s.v }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Corner</span>
+              <div style="display:flex;gap:4px;background:#EFEBDE;border:1px solid #DCD4BF;border-radius:10px;padding:3px">
+                <sc-for list="{{ posSegs }}" as="s" hint-placeholder-count="2">
+                  <button data-k="pos" data-v="{{ s.v }}" onClick="{{ setPick }}" style="{{ s.style }}">{{ s.v }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Launcher label</span>
+              <input data-k="label" value="{{ cfg.label }}" onChange="{{ setField }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Bubble that pops up</span>
+              <input data-k="bubble" value="{{ cfg.bubble }}" onChange="{{ setField }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16;outline:none;width:100%" style-focus="border-color:#B2544E">
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:18px;border-top:1px dashed #D8CFB8;padding-top:13px">
+            <button data-k="dark" onClick="{{ toggleField }}" style="display:flex;align-items:center;gap:10px;background:transparent;border:none;padding:0;cursor:pointer;text-align:left">
+              <span style="{{ darkBox }}">{{ darkTick }}</span>
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Dark widget</span>
+            </button>
+            <button data-k="badge" onClick="{{ toggleField }}" style="display:flex;align-items:center;gap:10px;background:transparent;border:none;padding:0;cursor:pointer;text-align:left">
+              <span style="{{ badgeBox }}">{{ badgeTick }}</span>
+              <span style="font-family:'Gaegu',cursive;font-size:17px;color:#4A453C">Show &ldquo;powered by Vocalonix&rdquo;</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Preview &middot; your site</span>
+          <div style="{{ previewStyle }}">
+            <div style="display:flex;align-items:center;gap:6px;padding:9px 11px;border-bottom:1px solid rgba(29,26,22,.1)">
+              <span style="width:8px;height:8px;border-radius:50%;background:#E0A9A3"></span>
+              <span style="width:8px;height:8px;border-radius:50%;background:#E2B98A"></span>
+              <span style="width:8px;height:8px;border-radius:50%;background:#A9C79F"></span>
+              <span style="margin-left:8px;font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B">{{ cfg.site }}</span>
+            </div>
+            <div style="position:relative;height:314px;padding:16px;display:flex;flex-direction:column;gap:9px">
+              <div style="height:14px;width:56%;border-radius:4px;background:repeating-linear-gradient(135deg,rgba(29,26,22,.09) 0,rgba(29,26,22,.09) 4px,transparent 4px,transparent 9px)"></div>
+              <div style="height:9px;width:84%;border-radius:4px;background:repeating-linear-gradient(135deg,rgba(29,26,22,.06) 0,rgba(29,26,22,.06) 4px,transparent 4px,transparent 9px)"></div>
+              <div style="height:9px;width:72%;border-radius:4px;background:repeating-linear-gradient(135deg,rgba(29,26,22,.06) 0,rgba(29,26,22,.06) 4px,transparent 4px,transparent 9px)"></div>
+              <div style="flex:1;border-radius:8px;background:repeating-linear-gradient(135deg,rgba(29,26,22,.05) 0,rgba(29,26,22,.05) 6px,transparent 6px,transparent 13px);display:flex;align-items:center;justify-content:center">
+                <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:#A79E8B">YOUR PAGE</span>
+              </div>
+              <div style="{{ widgetStackStyle }}">
+                <div style="{{ bubbleStyle }}">{{ cfg.bubble }}</div>
+                <div style="{{ launcherStyle }}">
+                  <span style="{{ avatarStyle }}">{{ avatarChar }}</span>
+                  <span style="{{ launcherTextStyle }}">{{ cfg.label }}</span>
+                </div>
+                <sc-if value="{{ cfg.badge }}" hint-placeholder-val="{{ true }}">
+                  <span style="{{ badgeStyle }}">powered by Vocalonix</span>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#8A8271">The live widget changes when you republish, not while you type here.</span>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isHist }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:14px;animation:vxin .16s ease">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+          <span style="font-family:'Gochi Hand',cursive;font-size:22px;color:#1D1A16">Every version that answered a call</span>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Restoring writes into your draft. Callers hear it only once you republish.</span>
+        </div>
+        <sc-for list="{{ hist }}" as="v" hint-placeholder-count="4">
+          <div style="{{ v.cardStyle }}">
+            <div style="display:flex;align-items:flex-start;gap:14px">
+              <div style="display:flex;flex-direction:column;gap:2px;width:112px;flex:none">
+                <span style="font-family:'Gochi Hand',cursive;font-size:21px;color:#1D1A16">{{ v.name }}</span>
+                <span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A8271">{{ v.when }}</span>
+                <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">{{ v.by }}</span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                <span style="{{ v.pillStyle }}">{{ v.pill }}</span>
+                <sc-for list="{{ v.lines }}" as="l" hint-placeholder-count="3">
+                  <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#4A453C">&middot; {{ l }}</span>
+                </sc-for>
+              </div>
+              <div style="flex:none;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+                <sc-if value="{{ v.isLive }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ openDiff }}" style="{{ v.compareStyle }}">{{ v.compareLabel }}</button>
+                </sc-if>
+                <sc-if value="{{ v.canRestore }}" hint-placeholder-val="{{ false }}">
+                  <button data-v="{{ v.v }}" onClick="{{ askRestore }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:7px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16" style-hover="border-color:#B2544E">Restore</button>
+                </sc-if>
+              </div>
+            </div>
+            <sc-if value="{{ v.confirming }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#FAEBDC;border:1px solid #E2B98A;border-radius:11px;padding:11px 13px;animation:vxup .16s ease">
+                <span style="flex:1;min-width:220px;font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#4A453C">{{ v.confirmText }}</span>
+                <button data-v="{{ v.v }}" onClick="{{ doRestore }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:10px;padding:7px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Yes, restore it</button>
+                <button onClick="{{ cancelRestore }}" style="background:transparent;border:1px solid #E2B98A;border-radius:10px;padding:7px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B4712A">Keep my draft</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <div style="background:#FDF8E9;display:flex;flex-direction:column;min-height:0;overflow:auto">
+
+    <div style="padding:18px 20px;border-bottom:1px solid #E3DCC6;display:flex;flex-direction:column;gap:14px">
+      <sc-if value="{{ isPending }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#FAEBDC;border:1px solid #E2B98A;border-radius:13px;padding:14px 15px;display:flex;flex-direction:column;gap:10px">
+          <span style="align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#B4712A;background:#FCF4EA;border:1px solid #E2B98A;border-radius:20px;padding:4px 9px">Changes pending</span>
+          <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#4A453C">{{ pendingLine }}</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button onClick="{{ publishClick }}" style="background:#1D1A16;border:1px solid #1D1A16;border-radius:10px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#FCFAF4">Republish</button>
+            <button onClick="{{ openDiff }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#1D1A16">See the diff</button>
+            <button onClick="{{ discardAll }}" style="background:transparent;border:none;padding:8px 4px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E;text-decoration:underline">Discard</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isPublishing }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#F2EEE1;border:1px solid #CFC5AB;border-radius:13px;padding:14px 15px;display:flex;align-items:center;gap:11px">
+          <span style="width:15px;height:15px;border-radius:50%;border:2px solid #CFC5AB;border-top-color:#B2544E;animation:spin .8s linear infinite;flex:none"></span>
+          <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#4A453C">{{ publishingLine }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isLiveState }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#E8F0E0;border:1px solid #A9C79F;border-radius:13px;padding:14px 15px;display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#4E7A48;animation:pulse 2.4s ease-in-out infinite;flex:none"></span>
+            <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.3;color:#3F6B3A">{{ liveLine }}</span>
+          </div>
+          <button data-t="History" onClick="{{ pickTab }}" style="align-self:flex-start;background:transparent;border:none;padding:0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#3F6B3A;text-decoration:underline">View history</button>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">In your draft</span>
+          <span style="font-family:'Gaegu',cursive;font-size:15px;color:#A79E8B">{{ pendingCountLabel }}</span>
+        </div>
+        <sc-for list="{{ pendingPeek }}" as="p" hint-placeholder-count="4">
+          <button data-t="{{ p.tab }}" onClick="{{ pickTab }}" style="display:flex;align-items:baseline;gap:9px;background:transparent;border:none;border-bottom:1px dashed #E3DCC6;padding:7px 0;cursor:pointer;text-align:left;width:100%">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#A79E8B;width:62px;flex:none">{{ p.sec }}</span>
+            <span style="flex:1;font-family:'Gaegu',cursive;font-size:16px;line-height:1.25;color:#1D1A16">{{ p.label }}</span>
+          </button>
+        </sc-for>
+        <sc-if value="{{ hasMorePending }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ openDiff }}" style="align-self:flex-start;background:transparent;border:none;padding:6px 0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E;text-decoration:underline">{{ morePending }}</button>
+        </sc-if>
+        <sc-if value="{{ isClean }}" hint-placeholder-val="{{ false }}">
+          <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#8A8271;padding:6px 0">Nothing waiting. The draft and the live agent say the same thing.</span>
+        </sc-if>
+      </div>
+    </div>
+
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:9px;border-bottom:1px solid #E3DCC6">
+      <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Live right now</span>
+      <sc-for list="{{ liveFacts }}" as="f" hint-placeholder-count="5">
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#A79E8B;width:70px;flex:none">{{ f.k }}</span>
+          <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.25;color:#1D1A16">{{ f.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="padding:18px 20px 26px;display:flex;flex-direction:column;gap:10px">
+      <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8A8271">Who changed what</span>
+      <sc-for list="{{ activity }}" as="a" hint-placeholder-count="4">
+        <div style="display:flex;gap:9px;align-items:baseline">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;color:#A79E8B;width:52px;flex:none">{{ a.t }}</span>
+          <span style="font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:#4A453C">{{ a.v }}</span>
+        </div>
+      </sc-for>
+      <button data-t="History" onClick="{{ pickTab }}" style="align-self:flex-start;background:transparent;border:none;padding:2px 0;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:#B2544E;text-decoration:underline">Full history &nearr;</button>
+    </div>
+  </div>
+
+  <sc-if value="{{ diffOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:70;background:rgba(29,26,22,.36);display:flex;align-items:center;justify-content:center;padding:40px;animation:vxin .14s ease">
+      <div style="width:820px;max-width:100%;max-height:100%;display:flex;flex-direction:column;background:#F7F3EB;border:1px solid #CFC5AB;border-radius:16px;box-shadow:0 18px 44px rgba(29,26,22,.22);overflow:hidden;animation:vxup .18s ease">
+        <div style="padding:20px 24px 16px;border-bottom:1px solid #CFC5AB;display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#9A2B2B">{{ diffEyebrow }}</span>
+            <span style="font-family:'Gochi Hand',cursive;font-size:26px;color:#1D1A16">What republishing would change</span>
+            <span style="font-family:'Gaegu',cursive;font-size:17px;color:#8A8271">{{ diffSub }}</span>
+          </div>
+          <button onClick="{{ closeDiff }}" style="flex:none;background:none;border:none;padding:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:14px;color:#8A8271">&#10005;</button>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;padding:16px 24px 22px;display:flex;flex-direction:column;gap:18px">
+          <sc-for list="{{ diffGroups }}" as="g" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9A2B2B;white-space:nowrap">{{ g.sec }}</span>
+                <span style="flex:1;height:1px;background:#DCD4BF"></span>
+              </div>
+              <sc-for list="{{ g.items }}" as="d" hint-placeholder-count="2">
+                <div style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;gap:9px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                    <span style="font-family:'Gaegu',cursive;font-size:18px;color:#1D1A16">{{ d.label }}</span>
+                    <button data-i="{{ d.i }}" onClick="{{ revertOne }}" style="flex:none;background:transparent;border:1px solid #CFC5AB;border-radius:9px;padding:5px 10px;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:#4A453C" style-hover="border-color:#B2544E;color:#B2544E">Keep the live one</button>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div style="background:#F1EDE1;border:1px solid #DCD4BF;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px">
+                      <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8A8271">Live now</span>
+                      <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#8A8271;white-space:pre-wrap">{{ d.from }}</span>
+                    </div>
+                    <div style="background:#E8F0E0;border:1px solid #A9C79F;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px">
+                      <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#4E7A48">Your draft</span>
+                      <span style="font-family:'Gaegu',cursive;font-size:17px;line-height:1.35;color:#1D1A16;white-space:pre-wrap">{{ d.to }}</span>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+          <sc-if value="{{ isClean }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#F9F5EC;border:1px dashed #D8CFB8;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:7px;align-items:center;text-align:center">
+              <span style="font-family:'Gochi Hand',cursive;font-size:20px;color:#1D1A16">Nothing to publish</span>
+              <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">Your draft matches the live agent line for line.</span>
+            </div>
+          </sc-if>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid #CFC5AB;background:#FDF8E9;display:flex;align-items:center;justify-content:space-between;gap:14px">
+          <span style="font-family:'Gaegu',cursive;font-size:16px;color:#8A8271">{{ diffFoot }}</span>
+          <div style="display:flex;gap:8px">
+            <button onClick="{{ closeDiff }}" style="background:#FCFAF4;border:1px solid #CFC5AB;border-radius:11px;padding:9px 15px;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16">Back to editing</button>
+            <button onClick="{{ publishFromDiff }}" style="{{ diffPubStyle }}">Republish now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:80;background:#1D1A16;color:#FCFAF4;border-radius:12px;padding:11px 18px;box-shadow:0 10px 28px rgba(29,26,22,.24);font-family:'Gaegu',cursive;font-size:17px">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;startTab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Business&quot;,&quot;Agent&quot;,&quot;Hours&quot;,&quot;Widget&quot;,&quot;Appearance&quot;,&quot;History&quot;],&quot;default&quot;:&quot;Business&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;publishState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Changes pending&quot;,&quot;Live and up to date&quot;],&quot;default&quot;:&quot;Changes pending&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;requireReview&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+class Component extends DCLogic {
+  NAVBASE = "border-radius:10px;padding:8px 11px;cursor:pointer;text-align:left;text-decoration:none;display:block;font-family:'Gaegu',cursive;font-size:18px;";
+
+  VOICES = [
+    { id:'wren', name:'Wren', desc:'Warm, unhurried, English', meta:'F \u00b7 en-GB' },
+    { id:'alder', name:'Alder', desc:'Level and clear, English', meta:'M \u00b7 en-GB' },
+    { id:'fen', name:'Fen', desc:'Quick, bright, Scottish', meta:'F \u00b7 en-GB' },
+    { id:'juno', name:'Juno', desc:'Soft, careful, Irish', meta:'F \u00b7 en-IE' }
+  ];
+
+  THENS = ['Ring the front desk', 'Take a message', 'Text the owner', 'Transfer to on-call mobile', 'Book a callback'];
+
+  DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+  FIELDS = [
+    { k:'bizName', label:'Business name', sec:'Business', tab:'Business' },
+    { k:'trading', label:'Kind of business', sec:'Business', tab:'Business' },
+    { k:'phone', label:'Number answered', sec:'Business', tab:'Business' },
+    { k:'tz', label:'Timezone', sec:'Business', tab:'Business' },
+    { k:'addr', label:'Address', sec:'Business', tab:'Business' },
+    { k:'site', label:'Website', sec:'Business', tab:'Business' },
+    { k:'about', label:'What you do', sec:'Business', tab:'Business' },
+    { k:'voice', label:'Voice', sec:'Agent', tab:'Agent', f:'voice' },
+    { k:'greeting', label:'Greeting', sec:'Agent', tab:'Agent' },
+    { k:'useName', label:"Use the caller's name", sec:'Agent', tab:'Agent', f:'yn' },
+    { k:'warmth', label:'Warmth', sec:'Agent', tab:'Agent' },
+    { k:'length', label:'Answer length', sec:'Agent', tab:'Agent' },
+    { k:'interrupt', label:'Callers may interrupt', sec:'Agent', tab:'Agent', f:'yn' },
+    { k:'never', label:'Never do', sec:'Agent', tab:'Agent', f:'list' },
+    { k:'closures', label:'Closures', sec:'Hours', tab:'Hours', f:'clos' },
+    { k:'oohMode', label:'After hours', sec:'Hours', tab:'Hours' },
+    { k:'oohLine', label:'Urgent wording', sec:'Hours', tab:'Hours' },
+    { k:'domains', label:'Allowed domains', sec:'Widget', tab:'Widget' },
+    { k:'askName', label:'Ask for a name', sec:'Widget', tab:'Widget' },
+    { k:'consent', label:'Consent line', sec:'Widget', tab:'Widget' },
+    { k:'accent', label:'Accent colour', sec:'Appearance', tab:'Appearance', f:'accent' },
+    { k:'shape', label:'Launcher shape', sec:'Appearance', tab:'Appearance' },
+    { k:'pos', label:'Launcher corner', sec:'Appearance', tab:'Appearance' },
+    { k:'label', label:'Launcher label', sec:'Appearance', tab:'Appearance' },
+    { k:'bubble', label:'Pop-up bubble', sec:'Appearance', tab:'Appearance' },
+    { k:'dark', label:'Dark widget', sec:'Appearance', tab:'Appearance', f:'yn' },
+    { k:'badge', label:'Vocalonix badge', sec:'Appearance', tab:'Appearance', f:'yn' }
+  ];
+
+  ACCENTS = [
+    { v:'#E9A8A3', name:'Blush' },
+    { v:'#4E7A48', name:'Moss' },
+    { v:'#B4712A', name:'Amber' },
+    { v:'#1D1A16', name:'Ink' }
+  ];
+
+  LOCS = [
+    { name:'Chiswick', sub:'42 Turnham Green Terrace \u00b7 main site', num:'+44 20 7946 0912' },
+    { name:'Ealing', sub:'11 Bond Street \u00b7 Tue and Thu only', num:'+44 20 7946 0918' }
+  ];
+
+  ACT = [
+    { t:'16:02', v:'Owner One published v14 \u2014 hours and deposits' },
+    { t:'15:48', v:'Owner One rewrote the greeting' },
+    { t:'15:44', v:'Owner One switched the voice to Wren' },
+    { t:'09:41', v:'Priya published v13 \u2014 after-hours wording' }
+  ];
+
+  HIST = [
+    { v:14, when:'29 Jul, 16:02', by:'Owner One', lines:['Thursday now closes at 5:30', 'Deposit added to whitening', 'Widget allowed on the blog'] },
+    { v:13, when:'28 Jul, 09:41', by:'Priya (manager)', lines:['After-hours wording rewritten', 'Answer length set to Normal'], ov:{ oohLine:'We are closed. Please call back after eight.', length:'Normal' } },
+    { v:12, when:'21 Jul, 14:07', by:'Owner One', lines:['Voice changed to Alder', 'Stopped answering after hours'], ov:{ voice:'alder', oohMode:'Do not answer at all', length:'Normal' } },
+    { v:11, when:'09 Jul, 11:22', by:'Owner One', lines:['First version that took a real call'], ov:{ greeting:'Acme Dental, how can I help?', voice:'alder', warmth:'Brisk', length:'Normal', interrupt:false } }
+  ];
+
+  base(){
+    const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    return {
+      bizName:'Acme Dental', trading:'Dental practice', phone:'+44 20 7946 0912', tz:'Europe / London',
+      addr:'42 Turnham Green Terrace, London W4 1QP', site:'acmedental.com',
+      about:'Family dental practice in Chiswick since 2004. Two dentists and a hygienist. NHS for children, private for adults, and we can usually see an emergency the same day.',
+      voice:'wren',
+      greeting:'Good morning, Acme Dental \u2014 how can I help?',
+      useName:true, warmth:'Balanced', length:'Short', interrupt:true,
+      rules:[
+        { when:'the caller says it is an emergency', then:'Ring the front desk', on:true },
+        { when:'they ask about a refund or a complaint', then:'Text the owner', on:true },
+        { when:'the same question comes back a third time', then:'Take a message', on:true },
+        { when:'they ask for a dentist who is off today', then:'Book a callback', on:false }
+      ],
+      never:['Quote a price for implants', 'Give clinical advice', 'Promise a slot that is not in the diary'],
+      hours: days.map((d, i) => ({ d: d, open: i < 6, from: i === 5 ? '09:00' : '08:00', to: i === 5 ? '14:00' : '18:00' })),
+      closures:[
+        { when:'25 Aug', what:'Bank holiday \u2014 shut all day' },
+        { when:'12\u201316 Sep', what:'Dr. Reyes on leave, hygiene only' },
+        { when:'24 Dec \u2013 2 Jan', what:'Christmas' }
+      ],
+      oohMode:'Answer and take a message',
+      oohLine:'If it is bleeding, swelling or a knocked-out tooth, say so and I will page the on-call dentist straight away.',
+      domains:'acmedental.com\nwww.acmedental.com',
+      askName:'Ask, but let them skip it',
+      consent:'We keep your name with this call so we know you next time.',
+      accent:'#E9A8A3', shape:'Round', pos:'Right', label:'Talk to us', bubble:'Questions about a booking? Just ask out loud.',
+      dark:false, badge:true
+    };
+  }
+
+  constructor(props){
+    super(props);
+    const cfg = this.base();
+    const pub = this.base();
+    pub.hours[6].open = false;
+    pub.greeting = 'Hello, you have reached Acme Dental. Please hold.';
+    pub.voice = 'alder';
+    pub.length = 'Normal';
+    pub.hours[3].to = '17:30';
+    pub.domains = 'acmedental.com';
+    pub.rules[1].then = 'Take a message';
+    cfg.hours[6].open = false;
+    this.state = {
+      tab: null, cfg: cfg, pub: pub, phase: null, wsOpen: false, toast: '',
+      histv: null, diffOpen: false, confirm: null, playing: null, tokenOpen: false,
+      copied: false, publishedAt: 'today at 16:02'
+    };
+  }
+
+  componentWillUnmount(){
+    if (this._to) clearTimeout(this._to);
+    if (this._to2) clearTimeout(this._to2);
+    if (this._pt) clearTimeout(this._pt);
+    if (this._vt) clearTimeout(this._vt);
+  }
+
+  say(m){ if (this._to) clearTimeout(this._to); this.setState({ toast: m }); this._to = setTimeout(() => this.setState({ toast: '' }), 2800); }
+
+  hist(){ return this.state.histv || this.HIST; }
+
+  clone(x){ return JSON.parse(JSON.stringify(x)); }
+
+  edit(fn){
+    this.setState(s => {
+      const c = this.clone(s.cfg);
+      fn(c);
+      return { cfg: c, phase: 'pending' };
+    });
+  }
+
+  hstr(h){ return h.open ? h.from + ' \u2013 ' + h.to : 'Shut'; }
+  rstr(r){ return (r.on ? '' : '(off) ') + 'If ' + r.when + ', ' + r.then.toLowerCase(); }
+  vname(id){ const v = this.VOICES.find(x => x.id === id); return v ? v.name : id; }
+  aname(hex){ const a = this.ACCENTS.find(x => x.v === hex); return a ? a.name + ' \u00b7 ' + hex : hex; }
+
+  fmt(f, v){
+    if (f.f === 'yn') return v ? 'Yes' : 'No';
+    if (f.f === 'voice') return this.vname(v);
+    if (f.f === 'accent') return this.aname(v);
+    if (f.f === 'list') return v.join('\n');
+    if (f.f === 'clos') return v.map(x => x.when + ' \u00b7 ' + x.what).join('\n');
+    return String(v);
+  }
+
+  diffs(){
+    const c = this.state.cfg, p = this.state.pub, out = [];
+    this.FIELDS.forEach(f => {
+      const a = this.fmt(f, p[f.k]), b = this.fmt(f, c[f.k]);
+      if (a !== b) out.push({ sec: f.sec, tab: f.tab, label: f.label, from: a, to: b, k: f.k });
+    });
+    c.hours.forEach((h, i) => {
+      const a = p.hours[i] ? this.hstr(p.hours[i]) : 'Not set', b = this.hstr(h);
+      if (a !== b) out.push({ sec: 'Hours', tab: 'Hours', label: h.d, from: a, to: b, k: 'hours', i: i });
+    });
+    const n = Math.max(c.rules.length, p.rules.length);
+    for (let i = 0; i < n; i++) {
+      const cr = c.rules[i], pr = p.rules[i];
+      const a = pr ? this.rstr(pr) : 'No such rule', b = cr ? this.rstr(cr) : 'Rule removed';
+      if (a !== b) out.push({ sec: 'Agent', tab: 'Agent', label: 'Escalation rule ' + (i + 1), from: a, to: b, k: 'rules', i: i });
+    }
+    return out;
+  }
+
+  revert(d){
+    this.setState(s => {
+      const c = this.clone(s.cfg), p = s.pub;
+      if (d.k === 'hours') c.hours[d.i] = this.clone(p.hours[d.i]);
+      else if (d.k === 'rules') {
+        if (!p.rules[d.i]) c.rules.splice(d.i, 1);
+        else c.rules[d.i] = this.clone(p.rules[d.i]);
+      } else c[d.k] = this.clone(p[d.k]);
+      return { cfg: c };
+    });
+    this.say('Kept the live version of ' + d.label.toLowerCase());
+  }
+
+  publish(){
+    if (this.state.phase === 'publishing') return;
+    const list = this.diffs();
+    if (!list.length) { this.say('Nothing has changed since the last publish'); return; }
+    const lines = list.slice(0, 4).map(d => d.label + ' \u2192 ' + (d.to.length > 44 ? d.to.slice(0, 44) + '\u2026' : d.to.split('\n')[0]));
+    if (list.length > 4) lines.push('and ' + (list.length - 4) + ' more');
+    const nextV = this.hist()[0].v + 1;
+    this.setState({ phase: 'publishing', diffOpen: false, confirm: null });
+    if (this._pt) clearTimeout(this._pt);
+    this._pt = setTimeout(() => {
+      this.setState(s => {
+        const h = (s.histv || this.HIST).slice();
+        h.unshift({ v: nextV, when: 'just now', by: 'Owner One', lines: lines });
+        return { phase: 'live', pub: this.clone(s.cfg), histv: h, publishedAt: 'just now' };
+      });
+      this.say('v' + nextV + ' is live \u2014 callers hear it from the next call');
+    }, 1700);
+  }
+
+  seg(on, big){
+    const p = 'flex:1;border-radius:8px;padding:' + (big ? '6px 10px' : '5px 9px') + ";cursor:pointer;white-space:nowrap;font-family:'Gaegu',cursive;font-size:" + (big ? 16 : 15) + 'px;';
+    return on
+      ? p + 'background:#FCFAF4;border:1px solid #CFC5AB;color:#1D1A16'
+      : p + 'background:transparent;border:1px solid transparent;color:#8A8271';
+  }
+
+  box(on){
+    return on
+      ? "width:20px;height:20px;flex:none;border-radius:6px;background:#1D1A16;border:1px solid #1D1A16;color:#FCFAF4;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:11px"
+      : 'width:20px;height:20px;flex:none;border-radius:6px;background:#FCFAF4;border:1px solid #CFC5AB;display:flex';
+  }
+
+  radio(on){
+    return 'display:flex;align-items:flex-start;gap:10px;text-align:left;cursor:pointer;border-radius:11px;padding:10px 12px;'
+      + (on ? 'background:#FBE7E4;border:1px solid #EFC9C4' : 'background:#FDFBF6;border:1px solid #DCD4BF');
+  }
+
+  dot(on){
+    return 'width:16px;height:16px;flex:none;border-radius:50%;margin-top:2px;'
+      + (on ? 'background:#1D1A16;border:4px solid #FBE7E4;box-shadow:0 0 0 1px #1D1A16' : 'background:#FCFAF4;border:1px solid #CFC5AB');
+  }
+
+  span(h){
+    const mins = s => { const p = String(s).split(':'); return Number(p[0]) * 60 + Number(p[1] || 0); };
+    const d = mins(h.to) - mins(h.from);
+    if (isNaN(d) || d <= 0) return '';
+    return (d % 60 ? (d / 60).toFixed(1) : String(d / 60)) + ' h';
+  }
+
+  renderVals(){
+    const st = this.state, c = st.cfg;
+    const tab = st.tab || this.props.startTab || 'Business';
+    const list = this.diffs();
+    const clean = list.length === 0;
+    const phase = st.phase || (this.props.publishState === 'Live and up to date' ? 'live' : 'pending');
+    const publishing = phase === 'publishing';
+    const live = clean || (phase === 'live' && !publishing);
+    const requireReview = this.props.requireReview ?? false;
+    const hist = this.hist();
+    const liveV = hist[0].v;
+
+    const groups = [];
+    list.forEach((d, i) => {
+      d.i = i;
+      let g = groups.find(x => x.sec === d.sec);
+      if (!g) { g = { sec: d.sec, items: [] }; groups.push(g); }
+      g.items.push(d);
+    });
+
+    return {
+      navOn: this.NAVBASE + 'display:flex;justify-content:space-between;align-items:center;background:#FBE7E4;border:1px solid #EFC9C4;color:#1D1A16',
+      navIdle: this.NAVBASE + 'background:transparent;border:1px solid transparent;color:#4A453C',
+      navCount: clean ? '' : String(list.length),
+      navCountStyle: "font-family:'Space Mono',monospace;font-size:10px;color:#B4712A",
+      wsOpen: st.wsOpen,
+      toggleWs: () => this.setState(s => ({ wsOpen: !s.wsOpen })),
+      closeWs: () => this.setState({ wsOpen: false }),
+      navSoon: e => this.say(e.currentTarget.dataset.name + ' \u2014 designed in the next pass'),
+
+      tabs: ['Business','Agent','Hours','Widget','Appearance','History'].map(k => ({
+        k: k,
+        style: "border-radius:10px 10px 0 0;padding:9px 15px 10px;cursor:pointer;position:relative;top:1px;font-family:'Gaegu',cursive;font-size:17px;"
+          + (k === tab
+            ? 'background:#F7F3EB;border:1px solid #CFC5AB;border-bottom-color:#F7F3EB;color:#1D1A16'
+            : 'background:transparent;border:1px solid transparent;color:#8A8271')
+      })),
+      pickTab: e => this.setState({ tab: e.currentTarget.dataset.t }),
+      isBiz: tab === 'Business', isAgent: tab === 'Agent', isHours: tab === 'Hours',
+      isWidget: tab === 'Widget', isLook: tab === 'Appearance', isHist: tab === 'History',
+      headNote: clean
+        ? 'v' + liveV + ' is live, and your draft matches it'
+        : list.length + (list.length === 1 ? ' change' : ' changes') + ' waiting in the draft',
+
+      cfg: c,
+      setField: e => { const k = e.currentTarget.dataset.k, v = e.currentTarget.value; this.edit(o => { o[k] = v; }); },
+      toggleField: e => { const k = e.currentTarget.dataset.k; this.edit(o => { o[k] = !o[k]; }); },
+      setPick: e => { const k = e.currentTarget.dataset.k, v = e.currentTarget.dataset.v; this.edit(o => { o[k] = v; }); },
+
+      pickTz: () => this.say('Timezone picker \u2014 searchable, the same one everywhere'),
+      aboutCount: c.about.length + ' characters',
+      locations: this.LOCS,
+      addLocation: () => this.say('A second number with its own hours \u2014 next pass'),
+
+      voices: this.VOICES.map(v => {
+        const on = c.voice === v.id, playing = st.playing === v.id;
+        return Object.assign({}, v, {
+          cardStyle: 'border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:9px;'
+            + (on ? 'background:#FBE7E4;border:1px solid #EFC9C4;box-shadow:0 0 0 1px #EFC9C4' : 'background:#FDFBF6;border:1px solid #DCD4BF'),
+          playStyle: "background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:5px 10px;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:" + (playing ? '#B2544E' : '#4A453C'),
+          playLabel: playing ? 'Playing' : 'Hear it',
+          bars: [0,1,2,3,4].map(i => ({
+            style: 'width:3px;height:16px;border-radius:2px;transform-origin:bottom;background:' + (playing ? '#B2544E' : '#DCD4BF')
+              + (playing
+                ? ';animation:vxbar .62s ease-in-out infinite;animation-delay:' + (i * 0.09) + 's'
+                : ';transform:scaleY(' + (0.3 + (i % 3) * 0.16) + ')')
+          }))
+        });
+      }),
+      pickVoice: e => { const v = e.currentTarget.dataset.v; this.edit(o => { o.voice = v; }); },
+      playVoice: e => {
+        const v = e.currentTarget.dataset.v;
+        this.setState({ playing: v });
+        if (this._vt) clearTimeout(this._vt);
+        this._vt = setTimeout(() => this.setState({ playing: null }), 2400);
+      },
+
+      useNameBox: this.box(c.useName), useNameTick: c.useName ? '\u2713' : '',
+      interruptBox: this.box(c.interrupt), interruptTick: c.interrupt ? '\u2713' : '',
+      darkBox: this.box(c.dark), darkTick: c.dark ? '\u2713' : '',
+      badgeBox: this.box(c.badge), badgeTick: c.badge ? '\u2713' : '',
+      greetPreview: c.useName
+        ? (/how can i help/i.test(c.greeting) ? c.greeting.replace(/how can i help/i, 'how can I help, Marcus') : c.greeting + ' Good to hear from you again, Marcus.')
+        : c.greeting,
+      greetNote: c.useName
+        ? 'Marcus Bell has called before, so his name goes in. First-timers hear it exactly as written.'
+        : 'Every caller hears exactly this, known or not.',
+
+      warmthSegs: ['Brisk','Balanced','Chatty'].map(v => ({ v: v, style: this.seg(c.warmth === v, true) })),
+      lengthSegs: ['Short','Normal','Thorough'].map(v => ({ v: v, style: this.seg(c.length === v, true) })),
+      langs: [
+        { label: 'English (UK) \u00b7 primary', on: true },
+        { label: 'Polish', on: true },
+        { label: 'Urdu \u00b7 off', on: false }
+      ].map(l => ({
+        label: l.label,
+        style: "border-radius:20px;padding:5px 11px;font-family:'Gaegu',cursive;font-size:16px;"
+          + (l.on ? 'background:#E8F0E0;border:1px solid #A9C79F;color:#3F6B3A' : 'background:#EFEBDE;border:1px solid #DCD4BF;color:#8A8271')
+      })),
+
+      rules: c.rules.map((r, i) => ({
+        i: i, n: String(i + 1), when: r.when, then: r.then,
+        rowStyle: 'display:flex;align-items:flex-start;gap:9px;border-radius:12px;padding:6px 10px;'
+          + (r.on ? 'background:#FDFBF6;border:1px solid #DCD4BF' : 'background:#F7F3EB;border:1px dashed #D8CFB8;opacity:.74'),
+        thenStyle: "flex:none;width:206px;text-align:left;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:8px 11px;cursor:pointer;font-family:'Gaegu',cursive;font-size:17px;color:#1D1A16",
+        onStyle: "flex:none;border-radius:20px;padding:6px 11px;cursor:pointer;margin-top:1px;font-family:'Gaegu',cursive;font-size:15px;"
+          + (r.on ? 'background:#E8F0E0;border:1px solid #A9C79F;color:#3F6B3A' : 'background:#EFEBDE;border:1px solid #DCD4BF;color:#8A8271'),
+        onLabel: r.on ? 'On' : 'Off'
+      })),
+      setRuleWhen: e => { const i = Number(e.currentTarget.dataset.i), v = e.currentTarget.value; this.edit(o => { o.rules[i].when = v; }); },
+      cycleRule: e => { const i = Number(e.currentTarget.dataset.i); this.edit(o => { const n = (this.THENS.indexOf(o.rules[i].then) + 1) % this.THENS.length; o.rules[i].then = this.THENS[n]; }); },
+      toggleRule: e => { const i = Number(e.currentTarget.dataset.i); this.edit(o => { o.rules[i].on = !o.rules[i].on; }); },
+      dropRule: e => { const i = Number(e.currentTarget.dataset.i); this.edit(o => { o.rules.splice(i, 1); }); this.say('Rule taken out of the draft'); },
+      addRule: () => this.edit(o => { o.rules.push({ when: 'they ask for something new', then: 'Take a message', on: true }); }),
+
+      nevers: c.never.map((v, i) => ({ v: v, i: i })),
+      dropNever: e => { const i = Number(e.currentTarget.dataset.i); this.edit(o => { o.never.splice(i, 1); }); },
+      addNever: () => this.edit(o => { o.never.push('Discuss another patient'); }),
+
+      hourRows: c.hours.map((h, i) => ({
+        i: i, d: h.d, from: h.from, to: h.to, on: h.open, off: !h.open,
+        rowStyle: 'display:flex;align-items:center;gap:11px;border-radius:11px;padding:8px 12px;'
+          + (h.open ? 'background:#FDFBF6;border:1px solid #DCD4BF' : 'background:#F7F3EB;border:1px dashed #D8CFB8'),
+        openStyle: "flex:none;width:74px;border-radius:20px;padding:5px 10px;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;"
+          + (h.open ? 'background:#E8F0E0;border:1px solid #A9C79F;color:#3F6B3A' : 'background:#EFEBDE;border:1px solid #DCD4BF;color:#8A8271'),
+        openLabel: h.open ? 'Open' : 'Shut',
+        span: h.open ? this.span(h) : ''
+      })),
+      toggleDay: e => { const i = Number(e.currentTarget.dataset.i); this.edit(o => { o.hours[i].open = !o.hours[i].open; }); },
+      setHour: e => { const i = Number(e.currentTarget.dataset.i), w = e.currentTarget.dataset.w, v = e.currentTarget.value; this.edit(o => { o.hours[i][w] = v; }); },
+      copyDown: () => { this.edit(o => { const m = o.hours[0]; for (let i = 1; i < 5; i++) o.hours[i] = { d: o.hours[i].d, open: m.open, from: m.from, to: m.to }; }); this.say('Monday copied across to Friday'); },
+
+      closures: c.closures.map((x, i) => ({ when: x.when, what: x.what, i: i })),
+      dropClosure: e => { const i = Number(e.currentTarget.dataset.i); this.edit(o => { o.closures.splice(i, 1); }); },
+      addClosure: () => this.edit(o => { o.closures.push({ when: '01 Nov', what: 'Staff training \u2014 shut from 1pm' }); }),
+
+      oohSegs: [
+        { v:'Answer and book', sub:'Full service overnight, straight into the diary.' },
+        { v:'Answer and take a message', sub:'Talks and answers questions, but books nothing.' },
+        { v:'Do not answer at all', sub:'Rings out. Nobody hears a robot at 3am.' }
+      ].map(s => ({ v: s.v, sub: s.sub, style: this.radio(c.oohMode === s.v), dotStyle: this.dot(c.oohMode === s.v) })),
+
+      embed: '<' + 'script src="https://cdn.vocalonix.com/widget.js"\n  data-token="' + (st.tokenOpen ? 'emb_kAuz7Rq2mV9pLd4' : 'emb_kAuz\u2026') + '"\n  data-accent="' + c.accent + '"\n  defer><\/' + 'script>',
+      copyEmbed: () => {
+        this.setState({ copied: true });
+        this.say('Snippet copied \u2014 paste it at the end of the page');
+        if (this._to2) clearTimeout(this._to2);
+        this._to2 = setTimeout(() => this.setState({ copied: false }), 2000);
+      },
+      copyStyle: "position:absolute;top:10px;right:12px;background:#FCFAF4;border:1px solid #CFC5AB;border-radius:9px;padding:5px 11px;cursor:pointer;font-family:'Gaegu',cursive;font-size:15px;color:" + (st.copied ? '#4E7A48' : '#1D1A16'),
+      copyLabel: st.copied ? 'Copied' : 'Copy',
+      tokenText: st.tokenOpen ? 'emb_kAuz7Rq2mV9pLd4' : 'emb_kAuz\u2026\u2026\u2026\u2026',
+      tokenAction: st.tokenOpen ? 'Hide' : 'Reveal',
+      toggleToken: () => this.setState(s => ({ tokenOpen: !s.tokenOpen })),
+      revoke: () => this.say('Revoking breaks the widget on every site until the new snippet is pasted'),
+      domainNote: c.domains.trim() ? 'One hostname per line. Anything else that tries to load the widget is refused.' : 'Empty means any site on the internet can load your widget.',
+      domainNoteStyle: "font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;color:" + (c.domains.trim() ? '#8A8271' : '#B2544E'),
+      askSegs: [
+        { v:"Don't ask", sub:'Straight into the call. The agent may still hear a name.' },
+        { v:'Ask, but let them skip it', sub:'One optional field. Never blocks the call button.' },
+        { v:'Require a name', sub:'No name, no call. Expect a few to bounce.' }
+      ].map(s => ({ v: s.v, sub: s.sub, style: this.radio(c.askName === s.v), dotStyle: this.dot(c.askName === s.v) })),
+
+      accents: this.ACCENTS.map(a => ({
+        v: a.v, name: a.name,
+        style: 'display:flex;align-items:center;gap:8px;border-radius:11px;padding:7px 11px;cursor:pointer;'
+          + (c.accent === a.v ? 'background:#FBE7E4;border:1px solid #EFC9C4' : 'background:#FDFBF6;border:1px solid #DCD4BF'),
+        swatch: 'width:18px;height:18px;border-radius:50%;background:' + a.v + ';border:1px solid rgba(29,26,22,.16)'
+      })),
+      shapeSegs: ['Round','Pill','Square'].map(v => ({ v: v, style: this.seg(c.shape === v, false) })),
+      posSegs: ['Left','Right'].map(v => ({ v: v, style: this.seg(c.pos === v, false) })),
+
+      previewStyle: 'border-radius:14px;overflow:hidden;border:1px solid #CFC5AB;box-shadow:0 12px 30px rgba(29,26,22,.10);background:' + (c.dark ? '#221E19' : '#FFFDF8'),
+      widgetStackStyle: 'position:absolute;bottom:14px;' + (c.pos === 'Left' ? 'left:14px;align-items:flex-start' : 'right:14px;align-items:flex-end') + ';display:flex;flex-direction:column;gap:8px',
+      bubbleStyle: "max-width:214px;border-radius:12px;padding:9px 12px;font-family:'Gaegu',cursive;font-size:16px;line-height:1.3;box-shadow:0 6px 16px rgba(29,26,22,.14);background:"
+        + (c.dark ? '#302A23' : '#FCFAF4') + ';border:1px solid ' + (c.dark ? '#4A4137' : '#DCD4BF') + ';color:' + (c.dark ? '#EFE7D8' : '#4A453C'),
+      launcherStyle: 'display:flex;align-items:center;gap:9px;cursor:pointer;box-shadow:0 8px 20px rgba(29,26,22,.22);border:1px solid rgba(29,26,22,.14);background:' + c.accent + ';'
+        + (c.shape === 'Square' ? 'border-radius:12px;padding:9px 14px' : c.shape === 'Pill' ? 'border-radius:26px;padding:9px 16px' : 'border-radius:26px;padding:8px 14px 8px 8px'),
+      avatarStyle: "width:28px;height:28px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand',cursive;font-size:16px;background:"
+        + (c.accent === '#1D1A16' ? 'rgba(252,250,244,.18)' : 'rgba(29,26,22,.12)') + ';color:' + (c.accent === '#1D1A16' ? '#FCFAF4' : '#1D1A16'),
+      avatarChar: (c.bizName.trim().charAt(0) || 'V').toUpperCase(),
+      launcherTextStyle: "font-family:'Gaegu',cursive;font-size:17px;color:" + (c.accent === '#1D1A16' || c.accent === '#4E7A48' || c.accent === '#B4712A' ? '#FCFAF4' : '#1D1A16'),
+      badgeStyle: "font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:" + (c.dark ? '#7E7462' : '#A79E8B'),
+
+      hist: hist.map((v, i) => {
+        const isLive = i === 0;
+        return {
+          v: v.v, name: 'v' + v.v, when: v.when, by: v.by, lines: v.lines,
+          isLive: isLive, canRestore: !isLive && !!v.ov,
+          cardStyle: 'border-radius:13px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;'
+            + (isLive ? 'background:#FCFAF4;border:1px solid #A9C79F;box-shadow:2px 3px 0 rgba(29,26,22,0.05)' : 'background:#FDFBF6;border:1px solid #DCD4BF'),
+          pill: isLive ? (clean ? 'LIVE \u00b7 MATCHES YOUR DRAFT' : 'LIVE \u00b7 ' + list.length + ' CHANGES SINCE') : 'REPLACED',
+          pillStyle: "align-self:flex-start;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;border-radius:20px;padding:3px 8px;"
+            + (isLive
+              ? (clean ? 'color:#4E7A48;background:#E8F0E0;border:1px solid #A9C79F' : 'color:#B4712A;background:#FAEBDC;border:1px solid #E2B98A')
+              : 'color:#8A8271;background:#EFEBDE;border:1px solid #DCD4BF'),
+          compareLabel: clean ? 'Nothing to compare' : 'Compare with draft',
+          compareStyle: "background:#FCFAF4;border:1px solid #CFC5AB;border-radius:10px;padding:7px 13px;cursor:pointer;font-family:'Gaegu',cursive;font-size:16px;color:" + (clean ? '#A79E8B' : '#1D1A16'),
+          confirming: st.confirm === v.v,
+          confirmText: 'Restore v' + v.v + ' into your draft? Your ' + list.length + ' unpublished '
+            + (list.length === 1 ? 'change' : 'changes') + ' would go. The live agent stays on v' + liveV + ' until you republish.'
+        };
+      }),
+      askRestore: e => this.setState({ confirm: Number(e.currentTarget.dataset.v) }),
+      cancelRestore: () => this.setState({ confirm: null }),
+      doRestore: e => {
+        const v = Number(e.currentTarget.dataset.v);
+        const entry = this.hist().find(x => x.v === v);
+        this.setState(s => ({ cfg: Object.assign(this.clone(s.pub), this.clone(entry && entry.ov ? entry.ov : {})), confirm: null, phase: 'pending' }));
+        this.say('v' + v + ' is in your draft \u2014 republish to put it back on air');
+      },
+
+      isPending: !live && !publishing,
+      isPublishing: publishing,
+      isLiveState: live && !publishing,
+      pendingLine: list.length === 1
+        ? 'One change is waiting. Callers still hear v' + liveV + '.'
+        : list.length + ' changes are waiting. Callers still hear v' + liveV + '.',
+      publishingLine: 'Publishing v' + (liveV + 1) + '\u2026 calls already running finish on the old version.',
+      liveLine: clean ? 'v' + liveV + ' is live \u2014 published ' + st.publishedAt + '.' : 'v' + liveV + ' is live.',
+      isClean: clean,
+      pendingCountLabel: clean ? 'clean' : list.length + ' waiting',
+      pendingPeek: list.slice(0, 5),
+      hasMorePending: list.length > 5,
+      morePending: '+ ' + (list.length - 5) + ' more in the diff',
+
+      pubBtnLabel: publishing ? 'Publishing\u2026' : clean ? 'Published' : requireReview ? 'Review ' + list.length + ' changes' : 'Republish \u00b7 ' + list.length,
+      pubBtnStyle: "border-radius:10px;padding:9px 15px;font-family:'Gaegu',cursive;font-size:16px;"
+        + (clean || publishing
+          ? 'background:#EFEBDE;border:1px solid #DCD4BF;color:#A79E8B;cursor:default'
+          : 'background:#1D1A16;border:1px solid #1D1A16;color:#FCFAF4;cursor:pointer'),
+      publishClick: () => {
+        if (publishing) return;
+        if (clean) { this.say('Nothing has changed since v' + liveV); return; }
+        if (requireReview) { this.setState({ diffOpen: true }); return; }
+        this.publish();
+      },
+      discardAll: () => { this.setState(s => ({ cfg: this.clone(s.pub), phase: 'live' })); this.say('Draft thrown away \u2014 back to v' + liveV); },
+      testAgent: () => this.say('A test call uses your draft, not the live version'),
+
+      diffOpen: st.diffOpen,
+      openDiff: () => { if (clean) { this.say('Your draft matches the live agent'); return; } this.setState({ diffOpen: true }); },
+      closeDiff: () => this.setState({ diffOpen: false }),
+      diffGroups: groups,
+      diffEyebrow: 'v' + liveV + ' \u2192 v' + (liveV + 1),
+      diffSub: clean ? 'Nothing is different.' : list.length + ' ' + (list.length === 1 ? 'field' : 'fields') + ' across ' + groups.length + ' ' + (groups.length === 1 ? 'section' : 'sections') + '.',
+      diffFoot: clean ? 'Nothing to publish.' : 'Knowledge is re-attached automatically. Calls already running finish on v' + liveV + '.',
+      diffPubStyle: "border-radius:11px;padding:9px 15px;font-family:'Gaegu',cursive;font-size:17px;"
+        + (clean ? 'background:#EFEBDE;border:1px solid #DCD4BF;color:#A79E8B;cursor:default' : 'background:#1D1A16;border:1px solid #1D1A16;color:#FCFAF4;cursor:pointer'),
+      publishFromDiff: () => this.publish(),
+      revertOne: e => { const i = Number(e.currentTarget.dataset.i); const d = list[i]; if (d) this.revert(d); },
+
+      liveFacts: [
+        { k: 'version', v: 'v' + liveV + ' \u00b7 ' + hist[0].when },
+        { k: 'voice', v: this.vname(st.pub.voice) },
+        { k: 'greeting', v: st.pub.greeting },
+        { k: 'after hrs', v: st.pub.oohMode },
+        { k: 'domains', v: st.pub.domains.split('\n').join(', ') }
+      ],
+      activity: this.ACT,
+      hasToast: !!st.toast, toast: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
