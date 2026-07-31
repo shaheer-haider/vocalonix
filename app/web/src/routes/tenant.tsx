@@ -7,6 +7,8 @@ import { z } from "zod";
 import {
   api,
   type BusinessHoursDay,
+  type TenantConfigSnapshot,
+  type TenantConfigVersion,
   type TenantKnowledgeItem,
   type TenantSettingsResponse,
   type TenantWidget,
@@ -19,6 +21,7 @@ import {
   ColorField,
   EmptyState,
   LoadingState,
+  Modal,
   Pill,
   SelectField,
   TextArea,
@@ -1088,10 +1091,588 @@ export function TenantOnboardingPage() {
   );
 }
 
-export function TenantSettingsPage({
-  section = "overview",
+const CONFIG_FIELD_LABELS: Record<string, { label: string; section: string }> = {
+  name: { label: "Business name", section: "Business" },
+  city: { label: "City", section: "Business" },
+  country: { label: "Country", section: "Business" },
+  timezone: { label: "Timezone", section: "Business" },
+  contactEmail: { label: "Contact email", section: "Business" },
+  vertical: { label: "Kind of business", section: "Business" },
+  agentName: { label: "Agent name", section: "Agent" },
+  greeting: { label: "Greeting", section: "Agent" },
+  prompt: { label: "Agent instructions", section: "Agent" },
+  closing: { label: "Closing", section: "Agent" },
+  tone: { label: "Tone", section: "Agent" },
+  voice: { label: "Voice", section: "Agent" },
+  allowInterrupt: { label: "Callers may interrupt", section: "Agent" },
+  escalationGuidance: { label: "Escalation guidance", section: "Agent" },
+  businessHours: { label: "Opening hours", section: "Hours" },
+  widgetButtonText: { label: "Launcher label", section: "Appearance" },
+  widgetColor: { label: "Accent colour", section: "Appearance" },
+  allowedDomains: { label: "Allowed domains", section: "Widget" },
+};
+
+function formatConfigValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, BusinessHoursDay>);
+    return entries
+      .map(([day, hours]) =>
+        hours.enabled ? `${day.slice(0, 3)} ${hours.open}–${hours.close}` : `${day.slice(0, 3)} shut`,
+      )
+      .join(" · ");
+  }
+  return String(value);
+}
+
+export interface ConfigDiffEntry {
+  key: string;
+  label: string;
+  section: string;
+  from: string;
+  to: string;
+}
+
+function configDiff(
+  live: TenantConfigSnapshot,
+  draft: TenantConfigSnapshot,
+): ConfigDiffEntry[] {
+  return Object.keys(CONFIG_FIELD_LABELS)
+    .filter(
+      (key) =>
+        JSON.stringify(live[key as keyof TenantConfigSnapshot] ?? null) !==
+        JSON.stringify(draft[key as keyof TenantConfigSnapshot] ?? null),
+    )
+    .map((key) => ({
+      key,
+      label: CONFIG_FIELD_LABELS[key]!.label,
+      section: CONFIG_FIELD_LABELS[key]!.section,
+      from: formatConfigValue(live[key as keyof TenantConfigSnapshot]),
+      to: formatConfigValue(draft[key as keyof TenantConfigSnapshot]),
+    }));
+}
+
+function useConfigVersions(slug: string) {
+  const [versions, setVersions] = useState<TenantConfigVersion[]>([]);
+  const [draft, setDraft] = useState<TenantConfigSnapshot | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const result = await api.businesses.configVersions(slug);
+      setVersions(result.versions);
+      setDraft(result.draft);
+    } catch {
+      setVersions([]);
+      setDraft(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return { versions, draft, loading, refresh };
+}
+
+function DiffModal({
+  diff,
+  onClose,
+  onRepublish,
+  publishing,
 }: {
-  section?: "overview" | "profile" | "agent" | "knowledge" | "hours" | "widget";
+  diff: ConfigDiffEntry[];
+  onClose: () => void;
+  onRepublish?: () => void;
+  publishing?: boolean;
+}) {
+  return (
+    <Modal open onClose={onClose} titleId="config-diff-title">
+      <h2 id="config-diff-title">What republishing would change</h2>
+      {diff.length === 0 ? (
+        <EmptyState title="Nothing to publish">
+          Your draft matches the live agent line for line.
+        </EmptyState>
+      ) : (
+        <div className="config-diff">
+          {diff.map((entry) => (
+            <div className="config-diff__row" key={entry.key}>
+              <p className="eyebrow">
+                {entry.section} · {entry.label}
+              </p>
+              <div className="config-diff__values">
+                <div>
+                  <span>Live now</span>
+                  <p>{entry.from}</p>
+                </div>
+                <div>
+                  <span>Your draft</span>
+                  <p>{entry.to}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="stack-row" style={{ justifyContent: "flex-end", marginTop: 16 }}>
+        <Button variant="ghost" onClick={onClose}>
+          Back to editing
+        </Button>
+        {onRepublish && diff.length > 0 ? (
+          <Button variant="primary" loading={publishing} onClick={onRepublish}>
+            Republish now
+          </Button>
+        ) : null}
+      </div>
+    </Modal>
+  );
+}
+
+function PublishBanner({
+  canPublish,
+  data,
+  refresh,
+  slug,
+}: {
+  canPublish: boolean;
+  data: TenantSettingsResponse;
+  refresh: () => Promise<void>;
+  slug: string;
+}) {
+  const { versions, draft, loading, refresh: refreshVersions } = useConfigVersions(slug);
+  const [publishing, setPublishing] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const latest = versions[0] ?? null;
+  const diff = latest && draft ? configDiff(latest.config, draft) : [];
+  const published = Boolean(data.onboarding.publishedAt) || versions.length > 0;
+  const pending = published && latest !== null && diff.length > 0;
+
+  async function republish() {
+    setPublishing(true);
+    setError(null);
+    try {
+      await api.businesses.publish(slug);
+      await Promise.all([refresh(), refreshVersions()]);
+      setShowDiff(false);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to publish.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  if (loading) return null;
+
+  return (
+    <>
+      {error ? <Alert variant="error">{error}</Alert> : null}
+      {publishing ? (
+        <div className="publish-banner publish-banner--working">
+          <Pill variant="info">Publishing</Pill>
+          <p>Publishing to the live widget… knowledge is re-attached automatically.</p>
+        </div>
+      ) : pending ? (
+        <div className="publish-banner publish-banner--pending">
+          <Pill variant="warn">Changes pending</Pill>
+          <p>
+            {diff.length === 1
+              ? `You edited ${diff[0]!.label.toLowerCase()}.`
+              : `You have ${diff.length} unpublished edits.`}{" "}
+            Visitors still hear the old version until you republish.
+          </p>
+          <span className="stack-row">
+            <Button variant="ghost" onClick={() => setShowDiff(true)}>
+              See the diff
+            </Button>
+            {canPublish ? (
+              <Button variant="primary" loading={publishing} onClick={() => void republish()}>
+                Republish
+              </Button>
+            ) : null}
+          </span>
+        </div>
+      ) : published ? (
+        <div className="publish-banner publish-banner--live">
+          <Pill variant="good">Live</Pill>
+          <p>
+            The live agent matches your draft line for line.
+            {latest
+              ? ` Version ${latest.version} · published ${new Date(latest.publishedAt).toLocaleString()}.`
+              : ""}
+          </p>
+          <a href={`/app/${slug}/settings/history`}>View history</a>
+        </div>
+      ) : (
+        <div className="publish-banner publish-banner--draft">
+          <Pill>Draft</Pill>
+          <p>Nothing here reaches a caller until you publish for the first time.</p>
+          {canPublish ? (
+            <Button variant="primary" loading={publishing} onClick={() => void republish()}>
+              Publish
+            </Button>
+          ) : null}
+        </div>
+      )}
+      {showDiff ? (
+        <DiffModal
+          diff={diff}
+          onClose={() => setShowDiff(false)}
+          onRepublish={canPublish ? () => void republish() : undefined}
+          publishing={publishing}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function AppearanceForm({
+  data,
+  onSaved,
+  slug,
+}: {
+  data: TenantSettingsResponse;
+  onSaved: () => Promise<void>;
+  slug: string;
+}) {
+  const [label, setLabel] = useState(data.settings.widgetButtonText);
+  const [color, setColor] = useState(data.settings.widgetColor);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  return (
+    <div className="config-columns">
+      <Box style={{ padding: 24 }}>
+        <h2>Appearance</h2>
+        <p className="auth-card-copy">
+          The live widget changes when you republish, not while you type here.
+        </p>
+        <TextField
+          label="Launcher label"
+          required
+          value={label}
+          onChange={(event) => setLabel(event.target.value)}
+        />
+        <ColorField
+          label="Accent colour"
+          required
+          value={color}
+          onChange={setColor}
+        />
+        {notice ? (
+          <Alert variant={notice.endsWith("saved.") ? "success" : "error"}>{notice}</Alert>
+        ) : null}
+        <Button
+          variant="primary"
+          loading={saving}
+          onClick={() => {
+            setSaving(true);
+            setNotice(null);
+            void api.businesses
+              .updateWidget(slug, {
+                widgetButtonText: label,
+                widgetColor: color,
+                allowedDomains: data.settings.allowedDomains,
+              })
+              .then(onSaved)
+              .then(() => setNotice("Appearance saved."))
+              .catch((caught: unknown) =>
+                setNotice(
+                  caught instanceof Error ? caught.message : "Unable to save appearance.",
+                ),
+              )
+              .finally(() => setSaving(false));
+          }}
+        >
+          Save appearance
+        </Button>
+      </Box>
+      <Box tone="tinted" style={{ padding: 24 }}>
+        <p className="eyebrow">Preview · your site</p>
+        <div className="widget-stage">
+          <span className="widget-stage__label">YOUR PAGE</span>
+          <button
+            type="button"
+            className="widget-stage__launcher"
+            style={{ backgroundColor: color }}
+          >
+            {label || "Talk to us"}
+          </button>
+        </div>
+      </Box>
+    </div>
+  );
+}
+
+function WidgetTab({
+  canEdit,
+  data,
+  refresh,
+  slug,
+}: {
+  canEdit: boolean;
+  data: TenantSettingsResponse;
+  refresh: () => Promise<void>;
+  slug: string;
+}) {
+  const [domains, setDomains] = useState(data.settings.allowedDomains.join("\n"));
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [widget, setWidget] = useState<TenantWidget | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!data.onboarding.publishedAt) return;
+    void api.businesses
+      .widget(slug)
+      .then(setWidget)
+      .catch(() => setWidget(null));
+  }, [data.onboarding.publishedAt, slug]);
+
+  return (
+    <div className="settings-stack">
+      <Box style={{ padding: 24 }}>
+        <h2>Where it may load</h2>
+        <TextArea
+          label="Allowed domains"
+          helper="One hostname per line. Empty means any site can load your widget."
+          value={domains}
+          readOnly={!canEdit}
+          onChange={(event) => setDomains(event.target.value)}
+        />
+        {notice ? (
+          <Alert variant={notice.endsWith("saved.") ? "success" : "error"}>{notice}</Alert>
+        ) : null}
+        {canEdit ? (
+          <Button
+            variant="primary"
+            loading={saving}
+            onClick={() => {
+              setSaving(true);
+              setNotice(null);
+              void api.businesses
+                .updateWidget(slug, {
+                  widgetButtonText: data.settings.widgetButtonText,
+                  widgetColor: data.settings.widgetColor,
+                  allowedDomains: domains
+                    .split(/\r?\n|,/)
+                    .map((domain) => domain.trim())
+                    .filter(Boolean),
+                })
+                .then(refresh)
+                .then(() => setNotice("Widget settings saved."))
+                .catch((caught: unknown) =>
+                  setNotice(
+                    caught instanceof Error
+                      ? caught.message
+                      : "Unable to save widget settings.",
+                  ),
+                )
+                .finally(() => setSaving(false));
+            }}
+          >
+            Save domains
+          </Button>
+        ) : null}
+      </Box>
+      {widget ? (
+        <>
+          <Box style={{ padding: 24 }}>
+            <div className="account-section__heading">
+              <div>
+                <h2>Put it on your site</h2>
+                <p>Paste once, at the end of the page. It never needs changing again.</p>
+              </div>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  void navigator.clipboard.writeText(widget.snippet).then(() => {
+                    setCopied(true);
+                    window.setTimeout(() => setCopied(false), 2000);
+                  });
+                }}
+              >
+                {copied ? "Copied" : "Copy snippet"}
+              </Button>
+            </div>
+            <TextArea readOnly className="ui-input--mono" value={widget.snippet} />
+          </Box>
+          <BrowserTestCall widget={widget} />
+        </>
+      ) : (
+        <EmptyState title="Widget not published">
+          Publish this business to generate its embed snippet and browser test call.
+        </EmptyState>
+      )}
+    </div>
+  );
+}
+
+function versionSummary(
+  version: TenantConfigVersion,
+  previous: TenantConfigVersion | undefined,
+): string[] {
+  if (!previous) return ["First version that took a real call"];
+  const diff = configDiff(previous.config, version.config);
+  if (diff.length === 0) return ["Republished without config changes"];
+  return diff.map((entry) => `${entry.label}: ${entry.to}`);
+}
+
+function HistoryTab({
+  canEdit,
+  refresh,
+  slug,
+}: {
+  canEdit: boolean;
+  refresh: () => Promise<void>;
+  slug: string;
+}) {
+  const { versions, draft, loading } = useConfigVersions(slug);
+  const [compare, setCompare] = useState<TenantConfigVersion | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function restore(version: TenantConfigVersion) {
+    setRestoring(true);
+    setNotice(null);
+    const config = version.config;
+    try {
+      await api.businesses.updateProfile(slug, {
+        name: config.name,
+        city: config.city ?? undefined,
+        country: config.country,
+        timezone: config.timezone,
+        contactEmail: config.contactEmail ?? undefined,
+        vertical: config.vertical ?? undefined,
+      });
+      await api.businesses.updateAgentSettings(slug, {
+        agentName: config.agentName,
+        greeting: config.greeting,
+        prompt: config.prompt,
+        closing: config.closing,
+        tone: config.tone,
+        voice: config.voice,
+        allowInterrupt: config.allowInterrupt,
+        escalationGuidance: config.escalationGuidance,
+      });
+      await api.businesses.updateHours(slug, config.businessHours);
+      await api.businesses.updateWidget(slug, {
+        widgetButtonText: config.widgetButtonText,
+        widgetColor: config.widgetColor,
+        allowedDomains: config.allowedDomains,
+      });
+      await refresh();
+      setNotice(`Version ${version.version} restored into your draft. Republish to make it live.`);
+      setConfirming(null);
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "Unable to restore this version.");
+    } finally {
+      setRestoring(false);
+    }
+  }
+
+  if (loading) return <LoadingState label="Loading history…" />;
+
+  return (
+    <div className="settings-stack">
+      <Box style={{ padding: 24 }}>
+        <h2>Every version that answered a call</h2>
+        <p className="auth-card-copy">
+          Restoring writes into your draft. Callers hear it only once you republish.
+        </p>
+        {notice ? (
+          <Alert variant={notice.includes("restored") ? "success" : "error"}>{notice}</Alert>
+        ) : null}
+        {versions.length === 0 ? (
+          <EmptyState title="No published versions yet">
+            Publish this business and every published version will appear here.
+          </EmptyState>
+        ) : (
+          <div className="history-list">
+            {versions.map((version, index) => {
+              const lines = versionSummary(version, versions[index + 1]);
+              return (
+                <div className="history-item" key={version.id}>
+                  <div className="history-item__head">
+                    <div>
+                      <strong>Version {version.version}</strong>
+                      <span>
+                        {new Date(version.publishedAt).toLocaleString()} ·{" "}
+                        {version.publishedByName ?? "Unknown"}
+                      </span>
+                    </div>
+                    {index === 0 ? <Pill variant="good">Live</Pill> : null}
+                  </div>
+                  <ul>
+                    {lines.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                  <div className="stack-row">
+                    {draft ? (
+                      <Button variant="ghost" onClick={() => setCompare(version)}>
+                        Compare with draft
+                      </Button>
+                    ) : null}
+                    {canEdit && index !== 0 ? (
+                      confirming === version.id ? (
+                        <>
+                          <span>Overwrite your current draft?</span>
+                          <Button
+                            variant="primary"
+                            loading={restoring}
+                            onClick={() => void restore(version)}
+                          >
+                            Yes, restore it
+                          </Button>
+                          <Button variant="ghost" onClick={() => setConfirming(null)}>
+                            Keep my draft
+                          </Button>
+                        </>
+                      ) : (
+                        <Button variant="ghost" onClick={() => setConfirming(version.id)}>
+                          Restore
+                        </Button>
+                      )
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Box>
+      {compare && draft ? (
+        <DiffModal
+          diff={configDiff(compare.config, draft)}
+          onClose={() => setCompare(null)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+const configTabs = [
+  { slug: "business", label: "Business" },
+  { slug: "agent", label: "Agent" },
+  { slug: "hours", label: "Hours" },
+  { slug: "widget", label: "Widget" },
+  { slug: "appearance", label: "Appearance" },
+  { slug: "history", label: "History" },
+] as const;
+
+export type ConfigTab = (typeof configTabs)[number]["slug"];
+
+export function TenantSettingsPage({
+  section = "business",
+}: {
+  section?: ConfigTab | "knowledge";
 }) {
   return (
     <WorkspaceShell>
@@ -1099,76 +1680,76 @@ export function TenantSettingsPage({
         <ConfigurationState>
           {(data, refresh, slug) => {
             const canEditAgent = can(business.role, "agent.edit");
-            if (section === "profile") {
-              return canEditAgent ? (
-                <ProfileForm data={data} onSaved={refresh} slug={slug} />
-              ) : (
-                <Alert variant="warn">
-                  Your role can view but cannot edit business settings.
-                </Alert>
-              );
-            }
-            if (section === "agent") {
-              return canEditAgent ? (
-                <AgentForm data={data} onSaved={refresh} slug={slug} />
-              ) : (
-                <Alert variant="warn">
-                  Your role can view but cannot edit agent settings.
-                </Alert>
-              );
-            }
-            if (section === "hours") {
-              return canEditAgent ? (
-                <HoursForm data={data} onSaved={refresh} slug={slug} />
-              ) : (
-                <Alert variant="warn">
-                  Your role can view but cannot edit business hours.
-                </Alert>
-              );
-            }
-            if (section === "widget") {
-              return canEditAgent ? (
-                <WidgetForm data={data} onSaved={refresh} slug={slug} />
-              ) : (
-                <Alert variant="warn">
-                  Your role can view but cannot edit widget settings.
-                </Alert>
-              );
-            }
             if (section === "knowledge") {
               return can(business.role, "knowledge.manage") ? (
                 <KnowledgeManager slug={slug} />
               ) : (
-                <Alert variant="warn">
-                  Your role cannot manage business knowledge.
-                </Alert>
+                <Alert variant="warn">Your role cannot manage business knowledge.</Alert>
               );
             }
+            const readOnlyNote = (
+              <Alert variant="warn">Your role can view but cannot edit these settings.</Alert>
+            );
             return (
               <div className="settings-stack">
+                <PublishBanner
+                  canPublish={canEditAgent}
+                  data={data}
+                  refresh={refresh}
+                  slug={slug}
+                />
+                <nav className="config-tabs" aria-label="Configuration">
+                  {configTabs.map((tab) => (
+                    <a
+                      key={tab.slug}
+                      className={`config-tab ${section === tab.slug ? "config-tab--active" : ""}`.trim()}
+                      aria-current={section === tab.slug ? "page" : undefined}
+                      href={`/app/${slug}/settings/${tab.slug}`}
+                    >
+                      {tab.label}
+                    </a>
+                  ))}
+                </nav>
+                {section === "business" ? (
+                  canEditAgent ? (
+                    <ProfileForm data={data} onSaved={refresh} slug={slug} />
+                  ) : (
+                    readOnlyNote
+                  )
+                ) : null}
+                {section === "agent" ? (
+                  canEditAgent ? (
+                    <AgentForm data={data} onSaved={refresh} slug={slug} />
+                  ) : (
+                    readOnlyNote
+                  )
+                ) : null}
+                {section === "hours" ? (
+                  canEditAgent ? (
+                    <HoursForm data={data} onSaved={refresh} slug={slug} />
+                  ) : (
+                    readOnlyNote
+                  )
+                ) : null}
+                {section === "widget" ? (
+                  <WidgetTab
+                    canEdit={canEditAgent}
+                    data={data}
+                    refresh={refresh}
+                    slug={slug}
+                  />
+                ) : null}
+                {section === "appearance" ? (
+                  canEditAgent ? (
+                    <AppearanceForm data={data} onSaved={refresh} slug={slug} />
+                  ) : (
+                    readOnlyNote
+                  )
+                ) : null}
+                {section === "history" ? (
+                  <HistoryTab canEdit={canEditAgent} refresh={refresh} slug={slug} />
+                ) : null}
                 <SyncStatus data={data} />
-                <Box style={{ padding: 24 }}>
-                  <h2>Settings</h2>
-                  <div className="settings-links">
-                    <a href={`/app/${slug}/settings/profile`}>Business profile</a>
-                    <a href={`/app/${slug}/settings/agent`}>Agent</a>
-                    <a href={`/app/${slug}/settings/knowledge`}>Knowledge</a>
-                    <a href={`/app/${slug}/settings/hours`}>Business hours</a>
-                    <a href={`/app/${slug}/settings/widget`}>Widget</a>
-                  </div>
-                </Box>
-                <Box style={{ padding: 24 }}>
-                  <h2>Onboarding</h2>
-                  <p className="auth-card-copy">
-                    Resume from {data.onboarding.currentStep.replaceAll("-", " ")}.
-                  </p>
-                  <a
-                    className="ui-button ui-button--primary"
-                    href={`/app/${slug}/onboarding/${data.onboarding.currentStep}`}
-                  >
-                    Resume onboarding
-                  </a>
-                </Box>
               </div>
             );
           }}

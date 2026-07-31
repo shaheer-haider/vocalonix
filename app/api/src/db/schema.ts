@@ -409,6 +409,34 @@ export const businessOnboarding = pgTable("business_onboarding", {
     .defaultNow(),
 });
 
+export const businessConfigVersions = pgTable(
+  "business_config_versions",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    config: jsonb("config").$type<Record<string, unknown>>().notNull(),
+    publishedBy: text("published_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    publishedAt: timestamp("published_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("business_config_versions_business_version_unique").on(
+      table.businessId,
+      table.version,
+    ),
+    index("business_config_versions_business_idx").on(
+      table.businessId,
+      table.publishedAt,
+    ),
+  ],
+);
+
 export const businessKnowledge = pgTable(
   "business_knowledge",
   {

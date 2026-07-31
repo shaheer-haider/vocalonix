@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { and, asc, eq, isNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 
 import { normalizeEmail } from "../auth/email";
@@ -10,9 +10,11 @@ import {
   businessAgentSettings,
   businessDograhMappings,
   businessKnowledge,
+  businessConfigVersions,
   businessOnboarding,
   businesses,
   outboxEvents,
+  users,
 } from "../db/schema";
 import {
   DograhSyncError,
@@ -104,6 +106,43 @@ async function queueBusinessSync(
       dedupeKey: `dograh.workflow.sync:${businessId}`,
     })
     .onConflictDoNothing();
+}
+
+async function snapshotBusinessConfig(
+  businessId: string,
+): Promise<Record<string, unknown>> {
+  const [row] = await db
+    .select({ business: businesses, settings: businessAgentSettings })
+    .from(businesses)
+    .innerJoin(
+      businessAgentSettings,
+      eq(businessAgentSettings.businessId, businesses.id),
+    )
+    .where(eq(businesses.id, businessId))
+    .limit(1);
+  if (!row) {
+    throw new ApiError(500, "SETTINGS_UNAVAILABLE", "Business settings are unavailable.");
+  }
+  return {
+    name: row.business.name,
+    city: row.business.city,
+    country: row.business.country,
+    timezone: row.business.timezone,
+    contactEmail: row.business.contactEmail,
+    vertical: row.business.vertical,
+    agentName: row.settings.agentName,
+    greeting: row.settings.greeting,
+    prompt: row.settings.prompt,
+    closing: row.settings.closing,
+    tone: row.settings.tone,
+    voice: row.settings.voice,
+    allowInterrupt: row.settings.allowInterrupt,
+    escalationGuidance: row.settings.escalationGuidance,
+    businessHours: row.settings.businessHours,
+    widgetButtonText: row.settings.widgetButtonText,
+    widgetColor: row.settings.widgetColor,
+    allowedDomains: row.settings.allowedDomains,
+  };
 }
 
 function dograhApiError(error: unknown): never {
@@ -497,6 +536,20 @@ export const tenantRoutes = new Elysia()
           .update(businessOnboarding)
           .set({ publishedAt: new Date(), updatedAt: new Date() })
           .where(eq(businessOnboarding.businessId, workspace.business.id));
+        const config = await snapshotBusinessConfig(workspace.business.id);
+        const [latest] = await tx
+          .select({
+            version: sql<number>`coalesce(max(${businessConfigVersions.version}), 0)`,
+          })
+          .from(businessConfigVersions)
+          .where(eq(businessConfigVersions.businessId, workspace.business.id));
+        await tx.insert(businessConfigVersions).values({
+          id: randomUUID(),
+          businessId: workspace.business.id,
+          version: (latest?.version ?? 0) + 1,
+          config,
+          publishedBy: workspace.session.user.id,
+        });
         await tx.insert(auditLogs).values({
           id: randomUUID(),
           businessId: workspace.business.id,
@@ -517,6 +570,22 @@ export const tenantRoutes = new Elysia()
     } catch (error) {
       dograhApiError(error);
     }
+  })
+  .get("/api/b/:slug/settings/versions", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const rows = await db
+      .select({
+        id: businessConfigVersions.id,
+        version: businessConfigVersions.version,
+        config: businessConfigVersions.config,
+        publishedAt: businessConfigVersions.publishedAt,
+        publishedByName: users.name,
+      })
+      .from(businessConfigVersions)
+      .leftJoin(users, eq(users.id, businessConfigVersions.publishedBy))
+      .where(eq(businessConfigVersions.businessId, workspace.business.id))
+      .orderBy(desc(businessConfigVersions.version));
+    return { versions: rows, draft: await snapshotBusinessConfig(workspace.business.id) };
   })
   .get("/api/b/:slug/widget", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);

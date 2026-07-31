@@ -191,7 +191,25 @@ const workspaceSettingsRoute = createRoute({
 const workspaceProfileSettingsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/settings/profile",
-  component: () => <TenantSettingsPage section="profile" />,
+  component: () => <TenantSettingsPage section="business" />,
+});
+
+const workspaceBusinessSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/business",
+  component: () => <TenantSettingsPage section="business" />,
+});
+
+const workspaceAppearanceSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/appearance",
+  component: () => <TenantSettingsPage section="appearance" />,
+});
+
+const workspaceHistorySettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/history",
+  component: () => <TenantSettingsPage section="history" />,
 });
 
 const workspaceAgentSettingsRoute = createRoute({
@@ -314,6 +332,9 @@ const routeTree = rootRoute.addChildren([
     workspaceOnboardingRoute,
     workspaceSettingsRoute,
     workspaceProfileSettingsRoute,
+    workspaceBusinessSettingsRoute,
+    workspaceAppearanceSettingsRoute,
+    workspaceHistorySettingsRoute,
     workspaceAgentSettingsRoute,
     workspaceKnowledgeSettingsRoute,
     workspaceHoursSettingsRoute,

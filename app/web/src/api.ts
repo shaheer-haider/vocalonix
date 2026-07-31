@@ -222,6 +222,40 @@ export interface TenantKnowledgeItem {
   updatedAt: string | Date;
 }
 
+export interface TenantConfigSnapshot {
+  name: string;
+  city: string | null;
+  country: string;
+  timezone: string;
+  contactEmail: string | null;
+  vertical: string | null;
+  agentName: string;
+  greeting: string;
+  prompt: string;
+  closing: string;
+  tone: string;
+  voice: string;
+  allowInterrupt: boolean;
+  escalationGuidance: string;
+  businessHours: Record<string, BusinessHoursDay>;
+  widgetButtonText: string;
+  widgetColor: string;
+  allowedDomains: string[];
+}
+
+export interface TenantConfigVersion {
+  id: string;
+  version: number;
+  config: TenantConfigSnapshot;
+  publishedAt: string | Date;
+  publishedByName: string | null;
+}
+
+export interface TenantConfigVersionsResponse {
+  versions: TenantConfigVersion[];
+  draft: TenantConfigSnapshot;
+}
+
 export interface TenantWidget {
   workflowId: number;
   scriptUrl: string;
@@ -356,6 +390,12 @@ export const api = {
       unwrap(await client.api.b[slug].dograh.get()),
     retryDograh: async (slug: string) =>
       unwrap(await client.api.b[slug].dograh.retry.post()),
+    configVersions: async (
+      slug: string,
+    ): Promise<TenantConfigVersionsResponse> =>
+      unwrap(
+        await client.api.b[slug].settings.versions.get(),
+      ) as unknown as TenantConfigVersionsResponse,
     publish: async (slug: string): Promise<{ widget: TenantWidget }> =>
       unwrap(await client.api.b[slug].publish.post()) as {
         widget: TenantWidget;
