@@ -18,8 +18,8 @@ export function Box({ children, tone = "default", style, ...rest }: BoxProps) {
     <div
       style={{
         background,
-        border: "1.5px solid var(--line)",
-        borderRadius: 8,
+        border: "1px solid var(--line-2)",
+        borderRadius: 12,
         boxShadow: "var(--shadow-sketch)",
         ...style,
       }}
