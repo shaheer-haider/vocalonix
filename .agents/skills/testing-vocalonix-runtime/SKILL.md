@@ -49,6 +49,12 @@ Never print provider values or write them into tracked files.
    curl -fsS http://localhost:3001/api/dograh/status
    ```
 6. Test the browser at `http://localhost:3000`.
+7. Before testing a branch, verify the served web bundle matches HEAD: fetch
+   `http://localhost:3000/` and grep the referenced `assets/index-*.js` for a
+   string unique to the newest commit. Compose images can be stale even when
+   containers report healthy; if the marker is missing, rerun
+   `docker compose up -d --build --wait vocalonix-api vocalonix-web vocalonix-worker`
+   and hard-reload (Ctrl+Shift+R) to bust the cached index.html.
 
 The API defaults `APP_ORIGIN` to `http://localhost:3000`. An ad hoc frontend
 preview on another port might produce browser `Failed to fetch` errors even
@@ -187,6 +193,21 @@ To make a real call in a VM with no audio hardware:
    shows duration, disposition (`user_hangup`), audio playback, and a full
    transcript. Runs are named `[Vocalonix:<business_id>] <agent> for <business>`.
    Failed mic attempts still create 0-second ghost runs.
+
+## Configuration versions and Knowledge tabs
+
+- The Configuration page lives at
+  `/app/:slug/settings/{business,agent,hours,widget,appearance,history}`.
+  Saving any tab flips the publish banner to `Changes pending` with
+  `See the diff` and `Republish` actions; each publish records a row in
+  `business_config_versions` (check with
+  `docker compose exec -T vocalonix-db psql -U vocalonix -d vocalonix -c "select version, published_at from business_config_versions order by version;"`).
+- The History tab's `Restore` writes into the draft only (the banner returns to
+  `Changes pending`) — it does not auto-publish.
+- Knowledge tabs are hash-based: `/app/:slug/settings/knowledge#answers` and
+  `#gaps`. `Rewrite it` in Answers creates a pending replacement row that
+  consolidates into one row after the worker processes it — reload before
+  asserting a duplicate-row bug.
 
 ## Scope
 
