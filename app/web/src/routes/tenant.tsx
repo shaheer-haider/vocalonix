@@ -1482,11 +1482,13 @@ function useConfigVersions(slug: string) {
 
 function DiffModal({
   diff,
+  fromLabel = "Live now",
   onClose,
   onRepublish,
   publishing,
 }: {
   diff: ConfigDiffEntry[];
+  fromLabel?: string;
   onClose: () => void;
   onRepublish?: () => void;
   publishing?: boolean;
@@ -1507,7 +1509,7 @@ function DiffModal({
               </p>
               <div className="config-diff__values">
                 <div>
-                  <span>Live now</span>
+                  <span>{fromLabel}</span>
                   <p>{entry.from}</p>
                 </div>
                 <div>
@@ -1952,6 +1954,7 @@ function HistoryTab({
       {compare && draft ? (
         <DiffModal
           diff={configDiff(compare.config, draft)}
+          fromLabel={`Version ${compare.version}`}
           onClose={() => setCompare(null)}
         />
       ) : null}

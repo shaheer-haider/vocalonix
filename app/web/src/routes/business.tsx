@@ -531,7 +531,7 @@ export function WorkspaceDashboardPage() {
           <div className="dash-surfaces">
             <Box className="dash-surface" style={{ padding: 20 }}>
               <p className="eyebrow">Agent</p>
-              <h2>Robin is set up here</h2>
+              <h2>Your agent is set up here</h2>
               <p>
                 Voice, greeting, escalation rules, opening hours and the website
                 widget all live in Configuration.
