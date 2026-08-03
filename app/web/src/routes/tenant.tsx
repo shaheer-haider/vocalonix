@@ -64,6 +64,31 @@ const widgetSchema = z.object({
   allowedDomains: z.string().max(10_000),
 });
 
+const TONE_OPTIONS = [
+  { label: "Warm", value: "warm" },
+  { label: "Professional", value: "professional" },
+  { label: "Concise", value: "concise" },
+  { label: "Friendly", value: "friendly" },
+];
+
+const VOICE_OPTIONS = [
+  { label: "Natural", value: "natural" },
+  { label: "Calm", value: "calm" },
+  { label: "Energetic", value: "energetic" },
+  { label: "Measured", value: "measured" },
+];
+
+function withSavedOption(
+  options: { label: string; value: string }[],
+  saved: string,
+): { label: string; value: string }[] {
+  if (!saved || options.some((option) => option.value === saved)) return options;
+  return [
+    { label: saved.charAt(0).toUpperCase() + saved.slice(1), value: saved },
+    ...options,
+  ];
+}
+
 type ProfileValues = z.infer<typeof profileSchema>;
 type AgentValues = z.infer<typeof agentSchema>;
 type WidgetValues = z.infer<typeof widgetSchema>;
@@ -271,23 +296,13 @@ function AgentForm({
           />
           <SelectField
             label="Tone"
-            options={[
-              { label: "Warm", value: "warm" },
-              { label: "Professional", value: "professional" },
-              { label: "Concise", value: "concise" },
-              { label: "Friendly", value: "friendly" },
-            ]}
+            options={withSavedOption(TONE_OPTIONS, data.settings.tone)}
             {...form.register("tone")}
           />
           <SelectField
             label="Voice style"
             helper="This guides the workflow's speaking style without changing global model credentials."
-            options={[
-              { label: "Natural", value: "natural" },
-              { label: "Calm", value: "calm" },
-              { label: "Energetic", value: "energetic" },
-              { label: "Measured", value: "measured" },
-            ]}
+            options={withSavedOption(VOICE_OPTIONS, data.settings.voice)}
             {...form.register("voice")}
           />
         </div>
