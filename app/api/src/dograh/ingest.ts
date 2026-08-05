@@ -9,6 +9,7 @@ import {
   contacts,
 } from "../db/schema";
 import { dograh } from "./client";
+import { extractVariablesFromTranscript } from "./extract";
 import type { DograhWorkflowRun } from "./types";
 
 const RUNS_PAGE_LIMIT = 50;
@@ -32,8 +33,9 @@ export interface ExtractedCaller {
   callbackReason: string | null;
 }
 
-export function extractCaller(run: DograhWorkflowRun): ExtractedCaller {
-  const context = run.gathered_context ?? {};
+export function callerFromContext(
+  context: Record<string, unknown>,
+): ExtractedCaller {
   return {
     name: extractedString(context.caller_name),
     phone: extractedString(context.caller_phone),
@@ -41,6 +43,29 @@ export function extractCaller(run: DograhWorkflowRun): ExtractedCaller {
     callbackRequested: context.callback_requested === true,
     callbackReason: extractedString(context.callback_reason),
   };
+}
+
+export function extractCaller(run: DograhWorkflowRun): ExtractedCaller {
+  return callerFromContext(run.gathered_context ?? {});
+}
+
+export function hasCallerSignal(caller: ExtractedCaller): boolean {
+  return Boolean(
+    caller.name || caller.phone || caller.email || caller.callbackRequested,
+  );
+}
+
+async function extractCallerWithFallback(
+  run: DograhWorkflowRun,
+): Promise<ExtractedCaller> {
+  const caller = extractCaller(run);
+  if (hasCallerSignal(caller)) return caller;
+  if (!run.transcript_public_url) return caller;
+  const transcript = await dograh.fetchRunTranscript(run.transcript_public_url);
+  if (!transcript) return caller;
+  const variables = await extractVariablesFromTranscript(transcript);
+  if (!variables) return caller;
+  return callerFromContext(variables);
 }
 
 async function upsertCallContact(
@@ -126,7 +151,7 @@ export async function ingestBusinessRuns(
     .sort((left, right) => left.id - right.id);
   let highest = lastIngestedRunId;
   for (const run of fresh) {
-    const caller = extractCaller(run);
+    const caller = await extractCallerWithFallback(run);
     await upsertCallContact(businessId, caller);
     await createCallCallback(businessId, run, caller);
     highest = run.id;

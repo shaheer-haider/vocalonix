@@ -75,6 +75,7 @@ export interface DograhManagementClient {
     limit?: number,
   ): Promise<DograhWorkflowRunsPage>;
   getWorkflowRun(workflowId: number, runId: number): Promise<DograhWorkflowRun>;
+  fetchRunTranscript(publicUrl: string): Promise<string | null>;
   getEmbedToken(workflowId: number): Promise<DograhEmbedToken | null>;
   createEmbedToken(
     workflowId: number,
@@ -294,6 +295,26 @@ export class DograhClient implements DograhManagementClient {
 
   getWorkflowRun(workflowId: number, runId: number): Promise<DograhWorkflowRun> {
     return this.rawRequest(`/workflow/${workflowId}/runs/${runId}`);
+  }
+
+  async fetchRunTranscript(publicUrl: string): Promise<string | null> {
+    const destination = new URL(publicUrl);
+    const internal = new URL(env.dograhInternalUrl);
+    destination.protocol = internal.protocol;
+    destination.hostname = internal.hostname;
+    destination.port = internal.port;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(destination, { signal: controller.signal });
+      if (!response.ok) return null;
+      return await response.text();
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   getEmbedToken(workflowId: number): Promise<DograhEmbedToken | null> {
