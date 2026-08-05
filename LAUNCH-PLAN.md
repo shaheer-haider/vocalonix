@@ -126,11 +126,14 @@ assume 1–2 engineers.
    writes back into knowledge Sources/Answers.
 3. ~~**Callbacks backend**~~ — done in PR #28: `callback_tasks` table with
    assignment, promise-time buckets, attempt logging and done states; the
-   existing UI is wired to it. Remaining: auto-creating tasks from call
-   dispositions (the schema already carries `source`/`runId` for it).
+   existing UI is wired to it. Auto-creation from calls is done in
+   PR #31/#32: the worker polls completed runs and creates "FROM A CALL"
+   tasks when the caller asked for a callback.
 4. ~~**Contacts backend**~~ — done in PR #29: `contacts` table with CSV
-   import, tags and per-contact agent notes. Remaining: auto-creation from
-   calls and call-history linkage.
+   import, tags and per-contact agent notes. Auto-creation from calls is
+   done in PR #31/#32: caller details come from Dograh's in-call extraction
+   when present, otherwise from a Gemini pass over the persisted transcript
+   (`GEMINI_API_KEY`). Remaining: call-history linkage on the contact page.
 5. **Real Dashboard** — partially done in PR #26: call stats, hourly chart,
    outcome mix and latest-calls feed are live from Dograh runs. Remaining:
    callback queue, knowledge-gap and diary surfaces once those backends land.
