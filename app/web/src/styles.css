@@ -2476,10 +2476,19 @@ p {
 
 .dash-bar {
   flex: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   align-items: center;
   gap: 6px;
+}
+
+.dash-bar__track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
 }
 
 .dash-bar__fill {

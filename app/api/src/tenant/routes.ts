@@ -179,6 +179,33 @@ function conversationSummary(run: DograhWorkflowRun) {
   };
 }
 
+function hourInTimezone(value: string, timezone: string): number {
+  const formatted = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    hourCycle: "h23",
+  }).format(new Date(value));
+  return Number(formatted);
+}
+
+function startOfDayInTimezone(now: Date, timezone: string): number {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const get = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const elapsedMs =
+    ((get("hour") * 60 + get("minute")) * 60 + get("second")) * 1000;
+  return now.getTime() - elapsedMs;
+}
+
 function dograhApiError(error: unknown): never {
   if (error instanceof DograhSyncError) {
     const status =
@@ -538,6 +565,53 @@ export const tenantRoutes = new Elysia()
         transcriptUrl: run.transcript_public_url ?? null,
         recordingUrl: run.recording_public_url ?? null,
       },
+    };
+  })
+  .get("/api/b/:slug/dashboard", async ({ params, query, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const range =
+      query.range === "7d" || query.range === "30d" ? query.range : "today";
+    const timezone = workspace.business.timezone;
+    const now = new Date();
+    const cutoff =
+      range === "today"
+        ? startOfDayInTimezone(now, timezone)
+        : now.getTime() - (range === "7d" ? 7 : 30) * 24 * 60 * 60 * 1000;
+
+    let runs: DograhWorkflowRun[] = [];
+    try {
+      const workflowId = await requireTenantWorkflowId(workspace.business.id);
+      const result = await dograh.listWorkflowRuns(workflowId, 1, 100);
+      runs = result.runs.filter(
+        (run) => Date.parse(run.created_at) >= cutoff,
+      );
+    } catch (error) {
+      if (
+        !(error instanceof ApiError && error.code === "DOGRAH_WORKFLOW_NOT_FOUND")
+      ) {
+        throw error;
+      }
+    }
+
+    const durations = runs
+      .map((run) => run.cost_info?.call_duration_seconds)
+      .filter((value): value is number => typeof value === "number");
+    const totalSeconds = durations.reduce((sum, value) => sum + value, 0);
+    const hourly = new Array<number>(24).fill(0);
+    for (const run of runs) {
+      const hour = hourInTimezone(run.created_at, timezone);
+      if (hour >= 0 && hour < 24) hourly[hour] = (hourly[hour] ?? 0) + 1;
+    }
+
+    return {
+      range,
+      callsAnswered: runs.length,
+      completedCalls: runs.filter((run) => run.is_completed).length,
+      totalSeconds,
+      averageSeconds:
+        durations.length > 0 ? Math.round(totalSeconds / durations.length) : 0,
+      hourly,
+      recent: runs.slice(0, 8).map(conversationSummary),
     };
   })
   .post("/api/b/:slug/dograh/retry", async ({ params, request }) => {

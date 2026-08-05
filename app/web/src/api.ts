@@ -280,6 +280,16 @@ export interface ConversationDetail extends ConversationSummary {
   recordingUrl: string | null;
 }
 
+export interface DashboardStats {
+  range: "today" | "7d" | "30d";
+  callsAnswered: number;
+  completedCalls: number;
+  totalSeconds: number;
+  averageSeconds: number;
+  hourly: number[];
+  recent: ConversationSummary[];
+}
+
 export interface TenantWidget {
   workflowId: number;
   scriptUrl: string;
@@ -426,6 +436,15 @@ export const api = {
       },
     widget: async (slug: string): Promise<TenantWidget> =>
       unwrap(await client.api.b[slug].widget.get()) as TenantWidget,
+    dashboard: async (
+      slug: string,
+      range: "today" | "7d" | "30d",
+    ): Promise<DashboardStats> =>
+      unwrap(
+        await client.api.b[slug].dashboard.get({
+          $query: { range },
+        }),
+      ) as unknown as DashboardStats,
     conversations: async (
       slug: string,
       page = 1,
