@@ -44,7 +44,8 @@ Each of these pages currently shows a "Design preview" banner:
 - **No real email delivery.** Resend integration is coded but unverified;
   magic links / verification / invites only show local preview URLs.
 - **No payments.** Billing is entirely sample data.
-- **Legacy `/secret/*` lab** is unauthenticated and duplicates the tenant path.
+- **Legacy `/secret/*` lab** duplicates the tenant path (now requires a
+  signed-in session; still not tenant-scoped).
 - **BYO provider keys in Dograh UI.** AI model keys (Gemini/OpenAI) are
   configured by hand in the Dograh dashboard, not provisioned per tenant.
 - **Escalation chain / night chain, human handoff** exist in designs

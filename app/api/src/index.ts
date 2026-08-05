@@ -17,6 +17,7 @@ import {
   isAllowedDocumentFilename,
 } from "./uploads";
 import { ApiError } from "./errors";
+import { requireSession } from "./workspace/context";
 import { workspaceRoutes } from "./workspace/routes";
 import { tenantRoutes } from "./tenant/routes";
 
@@ -112,7 +113,8 @@ export const app = new Elysia()
     service: "vocalonix-api",
     time: new Date().toISOString(),
   }))
-  .get("/api/dograh/status", async () => {
+  .get("/api/dograh/status", async ({ request }) => {
+    await requireSession(request.headers);
     const health = await dograh.health();
     const workflow = await ensureWorkflow();
     return {
@@ -125,7 +127,8 @@ export const app = new Elysia()
       },
     };
   })
-  .get("/api/agent", async () => {
+  .get("/api/agent", async ({ request }) => {
+    await requireSession(request.headers);
     const workflow = await ensureWorkflow();
     return {
       workflow: {
@@ -139,7 +142,8 @@ export const app = new Elysia()
   })
   .put(
     "/api/agent",
-    async ({ body }) => {
+    async ({ body, request }) => {
+      await requireSession(request.headers);
       validateSettings(body);
       const workflow = await saveSettings(body);
       await dograh.createEmbedToken(workflow.id, widgetSettings(body));
@@ -165,15 +169,20 @@ export const app = new Elysia()
       }),
     },
   )
-  .get("/api/agent/widget", widgetPayload)
-  .get("/api/knowledge", async () => {
+  .get("/api/agent/widget", async ({ request }) => {
+    await requireSession(request.headers);
+    return widgetPayload();
+  })
+  .get("/api/knowledge", async ({ request }) => {
+    await requireSession(request.headers);
     const response = await dograh.listDocuments();
     await syncCompletedDocuments(response.documents);
     return response;
   })
   .post(
     "/api/knowledge",
-    async ({ body }) => {
+    async ({ body, request }) => {
+      await requireSession(request.headers);
       const { file } = body;
       if (file.size > MAX_UPLOAD_BYTES) {
         throw new DograhError("File size must be 5MB or less", 400);
@@ -206,7 +215,8 @@ export const app = new Elysia()
       }),
     },
   )
-  .delete("/api/knowledge/:documentUuid", async ({ params }) => {
+  .delete("/api/knowledge/:documentUuid", async ({ params, request }) => {
+    await requireSession(request.headers);
     await dograh.deleteDocument(params.documentUuid);
     const documents = await dograh.listDocuments();
     await syncCompletedDocuments(documents.documents);
