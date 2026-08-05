@@ -44,6 +44,27 @@ docker compose up -d --build --wait
 - Demo API: `app/api/src/demo/*`
 - Database schema: `app/api/src/db/schema.ts`
 - Dograh integration: `app/api/src/dograh/*`
+- Hetzner deploy guide: `deploy/hetzner/README.md`
+- Infrastructure (OpenTofu): `terraform/`
+- Deployment SSH key: `terraform/.ssh/id_ed25519`
+
+## Deployment secrets
+
+`terraform/.ssh/id_ed25519` is the OpenTofu-generated deployment key and **one
+key grants root to both the Vocalonix and Dograh servers**. It lives only on the
+operator's machine, gitignored via `terraform/.ssh/`. Never commit it, never
+`rsync` it to a server, and never paste it into a file or log.
+
+The same applies to `terraform/*.tfstate`, the root `.env`, and
+`deploy/hetzner/*/.env`. Every deploy rsync must carry these excludes:
+
+```bash
+--exclude 'terraform/.ssh' --exclude 'terraform/*.tfstate*' \
+--exclude '.env' --exclude 'deploy/hetzner/*/.env'
+```
+
+See `deploy/hetzner/README.md` for the full deploy and redeploy commands, an
+audit snippet that finds stray copies on the servers, and the key-rotation steps.
 
 ## Verification status
 

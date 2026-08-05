@@ -35,10 +35,15 @@ cd deploy/hetzner
 
 ```bash
 # run locally from the repo root
-rsync -avz -e "ssh -i terraform/.ssh/id_ed25519" \
+rsync -avz -e "ssh -i terraform/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
   --exclude .git --exclude .terraform --exclude node_modules --exclude dist \
+  --exclude 'terraform/.ssh' --exclude 'terraform/*.tfstate*' \
+  --exclude '.env' --exclude 'deploy/hetzner/*/.env' \
   . root@<ip>:/opt/vocalonix/repo
 ```
+
+The last two exclude lines are not optional — see [Secrets that must never be
+synced](#secrets-that-must-never-be-synced).
 
 4. On the **Dograh** server:
 
@@ -56,6 +61,108 @@ cd /opt/vocalonix/repo/deploy/hetzner/vocalonix
 # Add 2 GB swap so the build does not OOM on the small cx23
 fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
 docker compose --env-file .env up -d --build
+```
+
+## Secrets that must never be synced
+
+The deployment SSH keypair lives at `terraform/.ssh/id_ed25519`. It is created
+out of band with `ssh-keygen` — OpenTofu does not generate it, it only reads
+`.ssh/id_ed25519.pub` (`local.ssh_public_key` in `main.tf`) and registers it as
+`hcloud_ssh_key`. That path is the private key's only home, it is gitignored via
+`terraform/.ssh/`, and it stays on the operator's machine.
+
+**One key grants root to both servers.** Copying it onto either one turns a file
+read on that box into root on the whole deployment, so the rsync step must
+exclude it.
+
+Also exclude, for different reasons:
+
+- `terraform/*.tfstate` — no private key or API token is stored in it, but it
+  records infrastructure layout (server and network IDs, private IPs, firewall
+  rules) that does not belong on a public-facing box.
+- the root `.env` and `deploy/hetzner/*/.env` — each server keeps its own env
+  file, and syncing yours overwrites production secrets with local ones.
+
+Audit both servers for stray copies:
+
+```bash
+for ip in $(cd terraform && tofu output -raw vocalonix_public_ip) \
+          $(cd terraform && tofu output -raw dograh_public_ip); do
+  echo "=== $ip ==="
+  ssh -i terraform/.ssh/id_ed25519 root@"$ip" \
+    'find / -name "id_ed25519" -o -name "*.tfstate" 2>/dev/null | grep -v ^/proc || echo clean'
+done
+```
+
+Anything listed should be deleted from the server.
+
+### Rotating an exposed key
+
+Do **not** just swap the key and run `tofu apply`. `hcloud_server.ssh_keys` is
+`ForceNew` in the hcloud provider because the Hetzner API cannot change the keys
+of an existing server — cloud-init writes `authorized_keys` only on first boot.
+Editing it therefore plans a **server replacement**, destroying both servers and
+their data. Rotate in this order instead:
+
+```bash
+# 1. new keypair (keep the old one until step 3 succeeds)
+ssh-keygen -t ed25519 -N "" -C "vocalonix-$(date +%Y%m%d)" -f terraform/.ssh/id_ed25519_new
+
+# 2. append the new public key on each server, using the OLD key to connect
+for ip in <vocalonix-ip> <dograh-ip>; do
+  ssh -i terraform/.ssh/id_ed25519 root@"$ip" \
+    "printf '%s\n' '$(cat terraform/.ssh/id_ed25519_new.pub)' >> ~/.ssh/authorized_keys"
+done
+
+# 3. confirm the new key works, then promote it
+ssh -i terraform/.ssh/id_ed25519_new root@<vocalonix-ip> 'echo ok'
+mv terraform/.ssh/id_ed25519_new terraform/.ssh/id_ed25519
+mv terraform/.ssh/id_ed25519_new.pub terraform/.ssh/id_ed25519.pub
+
+# 4. remove the old public key from each server's authorized_keys
+# 5. update the Hetzner project key so future servers get the new one:
+#    review the plan first and confirm it does not replace the servers
+cd terraform && tofu plan
+```
+
+If step 5 plans a replacement, do not apply it. Pin the existing servers first so
+the key change only affects future ones:
+
+```hcl
+resource "hcloud_server" "vocalonix" {
+  # ...
+  lifecycle {
+    ignore_changes = [ssh_keys]
+  }
+}
+```
+
+Access on the running servers is governed by `authorized_keys` (steps 2 and 4),
+not by this attribute.
+
+## Redeploying a change
+
+Infrastructure already exists, so a code change does **not** need `tofu apply`.
+For a web-only change (anything under `app/web/`), rsync as in step 3 and then:
+
+```bash
+ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
+  'cd /opt/vocalonix/repo/deploy/hetzner/vocalonix && docker compose --env-file .env up -d --build'
+```
+
+Compose recreates only the services whose image actually changed, so a CSS or
+frontend change replaces `vocalonix-web` and leaves `vocalonix-api`, the worker,
+the database, and Caddy running — no API downtime.
+
+Verify afterwards, and assert on the built asset rather than trusting a healthy
+container, because a stale image still reports healthy:
+
+```bash
+curl -fsS https://<host>/api/health
+curl -fsS https://<host>/api/dograh/health   # expect turnEnabled: true
+# confirm the new bundle is being served
+C=$(curl -sS https://<host>/ | grep -o 'assets/index-[^"]*\.css')
+curl -sS "https://<host>/$C" | grep -c '<a marker from your change>'
 ```
 
 ## Switching to production
