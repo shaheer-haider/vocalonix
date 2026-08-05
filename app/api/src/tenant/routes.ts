@@ -688,6 +688,26 @@ export const tenantRoutes = new Elysia()
           "Invalid promised-at time.",
         );
       }
+      if (body.assignedTo) {
+        const [member] = await db
+          .select({ userId: memberships.userId })
+          .from(memberships)
+          .where(
+            and(
+              eq(memberships.businessId, workspace.business.id),
+              eq(memberships.userId, body.assignedTo),
+              eq(memberships.status, "active"),
+            ),
+          )
+          .limit(1);
+        if (!member) {
+          throw new ApiError(
+            400,
+            "INVALID_ASSIGNEE",
+            "The assignee is not an active member of this business.",
+          );
+        }
+      }
       const id = randomUUID();
       const [created] = await db
         .insert(callbackTasks)
@@ -709,6 +729,15 @@ export const tenantRoutes = new Elysia()
           "Could not create the callback.",
         );
       }
+      const assigneeName = created.assignedTo
+        ? ((
+            await db
+              .select({ name: users.name })
+              .from(users)
+              .where(eq(users.id, created.assignedTo))
+              .limit(1)
+          )[0]?.name ?? null)
+        : null;
       await db.insert(auditLogs).values({
         id: randomUUID(),
         businessId: workspace.business.id,
@@ -717,7 +746,7 @@ export const tenantRoutes = new Elysia()
         targetType: "callback_task",
         targetId: id,
       });
-      return { callback: callbackView(created, null) };
+      return { callback: callbackView(created, assigneeName) };
     },
     {
       body: t.Object({
