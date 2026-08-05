@@ -1,5 +1,6 @@
 import { env } from "../env";
 import { dograh } from "./client";
+import { tenantWorkflowConfigurations } from "./config";
 import type { AgentSettings, DograhDocument, DograhWorkflow } from "./types";
 
 const WORKFLOW_PREFIX = "[Vocalonix]";
@@ -190,16 +191,28 @@ export async function ensureWorkflow(): Promise<DograhWorkflow> {
   if (managed) return dograh.getWorkflow(managed.id);
 
   const documents = await completedDocumentUuids();
-  return dograh.createWorkflow(
+  const created = await dograh.createWorkflow(
     workflowName(defaultAgentSettings),
     buildWorkflow(defaultAgentSettings, documents),
   );
+  await dograh.updateWorkflow(
+    created.id,
+    workflowName(defaultAgentSettings),
+    buildWorkflow(defaultAgentSettings, documents),
+    tenantWorkflowConfigurations(defaultAgentSettings),
+  );
+  return dograh.getWorkflow(created.id);
 }
 
 export async function saveSettings(settings: AgentSettings): Promise<DograhWorkflow> {
   const workflow = await ensureWorkflow();
   const documents = await completedDocumentUuids();
-  await dograh.updateWorkflow(workflow.id, workflowName(settings), buildWorkflow(settings, documents));
+  await dograh.updateWorkflow(
+    workflow.id,
+    workflowName(settings),
+    buildWorkflow(settings, documents),
+    tenantWorkflowConfigurations(settings),
+  );
   await dograh.publishWorkflow(workflow.id);
   return dograh.getWorkflow(workflow.id);
 }
@@ -217,7 +230,12 @@ export async function syncCompletedDocuments(
   if (JSON.stringify(current) === JSON.stringify(desired)) return workflow;
 
   const settings = readSettings(workflow);
-  await dograh.updateWorkflow(workflow.id, workflowName(settings), buildWorkflow(settings, desired));
+  await dograh.updateWorkflow(
+    workflow.id,
+    workflowName(settings),
+    buildWorkflow(settings, desired),
+    tenantWorkflowConfigurations(settings),
+  );
   await dograh.publishWorkflow(workflow.id);
   return dograh.getWorkflow(workflow.id);
 }
