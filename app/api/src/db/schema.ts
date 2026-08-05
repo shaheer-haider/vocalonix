@@ -473,4 +473,57 @@ export const businessKnowledge = pgTable(
   ],
 );
 
+export const callbackStatusEnum = pgEnum("callback_status", [
+  "open",
+  "spoke",
+  "voicemail",
+  "dropped",
+]);
+
+export const callbackSourceEnum = pgEnum("callback_source", [
+  "call",
+  "manual",
+]);
+
+export const callbackTasks = pgTable(
+  "callback_tasks",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    contactName: text("contact_name").notNull(),
+    contactChannel: text("contact_channel").notNull(),
+    reason: text("reason").notNull(),
+    source: callbackSourceEnum("source").notNull().default("manual"),
+    runId: integer("run_id"),
+    promisedAt: timestamp("promised_at", { withTimezone: true }).notNull(),
+    assignedTo: text("assigned_to").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    status: callbackStatusEnum("status").notNull().default("open"),
+    attempts: jsonb("attempts")
+      .$type<{ at: string; note: string }[]>()
+      .notNull()
+      .default([]),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("callback_tasks_business_status_idx").on(table.businessId, table.status),
+    index("callback_tasks_business_promised_idx").on(
+      table.businessId,
+      table.promisedAt,
+    ),
+  ],
+);
+
 export type Role = (typeof roleEnum.enumValues)[number];

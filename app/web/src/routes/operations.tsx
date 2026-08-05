@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Alert, Box, Button } from "../components/ui";
+import { api, type CallbackTask, type CallbacksResponse } from "../api";
+import { Alert, Box, Button, TextArea, TextField } from "../components/ui";
 import { WorkspaceShell } from "./business";
 
 import "./operations.css";
@@ -741,652 +742,727 @@ export function WorkspaceBookingsPage() {
 
 // ─── Callbacks ───
 
-type CallbackSrc = "call" | "waitlist" | "noshow" | "deposit" | "hand";
-type CallbackKind = "open" | "spoke" | "voicemail" | "dropped";
-
-interface Callback {
-  id: string;
-  who: string;
-  ch: string;
-  src: CallbackSrc;
-  promised: boolean;
-  day: number;
-  due: number;
-  assignee: string | null;
-  why: string;
-  made: string;
-  hist: string;
-  tries: { t: string; v: string }[];
-  links: string[];
-  state?: CallbackKind;
-  closedAt?: string;
-}
-
-const CALLBACKS: Callback[] = [
-  { id: "k1", who: "Dawn Whitfield", ch: "+44 7900 812 004", src: "call", promised: true, day: 0, due: 750, assignee: "Priya", why: "Unhappy about a crown fitted last month. Robin took the details and promised a call today.", made: "Yesterday 18:30 · 3m 12s", hist: "4th visit · flagged as upset", tries: [{ t: "09:10", v: "Priya rang — no answer, no voicemail left" }], links: ["call", "contact"] },
-  { id: "w2", who: "Nina Roche", ch: "+44 7700 900 118", src: "waitlist", promised: false, day: 0, due: 900, assignee: null, why: "On the waitlist for hygiene, any afternoon. The 3:20 with Aleks came free — hers until 3pm.", made: "Added to the waitlist Monday", hist: "2nd visit · never missed one", tries: [], links: ["booking", "contact"] },
-  { id: "k3", who: "Anna Pryce", ch: "+44 7412 660 118", src: "call", promised: true, day: 0, due: 960, assignee: "You", why: "Wanted to know if you take Bupa. Robin had no answer, so it took her number instead.", made: "Today 09:14 · 1m 48s", hist: "First time calling", tries: [], links: ["call", "knowledge", "contact"] },
-  { id: "d1", who: "Hugo Marsh", ch: "+44 7508 221 340", src: "deposit", promised: false, day: 0, due: 1005, assignee: "You", why: "Filling on Friday with no deposit paid. Policy wants a card before we hold the slot.", made: "Booked by Robin 13:58", hist: "3rd visit · one late cancellation", tries: [], links: ["booking", "contact"] },
-  { id: "k2", who: "Elena Fox", ch: "elena.fox@gmail.com", src: "call", promised: true, day: 0, due: 1020, assignee: null, why: "Asked what Invisalign costs — above the price Robin is allowed to quote out loud.", made: "Yesterday 17:55 · from the website button", hist: "Website visitor · no visits yet", tries: [], links: ["call", "contact"] },
-  { id: "n1", who: "Dan Price", ch: "+44 7900 447 201", src: "noshow", promised: false, day: 0, due: 1050, assignee: "Priya", why: "Did not arrive for his 11:00 check-up. Needs rebooking, and the deposit rule now applies to him.", made: "Marked as a no-show 11:20", hist: "5th visit · second no-show", tries: [], links: ["booking", "contact"] },
-  { id: "w1", who: "Callum Ford", ch: "+44 7311 508 662", src: "waitlist", promised: false, day: 1, due: 540, assignee: "Marta", why: "Waiting on a Thursday evening check-up. Dr. Osei has one late slot left next week.", made: "Added to the waitlist 09:12", hist: "2nd visit", tries: [], links: ["booking", "contact"] },
-  { id: "h1", who: "Ray Boland", ch: "+44 7822 119 003", src: "hand", promised: false, day: 1, due: 660, assignee: "Marta", why: "Asked for the practice manager by name and would not say what it was about.", made: "Added by Priya at the desk", hist: "No record — possibly not a patient", tries: [], links: ["contact"] },
-  { id: "p1", who: "Peter Vance", ch: "+44 7700 331 884", src: "call", promised: false, day: 1, due: 960, assignee: "Priya", why: "Wants his hygiene appointment moved. Rung twice, no answer either time.", made: "Today 08:41 · 2m 05s", hist: "6th visit · plan member", tries: [{ t: "10:02", v: "Priya rang — no answer" }, { t: "12:40", v: "Priya rang — no answer, voicemail full" }], links: ["call", "contact"] },
-  { id: "w3", who: "Marta Silva", ch: "+44 7455 620 771", src: "waitlist", promised: false, day: 3, due: 600, assignee: null, why: "Wants the first free Saturday for whitening. Nothing open until the 22nd.", made: "Added to the waitlist last Friday", hist: "First time booking", tries: [], links: ["booking", "contact"] },
-  { id: "z1", who: "Grace Odum", ch: "+44 7900 118 552", src: "call", promised: true, day: 0, due: 700, assignee: "Priya", state: "spoke", closedAt: "11:40", why: "Asked to move next week’s hygiene. Moved to Tuesday 4:00 while she was on the phone.", made: "Today 08:12 · 1m 32s", hist: "7th visit", tries: [{ t: "11:40", v: "Priya spoke to her — rebooked for Tuesday" }], links: ["call", "booking"] },
-  { id: "z2", who: "Yusuf Adeyemi", ch: "+44 7500 664 019", src: "call", promised: false, day: 0, due: 600, assignee: "You", state: "voicemail", closedAt: "09:52", why: "Wanted his Saturday hygiene changed. Voicemail left with two times to pick from.", made: "Yesterday 16:20 · 2m 44s", hist: "3rd visit", tries: [{ t: "09:52", v: "You left a voicemail with two options" }], links: ["call", "contact"] },
-];
-
-const PEOPLE = [
-  { key: "You", label: "You", sub: "Owner" },
-  { key: "Priya", label: "Priya", sub: "Front desk" },
-  { key: "Marta", label: "Marta", sub: "Front desk" },
-  { key: "Robin", label: "Robin", sub: "The agent" },
-];
-
-const SRC: Record<CallbackSrc, { text: string; cls: string }> = {
+const SRC: Record<CallbackTask["source"], { text: string; cls: string }> = {
   call: { text: "FROM A CALL", cls: "callbacks-tag--call" },
-  waitlist: { text: "FROM THE WAITLIST", cls: "callbacks-tag--waitlist" },
-  noshow: { text: "DID NOT ARRIVE", cls: "callbacks-tag--noshow" },
-  deposit: { text: "DEPOSIT UNPAID", cls: "callbacks-tag--deposit" },
-  hand: { text: "ADDED BY HAND", cls: "callbacks-tag--hand" },
+  manual: { text: "ADDED BY HAND", cls: "callbacks-tag--hand" },
 };
-
-const LINKS: Record<string, { label: string; path: string }> = {
-  call: { label: "The call ↗", path: "conversations" },
-  booking: { label: "The booking ↗", path: "bookings" },
-  contact: { label: "Contact ↗", path: "contacts" },
-  knowledge: { label: "The gap ↗", path: "settings/knowledge#gaps" },
-};
-
-const CBNOW = 884;
-const ME = "You";
 
 const GROUPS: [string, string, string][] = [
   ["late", "Late — already promised", "var(--accent)"],
   ["soon", "Within the hour", "var(--warn)"],
   ["today", "Later today", "var(--ink-4)"],
   ["ahead", "Tomorrow and after", "var(--ink-4)"],
-  ["closed", "Closed today", "var(--good)"],
+  ["closed", "Closed", "var(--good)"],
 ];
 
-export function WorkspaceCallbacksPage() {
-  const [filter, setFilter] = useState<"all" | "mine" | "unassigned" | "overdue" | "waitlist">("all");
+type CallbackBucket = "late" | "soon" | "today" | "ahead" | "closed";
+
+interface CallbackRow extends CallbackTask {
+  closed: boolean;
+  diffMinutes: number;
+  bucket: CallbackBucket;
+}
+
+function whenLabel(iso: string): string {
+  const date = new Date(iso);
+  const time = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const today = new Date();
+  if (date.toDateString() === today.toDateString()) return time;
+  return `${date.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })} ${time}`;
+}
+
+function relLabel(row: CallbackRow): string {
+  if (row.status === "spoke") return `done ${row.closedAt ? whenLabel(row.closedAt) : ""}`.trim();
+  if (row.status === "voicemail") return "message left";
+  if (row.status === "dropped") return "dropped";
+  const diff = row.diffMinutes;
+  if (diff < 0) return `${span(diff)} late`;
+  if (diff >= 1440) return `in ${Math.round(diff / 1440)} day${diff >= 2880 ? "s" : ""}`;
+  return `in ${span(diff)}`;
+}
+
+function toRow(task: CallbackTask, now: number): CallbackRow {
+  const closed = task.status !== "open";
+  const diffMinutes = Math.round((Date.parse(task.promisedAt) - now) / 60000);
+  const sameDay = new Date(task.promisedAt).toDateString() === new Date(now).toDateString();
+  let bucket: CallbackBucket = "today";
+  if (closed) bucket = "closed";
+  else if (diffMinutes < 0) bucket = "late";
+  else if (diffMinutes <= 60) bucket = "soon";
+  else if (!sameDay) bucket = "ahead";
+  return { ...task, closed, diffMinutes, bucket };
+}
+
+const DUE_OPTIONS = [
+  { key: "30", label: "In 30 min", minutes: 30 },
+  { key: "2h", label: "In 2 hours", minutes: 120 },
+  { key: "tom", label: "Tomorrow 9am", minutes: -1 },
+];
+
+function dueOptionDate(minutes: number): Date {
+  if (minutes === -1) {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(9, 0, 0, 0);
+    return d;
+  }
+  return new Date(Date.now() + minutes * 60000);
+}
+
+function CallbacksPage({ slug }: { slug: string }) {
+  const [data, setData] = useState<CallbacksResponse | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "mine" | "unassigned" | "overdue">("all");
   const [showDone, setShowDone] = useState(true);
   const [sel, setSel] = useState<string | null>(null);
-  const [assign, setAssign] = useState<Record<string, string | null>>({});
-  const [stateMap, setStateMap] = useState<Record<string, CallbackKind>>({});
-  const [dueOv, setDueOv] = useState<Record<string, number>>({});
-  const [extraTries, setExtraTries] = useState<Record<string, { t: string; v: string }[]>>({});
+  const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [showNew, setShowNew] = useState(false);
+  const [form, setForm] = useState({ contactName: "", contactChannel: "", reason: "", due: "30", assignedTo: "" });
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadError(null);
+    api.businesses
+      .callbacks(slug)
+      .then((result) => {
+        if (!cancelled) setData(result);
+      })
+      .catch((caught: unknown) => {
+        if (cancelled) return;
+        setLoadError(caught instanceof Error ? caught.message : "Unable to load callbacks.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   const say = (m: string) => {
     setToast(m);
     window.setTimeout(() => setToast(null), 2400);
   };
 
-  const allRows = useMemo(() => {
-    return CALLBACKS.map((t) => {
-      const kind = stateMap[t.id] ?? t.state ?? "open";
-      const abs = dueOv[t.id] !== undefined ? dueOv[t.id] : t.day * 1440 + t.due;
-      const owner = assign[t.id] !== undefined ? assign[t.id] : t.assignee;
-      const allTries = t.tries.concat(extraTries[t.id] ?? []);
-      const diff = abs - CBNOW;
-      const closed = kind === "spoke" || kind === "voicemail" || kind === "dropped";
-      let bucket: "late" | "soon" | "today" | "ahead" | "closed" = "today";
-      if (closed) bucket = "closed";
-      else if (diff < 0) bucket = "late";
-      else if (diff <= 60) bucket = "soon";
-      else if (abs >= 1440) bucket = "ahead";
-      return { ...t, kind, abs, owner, allTries, diff, closed, bucket };
-    });
-  }, [assign, stateMap, dueOv, extraTries]);
+  const now = Date.now();
+  const allRows = useMemo(
+    () => (data?.callbacks ?? []).map((task) => toRow(task, now)),
+    [data, now],
+  );
 
   const open = allRows.filter((r) => !r.closed);
-  const late = open.filter((r) => r.diff < 0);
-  const un = open.filter((r) => !r.owner);
-  const closedToday = allRows.filter((r) => r.kind === "spoke" || r.kind === "voicemail");
+  const late = open.filter((r) => r.diffMinutes < 0);
+  const un = open.filter((r) => !r.assignedTo);
+  const closedRows = allRows.filter((r) => r.closed && r.status !== "dropped");
 
   const filtered = useMemo(() => {
     let list = allRows;
-    if (filter === "mine") list = list.filter((r) => r.owner === ME);
-    else if (filter === "unassigned") list = list.filter((r) => !r.owner && !r.closed);
-    else if (filter === "overdue") list = list.filter((r) => !r.closed && r.diff < 0);
-    else if (filter === "waitlist") list = list.filter((r) => r.src === "waitlist");
+    if (filter === "mine") list = list.filter((r) => r.assignedTo === data?.viewerId);
+    else if (filter === "unassigned") list = list.filter((r) => !r.assignedTo && !r.closed);
+    else if (filter === "overdue") list = list.filter((r) => !r.closed && r.diffMinutes < 0);
     if (!showDone) list = list.filter((r) => !r.closed);
     return list;
-  }, [allRows, filter, showDone]);
+  }, [allRows, filter, showDone, data]);
 
   const groups = GROUPS.map(([key, label, color]) => {
-    const items = filtered.filter((r) => r.bucket === key).sort((a, b) => a.abs - b.abs);
+    const items = filtered
+      .filter((r) => r.bucket === key)
+      .sort((a, b) => Date.parse(a.promisedAt) - Date.parse(b.promisedAt));
     if (!items.length) return null;
     return { key, label, color, count: `${items.length} ${key === "closed" ? "done" : "waiting"}`, items };
   }).filter((g): g is NonNullable<typeof g> => g !== null);
 
   const selected = allRows.find((r) => r.id === sel);
+  const canManage = data?.canManage ?? false;
 
-  const handleAssign = (key: string) => {
-    if (!selected) return;
-    setAssign((prev) => ({ ...prev, [selected.id]: key || null }));
-    say(key ? (key === "Robin" ? "Robin will ring out from your number" : `${key} has it now`) : "Back in the shared pile");
+  const applyUpdate = (updated: CallbackTask) => {
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            callbacks: prev.callbacks.map((c) => (c.id === updated.id ? updated : c)),
+          }
+        : prev,
+    );
   };
 
-  const handleSetDue = (at: number, label: string) => {
-    if (!selected) return;
-    setDueOv((prev) => ({ ...prev, [selected.id]: at }));
-    say(`Due ${clock(at)}${at >= 1440 ? " tomorrow" : ""}`);
+  const update = async (id: string, changes: Parameters<typeof api.businesses.updateCallback>[2], message: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await api.businesses.updateCallback(slug, id, changes);
+      applyUpdate(result.callback);
+      say(message);
+    } catch (caught: unknown) {
+      say(caught instanceof Error ? caught.message : "That change did not save.");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const close = (kind: CallbackKind, msg: string) => {
-    if (!selected) return;
-    setStateMap((prev) => ({ ...prev, [selected.id]: kind }));
-    say(msg);
+  const handleCreate = async () => {
+    if (busy) return;
+    if (!form.contactName.trim() || !form.contactChannel.trim() || !form.reason.trim()) {
+      say("Name, number and reason are all needed");
+      return;
+    }
+    setBusy(true);
+    try {
+      const option = DUE_OPTIONS.find((d) => d.key === form.due) ?? DUE_OPTIONS[0];
+      const result = await api.businesses.createCallback(slug, {
+        contactName: form.contactName.trim(),
+        contactChannel: form.contactChannel.trim(),
+        reason: form.reason.trim(),
+        promisedAt: dueOptionDate(option.minutes).toISOString(),
+        assignedTo: form.assignedTo || null,
+      });
+      setData((prev) =>
+        prev ? { ...prev, callbacks: prev.callbacks.concat([result.callback]) } : prev,
+      );
+      setForm({ contactName: "", contactChannel: "", reason: "", due: "30", assignedTo: "" });
+      setShowNew(false);
+      setSel(result.callback.id);
+      say(`${result.callback.contactName} is in the queue`);
+    } catch (caught: unknown) {
+      say(caught instanceof Error ? caught.message : "Could not create the callback.");
+    } finally {
+      setBusy(false);
+    }
   };
-
-  const handleSpoke = () => close("spoke", `${selected?.who} — done, and written on the contact`);
-  const handleVoicemail = () => close("voicemail", "Message left — back tomorrow if they do not ring");
-  const handleDrop = () => close("dropped", "Dropped — taken off the queue");
 
   const handleNoAnswer = () => {
     if (!selected) return;
-    const n = selected.allTries.length + 1;
-    setExtraTries((prev) => ({
-      ...prev,
-      [selected.id]: (prev[selected.id] ?? []).concat([{ t: clock(CBNOW), v: `${selected.owner || "Somebody"} rang — no answer` }]),
-    }));
-    setDueOv((prev) => ({ ...prev, [selected.id]: CBNOW + 45 }));
-    say(n === 3 ? "Third miss — try a text instead" : `No answer — back in the queue for ${clock(CBNOW + 45)}`);
+    const nextDue = new Date(Date.now() + 45 * 60000);
+    void update(
+      selected.id,
+      {
+        attemptNote: `${selected.assigneeName ?? "Somebody"} rang — no answer`,
+        promisedAt: nextDue.toISOString(),
+      },
+      `No answer — back in the queue for ${whenLabel(nextDue.toISOString())}`,
+    );
   };
 
-  const handleHandBack = () => {
-    if (!selected) return;
-    setAssign((prev) => ({ ...prev, [selected.id]: "Robin" }));
-    say(`Robin will ring ${selected.who} and read the note back`);
-  };
-
-  const handleReopen = () => {
-    if (!selected) return;
-    setStateMap((prev) => {
-      const next = { ...prev };
-      delete next[selected.id];
-      return next;
-    });
-    say(`${selected.who} is back in the queue`);
-  };
-
-  const sweep = () => {
-    if (!un.length) {
-      say("Everything already has a name on it");
-      return;
-    }
-    const next: Record<string, string> = {};
-    un.forEach((r, i) => {
-      next[r.id] = ["Priya", "Marta", "You"][i % 3];
-    });
-    setAssign((prev) => ({ ...prev, ...next }));
-    say(`${un.length} shared between Priya, Marta and you`);
-  };
-
-  const dueLabel = (r: typeof allRows[0]) => clock(r.abs);
-
-  const relLabel = (r: typeof allRows[0]) => {
-    if (r.kind === "spoke") return `done ${r.closedAt}`;
-    if (r.kind === "voicemail") return "message left";
-    if (r.kind === "dropped") return "dropped";
-    const d = Math.floor(r.abs / 1440);
-    if (d === 1) return "tomorrow";
-    if (d > 1) return `in ${d} days`;
-    if (r.diff < 0) return `${span(r.diff)} late`;
-    return `in ${span(r.diff)}`;
-  };
-
-  const load = PEOPLE.map((p) => {
-    const mine = open.filter((r) => r.owner === p.key);
-    const l = mine.filter((r) => r.diff < 0).length;
-    const next = [...mine].sort((a, b) => a.abs - b.abs)[0];
-    return {
-      ...p,
-      mine,
-      l,
-      next,
-      count: mine.length ? String(mine.length) : "—",
-    };
-  }).concat([
-    {
-      key: "",
-      label: "Nobody yet",
-      sub: "",
-      mine: un,
-      l: un.filter((r) => r.diff < 0).length,
-      next: [...un].sort((a, b) => a.abs - b.abs)[0],
-      count: un.length ? String(un.length) : "—",
-    },
-  ]);
+  const load = (data?.members ?? [])
+    .map((p) => {
+      const mine = open.filter((r) => r.assignedTo === p.userId);
+      return {
+        key: p.userId,
+        label: p.name,
+        sub: p.role,
+        mine,
+        l: mine.filter((r) => r.diffMinutes < 0).length,
+        next: [...mine].sort((a, b) => Date.parse(a.promisedAt) - Date.parse(b.promisedAt))[0],
+        count: mine.length ? String(mine.length) : "—",
+      };
+    })
+    .concat([
+      {
+        key: "",
+        label: "Nobody yet",
+        sub: "",
+        mine: un,
+        l: un.filter((r) => r.diffMinutes < 0).length,
+        next: [...un].sort((a, b) => Date.parse(a.promisedAt) - Date.parse(b.promisedAt))[0],
+        count: un.length ? String(un.length) : "—",
+      },
+    ]);
 
   const maxLoad = Math.max(1, ...load.map((m) => m.mine.length));
   const fillColors = ["var(--accent-ink)", "var(--accent)", "var(--warn)", "var(--good)", "var(--accent-soft)"];
 
-  const sources = [
-    { n: allRows.filter((r) => r.src === "call").length, v: "Robin took a number on a call" },
-    { n: allRows.filter((r) => r.src === "waitlist").length, v: "Waiting for a slot in the diary" },
-    { n: allRows.filter((r) => r.src === "noshow" || r.src === "deposit").length, v: "Booking rules — no-shows and deposits" },
-    { n: allRows.filter((r) => r.src === "hand").length, v: "Added at the desk by hand" },
-  ];
-
-  const emptyTitle = filter === "overdue" ? "Nothing is late" : filter === "unassigned" ? "Everything has an owner" : "Nothing here";
+  const emptyTitle =
+    filter === "overdue"
+      ? "Nothing is late"
+      : filter === "unassigned"
+        ? "Everything has an owner"
+        : allRows.length === 0
+          ? "No callbacks yet"
+          : "Nothing here";
   const emptyLine =
     filter === "overdue"
       ? "Every promise still has time left on it."
       : filter === "unassigned"
-        ? "Every open callback has somebody’s name on it."
-        : "No callback matches that filter right now.";
+        ? "Every open callback has somebody's name on it."
+        : allRows.length === 0
+          ? "Add one by hand, or they will appear here when calls need a follow-up."
+          : "No callback matches that filter right now.";
 
-  const dueOptions = [
-    { key: "30", label: "In 30 min", at: CBNOW + 30 },
-    { key: "5pm", label: "Before 5pm", at: 1020 },
-    { key: "tom", label: "Tomorrow 9am", at: 1440 + 540 },
-  ];
+  if (loadError) {
+    return <Alert variant="warn">{loadError}</Alert>;
+  }
 
   return (
-    <WorkspaceShell>
-      {(business) => (
-        <>
-          <Alert variant="warn">
-            Design preview — the callbacks queue shows sample data while the callback backend is being built.
-          </Alert>
-
-          <div className="ops-page">
-            <div className="ops-main">
-              <div className="ops-header">
-                <div className="ops-header__row" style={{ alignItems: "flex-end" }}>
-                  <div>
-                    <h1 className="ops-title">Callbacks</h1>
-                    <p className="ops-blurb">One queue. Robin fills it, the waitlist fills it, so does the front desk.</p>
-                  </div>
-                  <div className="ops-toolbar">
-                    <Button variant="default" onClick={sweep}>
-                      Share out the unassigned
-                    </Button>
-                    <Button variant="primary" onClick={() => say("New callback — pick a contact, then a time")}>
-                      New callback
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="ops-header__row">
-                  <div className="ops-stats">
-                    <div className="ops-stat">
-                      <span className="ops-stat__v">{open.length}</span>
-                      <span className="ops-stat__k">still waiting</span>
-                    </div>
-                    <div className="ops-stat">
-                      <span className="ops-stat__v ops-stat__v--accent">{late.length}</span>
-                      <span className="ops-stat__k">late</span>
-                    </div>
-                    <div className="ops-stat">
-                      <span className="ops-stat__v ops-stat__v--warn">{un.length}</span>
-                      <span className="ops-stat__k">nobody’s</span>
-                    </div>
-                    <div className="ops-stat">
-                      <span className="ops-stat__v ops-stat__v--good">{closedToday.length}</span>
-                      <span className="ops-stat__k">closed today</span>
-                    </div>
-                  </div>
-
-                  <div className="ops-toolbar">
-                    {(["all", "mine", "unassigned", "overdue", "waitlist"] as const).map((f) => (
-                      <button
-                        type="button"
-                        key={f}
-                        className={`ops-chip ${filter === f ? "ops-chip--active" : ""}`}
-                        onClick={() => {
-                          setFilter(f);
-                          setSel(null);
-                        }}
-                      >
-                        {f === "all"
-                          ? "Everything"
-                          : f === "mine"
-                            ? "Mine"
-                            : f === "unassigned"
-                              ? "Nobody’s"
-                              : f === "overdue"
-                                ? "Late"
-                                : "From the waitlist"}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      className={`ops-chip ${showDone ? "ops-chip--active" : ""}`}
-                      onClick={() => setShowDone((v) => !v)}
-                    >
-                      {showDone ? "Hiding nothing" : "Show closed"}
-                    </button>
-                  </div>
-                </div>
-
-                {(filter === "overdue" || late.length > 0) && (
-                  <Alert variant="warn" title="Past the promise">
-                    {late.length === 1
-                      ? "One promise has gone past its time."
-                      : `${late.length} promises have gone past their time.`}
-                    {filter !== "overdue" && (
-                      <button
-                        type="button"
-                        style={{ marginLeft: 12, textDecoration: "underline", background: "transparent", border: "none", cursor: "pointer", color: "var(--warn)", font: "inherit" }}
-                        onClick={() => setFilter("overdue")}
-                      >
-                        Work through them
-                      </button>
-                    )}
-                  </Alert>
-                )}
+    <>
+      <div className="ops-page">
+        <div className="ops-main">
+          <div className="ops-header">
+            <div className="ops-header__row" style={{ alignItems: "flex-end" }}>
+              <div>
+                <h1 className="ops-title">Callbacks</h1>
+                <p className="ops-blurb">One queue for every promise to ring somebody back.</p>
               </div>
-
-              <div className="callbacks-groups">
-                {groups.length > 0 ? (
-                  groups.map((g) => (
-                    <div key={g.key}>
-                      <div className="callbacks-group__head">
-                        <span className="callbacks-group__label" style={{ color: g.color }}>
-                          {g.label}
-                        </span>
-                        <span className="callbacks-group__count">{g.count}</span>
-                      </div>
-                      {g.items.map((r) => {
-                        const on = sel === r.id;
-                        const src = SRC[r.src];
-                        return (
-                          <button
-                            type="button"
-                            key={r.id}
-                            className={[
-                              "callbacks-row",
-                              on ? "callbacks-row--selected" : "",
-                              r.bucket === "late" ? "callbacks-row--late" : "",
-                              r.closed ? "callbacks-row--closed" : "",
-                            ].join(" ")}
-                            onClick={() => setSel(r.id)}
-                          >
-                            <span className="callbacks-due">
-                              <span
-                                className={[
-                                  "callbacks-due__time",
-                                  r.bucket === "late" ? "callbacks-due__time--late" : "",
-                                ].join(" ")}
-                              >
-                                {dueLabel(r)}
-                              </span>
-                              <span
-                                className={[
-                                  "callbacks-due__rel",
-                                  r.bucket === "late" ? "callbacks-due__rel--late" : "",
-                                  r.closed ? "callbacks-due__rel--closed" : "",
-                                ].join(" ")}
-                              >
-                                {relLabel(r)}
-                              </span>
-                            </span>
-                            <span className="callbacks-middle">
-                              <span className="callbacks-topline">
-                                <span className={["callbacks-name", r.closed ? "callbacks-name--closed" : ""].join(" ")}>{r.who}</span>
-                                <span className={["callbacks-tag", src.cls].join(" ")}>{src.text}</span>
-                                {r.promised && !r.closed && <span className="callbacks-promised">PROMISED OUT LOUD</span>}
-                              </span>
-                              <span className="callbacks-why">{r.why}</span>
-                            </span>
-                            <span className="callbacks-right">
-                              {r.allTries.length > 0 && !r.closed && (
-                                <span className="callbacks-attempts-tag">
-                                  {r.allTries.length} {r.allTries.length === 1 ? "TRY" : "TRIES"}
-                                </span>
-                              )}
-                              <span
-                                className={[
-                                  "callbacks-owner",
-                                  r.owner ? "callbacks-owner--set" : "callbacks-owner--none",
-                                ].join(" ")}
-                              >
-                                {r.owner || "nobody"}
-                              </span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))
-                ) : (
-                  <div className="callbacks-empty">
-                    <span className="callbacks-empty__title">{emptyTitle}</span>
-                    <span className="callbacks-empty__line">{emptyLine}</span>
-                    <Button variant="default" onClick={() => setFilter("all")}>
-                      Show everything
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="callbacks-rail">
-              {selected ? (
-                <div className="callbacks-detail">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                    <div className="callbacks-detail__head">
-                      <span className={["callbacks-detail__tag", SRC[selected.src].cls].join(" ")}>
-                        {SRC[selected.src].text}
-                      </span>
-                      <button
-                        type="button"
-                        className="callbacks-detail__close"
-                        onClick={() => setSel(null)}
-                      >
-                        CLOSE ✕
-                      </button>
-                    </div>
-                    <span className="callbacks-detail__who">{selected.who}</span>
-                    <span className="callbacks-detail__channel">{selected.ch}</span>
-                    <span className="callbacks-detail__why">{selected.why}</span>
-                  </div>
-
-                  <div className="callbacks-facts">
-                    {[
-                      { k: "asked", v: selected.made },
-                      { k: "promised", v: selected.promised ? "Robin said somebody would ring today" : "No promise made out loud" },
-                      { k: "history", v: selected.hist },
-                      { k: "due back", v: `${dueLabel(selected)} · ${relLabel(selected)}` },
-                    ].map((f) => (
-                      <div className="callbacks-fact" key={f.k}>
-                        <span className="callbacks-fact__k">{f.k}</span>
-                        <span className="callbacks-fact__v">{f.v}</span>
-                      </div>
-                    ))}
-                    <div className="callbacks-links">
-                      {selected.links.map((k) => (
-                        <a key={k} href={LINKS[k] ? `/app/${business.slug}/${LINKS[k].path}` : "/app"}>
-                          {LINKS[k]?.label ?? k}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="callbacks-section">
-                    <span className="callbacks-section__label">Whose job it is</span>
-                    <div className="callbacks-chip-row">
-                      {PEOPLE.concat({ key: "", label: "Nobody", sub: "" }).map((p) => (
-                        <button
-                          type="button"
-                          key={p.key || "none"}
-                          className={`ops-chip ${(selected.owner || "") === p.key ? "ops-chip--active" : ""}`}
-                          onClick={() => handleAssign(p.key)}
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                    <span className="callbacks-note">
-                      {selected.owner === "Robin"
-                        ? "Robin dials out, reads the note, and hands over if they want a person."
-                        : selected.owner
-                          ? `Shows up in ${selected.owner}’s list, and on the shared queue.`
-                          : "Nobody owns this yet — it sits in the shared pile."}
-                    </span>
-                  </div>
-
-                  <div className="callbacks-section">
-                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-                      <span className="callbacks-section__label">Due back</span>
-                      <span
-                        style={{
-                          fontFamily: "var(--mono)",
-                          fontSize: 12,
-                          color: !selected.closed && selected.diff < 0 ? "var(--accent)" : "var(--ink-4)",
-                        }}
-                      >
-                        {dueLabel(selected)} · {relLabel(selected)}
-                      </span>
-                    </div>
-                    <div className="callbacks-chip-row">
-                      {dueOptions.map((d) => (
-                        <button
-                          type="button"
-                          key={d.key}
-                          className={`ops-chip ${selected.abs === d.at ? "ops-chip--active" : ""}`}
-                          onClick={() => handleSetDue(d.at, d.label)}
-                        >
-                          {d.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="callbacks-attempts">
-                    <span className="callbacks-section__label">Attempts</span>
-                    {selected.allTries.length > 0 ? (
-                      selected.allTries.map((a, i) => (
-                        <div className="callbacks-attempt" key={i}>
-                          <span className="callbacks-attempt__t">{a.t}</span>
-                          <span className="callbacks-attempt__v">{a.v}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="callbacks-note">Nobody has tried yet.</span>
-                    )}
-                  </div>
-
-                  {!selected.closed ? (
-                    <div className="callbacks-actions">
-                      <Button variant="primary" onClick={handleSpoke}>
-                        Spoke to them — done
-                      </Button>
-                      <div className="callbacks-outcomes">
-                        <Button variant="default" onClick={handleNoAnswer}>
-                          No answer
-                        </Button>
-                        <Button variant="default" onClick={handleVoicemail}>
-                          Left a message
-                        </Button>
-                        <Button variant="default" onClick={handleHandBack}>
-                          Robin tries
-                        </Button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleDrop}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          padding: "4px 0",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          fontSize: 16,
-                          color: "var(--accent-ink)",
-                          textDecoration: "underline",
-                          fontFamily: "var(--kalam)",
-                        }}
-                      >
-                        Not needed any more
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="callbacks-closed">
-                      <span className="callbacks-closed__line">
-                        {selected.kind === "spoke"
-                          ? `Spoke to them at ${selected.closedAt || "today"}. Logged on the contact, and the promise is cleared.`
-                          : selected.kind === "voicemail"
-                            ? `Message left at ${selected.closedAt || "today"}. It comes back if they have not rung by tomorrow.`
-                            : "Dropped — nobody is expecting a call."}
-                      </span>
-                      <button type="button" className="callbacks-reopen" onClick={handleReopen}>
-                        Put it back in the queue
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="callbacks-summary">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-                    <span className="callbacks-section__label">Who is carrying what</span>
-                    {load.map((m, i) => {
-                      const lateCount = m.l;
-                      const next = m.next;
-                      return (
-                        <div className="callbacks-load__item" key={m.label}>
-                          <div className="callbacks-load__head">
-                            <span className="callbacks-load__name">{`${m.label}${m.sub ? ` · ${m.sub}` : ""}`}</span>
-                            <span
-                              className={[
-                                "callbacks-load__count",
-                                lateCount ? "callbacks-load__count--late" : "",
-                              ].join(" ")}
-                            >
-                              {m.count}
-                            </span>
-                          </div>
-                          <div className="callbacks-load__bar">
-                            <div
-                              className="callbacks-load__fill"
-                              style={{
-                                width: `${Math.round((m.mine.length / maxLoad) * 100)}%`,
-                                background: fillColors[i % fillColors.length],
-                              }}
-                            />
-                          </div>
-                          <span className="callbacks-load__note">
-                            {!m.mine.length
-                              ? "Nothing waiting"
-                              : next
-                                ? `${lateCount ? `${lateCount} late · ` : ""}next ${clock(next.abs)} · ${next.who}`
-                                : ""}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="callbacks-sources">
-                    <span className="callbacks-sources__head">Where today’s came from</span>
-                    {sources.map((s, i) => (
-                      <div className="callbacks-source" key={i}>
-                        <span className="callbacks-source__n">{s.n}</span>
-                        <span className="callbacks-source__v">{s.v}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="callbacks-placeholder">
-                    <span className="callbacks-placeholder__title">Pick somebody on the left</span>
-                    <span className="callbacks-placeholder__line">
-                      Every task keeps the call it came from, so you can hear what was promised before you ring.
-                    </span>
-                  </div>
+              {canManage && (
+                <div className="ops-toolbar">
+                  <Button variant="primary" onClick={() => setShowNew((v) => !v)}>
+                    {showNew ? "Close the form" : "New callback"}
+                  </Button>
                 </div>
               )}
             </div>
+
+            <div className="ops-header__row">
+              <div className="ops-stats">
+                <div className="ops-stat">
+                  <span className="ops-stat__v">{open.length}</span>
+                  <span className="ops-stat__k">still waiting</span>
+                </div>
+                <div className="ops-stat">
+                  <span className="ops-stat__v ops-stat__v--accent">{late.length}</span>
+                  <span className="ops-stat__k">late</span>
+                </div>
+                <div className="ops-stat">
+                  <span className="ops-stat__v ops-stat__v--warn">{un.length}</span>
+                  <span className="ops-stat__k">nobody's</span>
+                </div>
+                <div className="ops-stat">
+                  <span className="ops-stat__v ops-stat__v--good">{closedRows.length}</span>
+                  <span className="ops-stat__k">closed</span>
+                </div>
+              </div>
+
+              <div className="ops-toolbar">
+                {(["all", "mine", "unassigned", "overdue"] as const).map((f) => (
+                  <button
+                    type="button"
+                    key={f}
+                    className={`ops-chip ${filter === f ? "ops-chip--active" : ""}`}
+                    onClick={() => {
+                      setFilter(f);
+                      setSel(null);
+                    }}
+                  >
+                    {f === "all" ? "Everything" : f === "mine" ? "Mine" : f === "unassigned" ? "Nobody's" : "Late"}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`ops-chip ${showDone ? "ops-chip--active" : ""}`}
+                  onClick={() => setShowDone((v) => !v)}
+                >
+                  {showDone ? "Hiding nothing" : "Show closed"}
+                </button>
+              </div>
+            </div>
+
+            {late.length > 0 && (
+              <Alert variant="warn" title="Past the promise">
+                {late.length === 1
+                  ? "One promise has gone past its time."
+                  : `${late.length} promises have gone past their time.`}
+                {filter !== "overdue" && (
+                  <button
+                    type="button"
+                    style={{ marginLeft: 12, textDecoration: "underline", background: "transparent", border: "none", cursor: "pointer", color: "var(--warn)", font: "inherit" }}
+                    onClick={() => setFilter("overdue")}
+                  >
+                    Work through them
+                  </button>
+                )}
+              </Alert>
+            )}
           </div>
 
-          {toast && <div className="ops-toast">{toast}</div>}
-        </>
-      )}
-    </WorkspaceShell>
+          <div className="callbacks-groups">
+            {!data ? (
+              <div className="callbacks-empty">
+                <span className="callbacks-empty__title">Loading the queue…</span>
+              </div>
+            ) : groups.length > 0 ? (
+              groups.map((g) => (
+                <div key={g.key}>
+                  <div className="callbacks-group__head">
+                    <span className="callbacks-group__label" style={{ color: g.color }}>
+                      {g.label}
+                    </span>
+                    <span className="callbacks-group__count">{g.count}</span>
+                  </div>
+                  {g.items.map((r) => {
+                    const on = sel === r.id;
+                    const src = SRC[r.source];
+                    return (
+                      <button
+                        type="button"
+                        key={r.id}
+                        className={[
+                          "callbacks-row",
+                          on ? "callbacks-row--selected" : "",
+                          r.bucket === "late" ? "callbacks-row--late" : "",
+                          r.closed ? "callbacks-row--closed" : "",
+                        ].join(" ")}
+                        onClick={() => setSel(r.id)}
+                      >
+                        <span className="callbacks-due">
+                          <span
+                            className={[
+                              "callbacks-due__time",
+                              r.bucket === "late" ? "callbacks-due__time--late" : "",
+                            ].join(" ")}
+                          >
+                            {whenLabel(r.promisedAt)}
+                          </span>
+                          <span
+                            className={[
+                              "callbacks-due__rel",
+                              r.bucket === "late" ? "callbacks-due__rel--late" : "",
+                              r.closed ? "callbacks-due__rel--closed" : "",
+                            ].join(" ")}
+                          >
+                            {relLabel(r)}
+                          </span>
+                        </span>
+                        <span className="callbacks-middle">
+                          <span className="callbacks-topline">
+                            <span className={["callbacks-name", r.closed ? "callbacks-name--closed" : ""].join(" ")}>{r.contactName}</span>
+                            <span className={["callbacks-tag", src.cls].join(" ")}>{src.text}</span>
+                          </span>
+                          <span className="callbacks-why">{r.reason}</span>
+                        </span>
+                        <span className="callbacks-right">
+                          {r.attempts.length > 0 && !r.closed && (
+                            <span className="callbacks-attempts-tag">
+                              {r.attempts.length} {r.attempts.length === 1 ? "TRY" : "TRIES"}
+                            </span>
+                          )}
+                          <span
+                            className={[
+                              "callbacks-owner",
+                              r.assignedTo ? "callbacks-owner--set" : "callbacks-owner--none",
+                            ].join(" ")}
+                          >
+                            {r.assigneeName || "nobody"}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))
+            ) : (
+              <div className="callbacks-empty">
+                <span className="callbacks-empty__title">{emptyTitle}</span>
+                <span className="callbacks-empty__line">{emptyLine}</span>
+                {allRows.length > 0 && (
+                  <Button variant="default" onClick={() => setFilter("all")}>
+                    Show everything
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="callbacks-rail">
+          {showNew && canManage ? (
+            <div className="callbacks-detail">
+              <div className="callbacks-detail__head">
+                <span className="callbacks-section__label">New callback</span>
+                <button type="button" className="callbacks-detail__close" onClick={() => setShowNew(false)}>
+                  CLOSE ✕
+                </button>
+              </div>
+              <TextField
+                label="Who to ring"
+                value={form.contactName}
+                maxLength={120}
+                onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
+                placeholder="Their name"
+              />
+              <TextField
+                label="Number or email"
+                value={form.contactChannel}
+                maxLength={160}
+                onChange={(e) => setForm((f) => ({ ...f, contactChannel: e.target.value }))}
+                placeholder="+1 555 010 0000"
+              />
+              <TextArea
+                label="What it is about"
+                rows={3}
+                value={form.reason}
+                maxLength={1000}
+                onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
+                placeholder="What was promised, or what they need"
+              />
+              <div className="callbacks-section">
+                <span className="callbacks-section__label">Due back</span>
+                <div className="callbacks-chip-row">
+                  {DUE_OPTIONS.map((d) => (
+                    <button
+                      type="button"
+                      key={d.key}
+                      className={`ops-chip ${form.due === d.key ? "ops-chip--active" : ""}`}
+                      onClick={() => setForm((f) => ({ ...f, due: d.key }))}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="callbacks-section">
+                <span className="callbacks-section__label">Whose job it is</span>
+                <div className="callbacks-chip-row">
+                  {[{ userId: "", name: "Nobody", role: "" }].concat(data?.members ?? []).map((p) => (
+                    <button
+                      type="button"
+                      key={p.userId || "none"}
+                      className={`ops-chip ${form.assignedTo === p.userId ? "ops-chip--active" : ""}`}
+                      onClick={() => setForm((f) => ({ ...f, assignedTo: p.userId }))}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Button variant="primary" disabled={busy} onClick={() => void handleCreate()}>
+                Put it in the queue
+              </Button>
+            </div>
+          ) : selected ? (
+            <div className="callbacks-detail">
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                <div className="callbacks-detail__head">
+                  <span className={["callbacks-detail__tag", SRC[selected.source].cls].join(" ")}>
+                    {SRC[selected.source].text}
+                  </span>
+                  <button type="button" className="callbacks-detail__close" onClick={() => setSel(null)}>
+                    CLOSE ✕
+                  </button>
+                </div>
+                <span className="callbacks-detail__who">{selected.contactName}</span>
+                <span className="callbacks-detail__channel">{selected.contactChannel}</span>
+                <span className="callbacks-detail__why">{selected.reason}</span>
+              </div>
+
+              <div className="callbacks-facts">
+                {[
+                  { k: "added", v: whenLabel(selected.createdAt) },
+                  { k: "due back", v: `${whenLabel(selected.promisedAt)} · ${relLabel(selected)}` },
+                ].map((f) => (
+                  <div className="callbacks-fact" key={f.k}>
+                    <span className="callbacks-fact__k">{f.k}</span>
+                    <span className="callbacks-fact__v">{f.v}</span>
+                  </div>
+                ))}
+                {selected.runId !== null && (
+                  <div className="callbacks-links">
+                    <a href={`/app/${slug}/conversations`}>The call ↗</a>
+                  </div>
+                )}
+              </div>
+
+              {canManage && (
+                <div className="callbacks-section">
+                  <span className="callbacks-section__label">Whose job it is</span>
+                  <div className="callbacks-chip-row">
+                    {[{ userId: "", name: "Nobody", role: "" }].concat(data?.members ?? []).map((p) => (
+                      <button
+                        type="button"
+                        key={p.userId || "none"}
+                        className={`ops-chip ${(selected.assignedTo ?? "") === p.userId ? "ops-chip--active" : ""}`}
+                        disabled={busy}
+                        onClick={() =>
+                          void update(
+                            selected.id,
+                            { assignedTo: p.userId || null },
+                            p.userId ? `${p.name} has it now` : "Back in the shared pile",
+                          )
+                        }
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {canManage && !selected.closed && (
+                <div className="callbacks-section">
+                  <span className="callbacks-section__label">Due back</span>
+                  <div className="callbacks-chip-row">
+                    {DUE_OPTIONS.map((d) => (
+                      <button
+                        type="button"
+                        key={d.key}
+                        className="ops-chip"
+                        disabled={busy}
+                        onClick={() => {
+                          const at = dueOptionDate(d.minutes);
+                          void update(
+                            selected.id,
+                            { promisedAt: at.toISOString() },
+                            `Due ${whenLabel(at.toISOString())}`,
+                          );
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="callbacks-attempts">
+                <span className="callbacks-section__label">Attempts</span>
+                {selected.attempts.length > 0 ? (
+                  selected.attempts.map((a, i) => (
+                    <div className="callbacks-attempt" key={i}>
+                      <span className="callbacks-attempt__t">{whenLabel(a.at)}</span>
+                      <span className="callbacks-attempt__v">{a.note}</span>
+                    </div>
+                  ))
+                ) : (
+                  <span className="callbacks-note">Nobody has tried yet.</span>
+                )}
+              </div>
+
+              {canManage &&
+                (!selected.closed ? (
+                  <div className="callbacks-actions">
+                    <Button
+                      variant="primary"
+                      disabled={busy}
+                      onClick={() =>
+                        void update(
+                          selected.id,
+                          { status: "spoke" },
+                          `${selected.contactName} — done`,
+                        )
+                      }
+                    >
+                      Spoke to them — done
+                    </Button>
+                    <div className="callbacks-outcomes">
+                      <Button variant="default" disabled={busy} onClick={handleNoAnswer}>
+                        No answer
+                      </Button>
+                      <Button
+                        variant="default"
+                        disabled={busy}
+                        onClick={() =>
+                          void update(
+                            selected.id,
+                            { status: "voicemail", attemptNote: "Left a voicemail" },
+                            "Message left",
+                          )
+                        }
+                      >
+                        Left a message
+                      </Button>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() =>
+                        void update(
+                          selected.id,
+                          { status: "dropped" },
+                          "Dropped — taken off the queue",
+                        )
+                      }
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        padding: "4px 0",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        fontSize: 16,
+                        color: "var(--accent-ink)",
+                        textDecoration: "underline",
+                        fontFamily: "var(--kalam)",
+                      }}
+                    >
+                      Not needed any more
+                    </button>
+                  </div>
+                ) : (
+                  <div className="callbacks-closed">
+                    <span className="callbacks-closed__line">
+                      {selected.status === "spoke"
+                        ? `Spoke to them${selected.closedAt ? ` at ${whenLabel(selected.closedAt)}` : ""}. The promise is cleared.`
+                        : selected.status === "voicemail"
+                          ? `Message left${selected.closedAt ? ` at ${whenLabel(selected.closedAt)}` : ""}.`
+                          : "Dropped — nobody is expecting a call."}
+                    </span>
+                    <button
+                      type="button"
+                      className="callbacks-reopen"
+                      disabled={busy}
+                      onClick={() =>
+                        void update(
+                          selected.id,
+                          { status: "open" },
+                          `${selected.contactName} is back in the queue`,
+                        )
+                      }
+                    >
+                      Put it back in the queue
+                    </button>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <div className="callbacks-summary">
+              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                <span className="callbacks-section__label">Who is carrying what</span>
+                {load.map((m, i) => (
+                  <div className="callbacks-load__item" key={m.key || "none"}>
+                    <div className="callbacks-load__head">
+                      <span className="callbacks-load__name">{`${m.label}${m.sub ? ` · ${m.sub}` : ""}`}</span>
+                      <span
+                        className={[
+                          "callbacks-load__count",
+                          m.l ? "callbacks-load__count--late" : "",
+                        ].join(" ")}
+                      >
+                        {m.count}
+                      </span>
+                    </div>
+                    <div className="callbacks-load__bar">
+                      <div
+                        className="callbacks-load__fill"
+                        style={{
+                          width: `${Math.round((m.mine.length / maxLoad) * 100)}%`,
+                          background: fillColors[i % fillColors.length],
+                        }}
+                      />
+                    </div>
+                    <span className="callbacks-load__note">
+                      {!m.mine.length
+                        ? "Nothing waiting"
+                        : m.next
+                          ? `${m.l ? `${m.l} late · ` : ""}next ${whenLabel(m.next.promisedAt)} · ${m.next.contactName}`
+                          : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="callbacks-placeholder">
+                <span className="callbacks-placeholder__title">Pick somebody on the left</span>
+                <span className="callbacks-placeholder__line">
+                  Every task keeps who asked, what was promised, and every attempt made.
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {toast && <div className="ops-toast">{toast}</div>}
+    </>
+  );
+}
+
+export function WorkspaceCallbacksPage() {
+  return (
+    <WorkspaceShell>{(business) => <CallbacksPage slug={business.slug} />}</WorkspaceShell>
   );
 }

@@ -290,6 +290,36 @@ export interface DashboardStats {
   recent: ConversationSummary[];
 }
 
+export interface CallbackTask {
+  id: string;
+  contactName: string;
+  contactChannel: string;
+  reason: string;
+  source: "call" | "manual";
+  runId: number | null;
+  promisedAt: string;
+  assignedTo: string | null;
+  assigneeName: string | null;
+  status: "open" | "spoke" | "voicemail" | "dropped";
+  attempts: { at: string; note: string }[];
+  createdAt: string;
+  closedAt: string | null;
+}
+
+export interface CallbacksResponse {
+  callbacks: CallbackTask[];
+  members: { userId: string; name: string; role: string }[];
+  viewerId: string;
+  canManage: boolean;
+}
+
+export interface CallbackUpdate {
+  assignedTo?: string | null;
+  promisedAt?: string;
+  status?: CallbackTask["status"];
+  attemptNote?: string;
+}
+
 export interface TenantWidget {
   workflowId: number;
   scriptUrl: string;
@@ -445,6 +475,31 @@ export const api = {
           $query: { range },
         }),
       ) as unknown as DashboardStats,
+    callbacks: async (slug: string): Promise<CallbacksResponse> =>
+      unwrap(
+        await client.api.b[slug].callbacks.get(),
+      ) as unknown as CallbacksResponse,
+    createCallback: async (
+      slug: string,
+      input: {
+        contactName: string;
+        contactChannel: string;
+        reason: string;
+        promisedAt: string;
+        assignedTo?: string | null;
+      },
+    ): Promise<{ callback: CallbackTask }> =>
+      unwrap(
+        await client.api.b[slug].callbacks.post(input),
+      ) as unknown as { callback: CallbackTask },
+    updateCallback: async (
+      slug: string,
+      callbackId: string,
+      update: CallbackUpdate,
+    ): Promise<{ callback: CallbackTask }> =>
+      unwrap(
+        await client.api.b[slug].callbacks[callbackId].patch(update),
+      ) as unknown as { callback: CallbackTask },
     conversations: async (
       slug: string,
       page = 1,

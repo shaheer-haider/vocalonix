@@ -6,7 +6,8 @@ export type Permission =
   | "billing.access"
   | "business.delete"
   | "agent.edit"
-  | "knowledge.manage";
+  | "knowledge.manage"
+  | "callbacks.manage";
 
 export const roleRank: Record<Role, number> = {
   Owner: 5,
@@ -23,6 +24,7 @@ const matrix: Record<Permission, readonly Role[]> = {
   "business.delete": ["Owner"],
   "agent.edit": ["Owner", "Admin", "Manager"],
   "knowledge.manage": ["Owner", "Admin", "Manager"],
+  "callbacks.manage": ["Owner", "Admin", "Manager", "Staff"],
 };
 
 export function can(role: Role, permission: Permission): boolean {
