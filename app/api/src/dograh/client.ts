@@ -307,7 +307,20 @@ export class DograhClient implements DograhManagementClient {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(destination, { signal: controller.signal });
+      const response = await fetch(destination, {
+        signal: controller.signal,
+        redirect: "manual",
+      });
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location) return null;
+        const storage = this.storageDestination(
+          new URL(location, destination).toString(),
+        );
+        const download = await fetch(storage, { signal: controller.signal });
+        if (!download.ok) return null;
+        return await download.text();
+      }
       if (!response.ok) return null;
       return await response.text();
     } catch {

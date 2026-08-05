@@ -60,8 +60,13 @@ async function extractCallerWithFallback(
 ): Promise<ExtractedCaller> {
   const caller = extractCaller(run);
   if (hasCallerSignal(caller)) return caller;
-  if (!run.transcript_public_url) return caller;
-  const transcript = await dograh.fetchRunTranscript(run.transcript_public_url);
+  let transcriptUrl = run.transcript_public_url ?? null;
+  if (!transcriptUrl) {
+    const detail = await dograh.getWorkflowRun(run.workflow_id, run.id);
+    transcriptUrl = detail.transcript_public_url ?? null;
+  }
+  if (!transcriptUrl) return caller;
+  const transcript = await dograh.fetchRunTranscript(transcriptUrl);
   if (!transcript) return caller;
   const variables = await extractVariablesFromTranscript(transcript);
   if (!variables) return caller;
