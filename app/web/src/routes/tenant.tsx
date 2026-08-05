@@ -1213,50 +1213,76 @@ function SyncStatus({ data }: { data: TenantSettingsResponse }) {
 function BrowserTestCall({ widget }: { widget: TenantWidget }) {
   const [status, setStatus] = useState("Ready to load the published web-call widget.");
   const [error, setError] = useState<string | null>(null);
+  const [inCall, setInCall] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      window.DograhWidget?.end();
+      document.getElementById("vocalonix-tenant-widget-script")?.remove();
+    };
+  }, []);
+
   return (
     <Box style={{ padding: 20 }}>
       <h2>Browser test call</h2>
       <p className="auth-card-copy">{status}</p>
       {error ? <Alert variant="error">{error}</Alert> : null}
-      <Button
-        variant="accent"
-        onClick={() => {
-          setError(null);
-          document.getElementById("vocalonix-tenant-widget-script")?.remove();
-          window.DograhWidget?.end();
-          const script = document.createElement("script");
-          script.id = "vocalonix-tenant-widget-script";
-          script.src = widget.scriptUrl;
-          script.async = true;
-          script.onload = () => {
-            setStatus("Widget loaded. Requesting microphone access for a web call…");
-            window.DograhWidget?.onStatusChange((state, text, subtext) => {
-              setStatus([text ?? state, subtext].filter(Boolean).join(" — "));
-            });
-            window.DograhWidget?.onCallStart(() =>
-              setStatus("Connecting the call…"),
-            );
-            window.DograhWidget?.onCallConnected(() =>
-              setStatus("Call connected. Speak with the agent, then hang up when done."),
-            );
-            window.DograhWidget?.onCallEnd(() =>
-              setStatus("Call ended. Start another test call anytime."),
-            );
-            window.DograhWidget?.onError((value) => {
-              setError(
-                value instanceof Error
-                  ? value.message
-                  : "The call could not be started. Check microphone access and try again.",
+      <div style={{ display: "flex", gap: 12 }}>
+        <Button
+          variant="accent"
+          disabled={inCall}
+          onClick={() => {
+            setError(null);
+            document.getElementById("vocalonix-tenant-widget-script")?.remove();
+            window.DograhWidget?.end();
+            const script = document.createElement("script");
+            script.id = "vocalonix-tenant-widget-script";
+            script.src = widget.scriptUrl;
+            script.async = true;
+            script.onload = () => {
+              setStatus("Widget loaded. Requesting microphone access for a web call…");
+              window.DograhWidget?.onStatusChange((state, text, subtext) => {
+                setStatus([text ?? state, subtext].filter(Boolean).join(" — "));
+              });
+              window.DograhWidget?.onCallStart(() => {
+                setInCall(true);
+                setStatus("Connecting the call…");
+              });
+              window.DograhWidget?.onCallConnected(() =>
+                setStatus("Call connected. Speak with the agent, then hang up when done."),
               );
-            });
-            window.setTimeout(() => window.DograhWidget?.start(), 1000);
-          };
-          script.onerror = () => setStatus("The published widget could not be loaded.");
-          document.body.appendChild(script);
-        }}
-      >
-        Start browser test call
-      </Button>
+              window.DograhWidget?.onCallEnd(() => {
+                setInCall(false);
+                setStatus("Call ended. Start another test call anytime.");
+              });
+              window.DograhWidget?.onError((value) => {
+                setInCall(false);
+                setError(
+                  value instanceof Error
+                    ? value.message
+                    : "The call could not be started. Check microphone access and try again.",
+                );
+              });
+              window.setTimeout(() => window.DograhWidget?.start(), 1000);
+            };
+            script.onerror = () => setStatus("The published widget could not be loaded.");
+            document.body.appendChild(script);
+          }}
+        >
+          Start browser test call
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={!inCall}
+          onClick={() => {
+            window.DograhWidget?.end();
+            setInCall(false);
+            setStatus("Call ended. Start another test call anytime.");
+          }}
+        >
+          End call
+        </Button>
+      </div>
       <p className="ui-field-message">Web call only. No phone setup is required.</p>
     </Box>
   );

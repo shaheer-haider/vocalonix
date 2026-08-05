@@ -99,7 +99,13 @@ export function TestAgent() {
           <p>Talk to the same agent your website visitors will reach.</p>
         </div>
         <span className={`call-state call-state--${status}`}>
-          {status === "connected" ? "Live call" : status === "connecting" ? "Connecting" : "Ready"}
+          {status === "connected"
+            ? "Live call"
+            : status === "connecting"
+              ? "Connecting"
+              : status === "failed"
+                ? "Failed"
+                : "Ready"}
         </span>
       </div>
 
