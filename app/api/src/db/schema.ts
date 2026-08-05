@@ -526,4 +526,41 @@ export const callbackTasks = pgTable(
   ],
 );
 
+export const contactSourceEnum = pgEnum("contact_source", [
+  "call",
+  "manual",
+  "import",
+]);
+
+export const contacts = pgTable(
+  "contacts",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    name: text("name"),
+    phone: text("phone"),
+    email: text("email"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    note: text("note").notNull().default(""),
+    source: contactSourceEnum("source").notNull().default("manual"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("contacts_business_idx").on(table.businessId),
+    index("contacts_business_phone_idx").on(table.businessId, table.phone),
+    index("contacts_business_email_idx").on(table.businessId, table.email),
+  ],
+);
+
 export type Role = (typeof roleEnum.enumValues)[number];
