@@ -1,0 +1,204 @@
+# Vocalonix — Launch Plan
+
+A page-by-page assessment of the current product and a detailed plan to take it
+from today's state to a launchable product, including the external integrations
+required. Based on a full codebase review and a hands-on UI test pass of every
+page and option (2026-08-05).
+
+---
+
+## 1. Where the product stands today
+
+### Working end-to-end (real backend, production-quality logic)
+
+| Area | Routes | Status |
+| --- | --- | --- |
+| Accounts & auth | `/signup`, `/login`, `/magic`, `/verify-email`, `/account`, `/account/security` | Password + magic-link auth, HTTP-only cookie sessions, session list, logout everywhere. Magic links return local preview URLs (no real email yet). |
+| Workspaces | `/app`, `/app/onboarding/create`, `/app/:slug/*` | Real multi-tenant businesses, one Dograh workflow per business, slug routing, workspace switching. |
+| Team & invitations | `/app/:slug/team`, `/invite/:token` | Roles (Owner→Viewer), invitations with resend/revoke, email-bound acceptance, reactivation of revoked members, audit logs. Server-enforced permission matrix. |
+| Configuration | `/app/:slug/settings/{business,agent,hours,widget,appearance,history}` | Draft → "Changes pending" → Publish with diff view; versions persisted in `business_config_versions`; History restore-to-draft. |
+| Knowledge — Sources & Answers | `/app/:slug/settings/knowledge` | Upload → MinIO → Dograh processing → workflow attach, delete/replace lifecycle via the outbox worker. |
+| Dograh sync engine | server-side | Deterministic config hashing, sync leases, workflow-ownership guards, outbox retry with backoff, failure classification. |
+| Browser-call widget | `/secret/test-agent`, `/embed/dograh-widget.js` | Real WebRTC calls via embed tokens; snippet embeddable on third-party sites. |
+| MVP lab | `/secret/*` | Intentionally unauthenticated single-workflow test surface (to be retired). |
+
+### Design previews only (UI built, sample data, no backend)
+
+Each of these pages currently shows a "Design preview" banner:
+
+| Area | Route | Missing backend |
+| --- | --- | --- |
+| Dashboard | `/app/:slug/dashboard` | Real call/booking/callback stats, call-volume chart, topic mix. |
+| Conversations | `/app/:slug/conversations` | Transcript feed from Dograh runs, per-call disposition, coaching ("Rewrite it") loop. |
+| Contacts | `/app/:slug/contacts` | Contact table, CSV import, tags, per-contact notes, call history linkage. |
+| Bookings | `/app/:slug/bookings` | Booking/resource/availability tables, CRUD API, agent booking tools, slot holds, waitlist. |
+| Callbacks ("Promises to keep") | `/app/:slug/callbacks` | Callback-task table fed by call dispositions, assignment, done states. |
+| Notifications | `/app/:slug/notifications` | Per-person event × Email/SMS/Push matrix, quiet hours, delivery. |
+| Knowledge — Gaps | `/app/:slug/settings/knowledge#gaps` | Feed of unanswered caller questions from real conversations. |
+| Billing | `/app/:slug/account` | Plans, payment method, metered minutes, invoices. |
+
+### Structural gaps
+
+- **No telephony.** The landing page promises a "real phone number", but only
+  browser (WebRTC widget) calls exist. No inbound PSTN number, no SIP trunk.
+- **No real email delivery.** Resend integration is coded but unverified;
+  magic links / verification / invites only show local preview URLs.
+- **No payments.** Billing is entirely sample data.
+- **Legacy `/secret/*` lab** is unauthenticated and duplicates the tenant path.
+- **BYO provider keys in Dograh UI.** AI model keys (Gemini/OpenAI) are
+  configured by hand in the Dograh dashboard, not provisioned per tenant.
+- **Escalation chain / night chain, human handoff** exist in designs
+  (`docs/design/`) but have no implementation.
+- **Spoken calls are currently broken** (agent never registers user speech —
+  see §2); the core voice loop must be fixed before anything else.
+
+---
+
+## 2. UI test findings (this pass)
+
+_See the attached test report / recording for full detail; summary:_
+
+**Passing** (every flow exercised in the running Compose stack):
+
+- Public landing and design system (dropdown keyboard/Escape/outside-click,
+  modal focus trap, backdrop close, focus restore).
+- Signup, cookie session restore, session list, log-out-everywhere, redirect
+  preservation; magic-link preview, single consumption, "already used" and
+  "invalid link" states.
+- Two-workspace onboarding, Dograh workflow publish, workspace switching with
+  route-tail preservation.
+- Team: sole-owner protection, invite/duplicate/resend/token rotation,
+  email-mismatch and used-token states, Viewer downgrade with `/team` denial,
+  revoke + Staff reinvite reactivation, escalation/nights toggles.
+- Configuration: all six tabs, draft save → "Changes pending" → diff →
+  Republish (version rows persisted), History restore-to-draft.
+- Knowledge Answers/Gaps hash tabs; "Rewrite it" → pending → worker
+  consolidation.
+- `/secret/*` navigation, refresh, back/forward, 404 recovery; embed widget
+  script serves `window.DograhWidget`.
+
+**Failing / blocking**:
+
+- **Spoken call: the agent never hears the caller.** Client audio verified
+  good (mic audio reaches Chrome and is stored in Dograh's run recording),
+  but all runs produced assistant-only transcripts and ended as
+  `user_idle_max_duration_exceeded`. Dograh logs show
+  `Gemini Live connection failed after 3 consecutive attempts: 1008` and the
+  Gemini Live service (`gemini-3.1-flash-live-preview`) emitting no
+  user-turn frames. This is a Dograh/Gemini-Live integration issue and is the
+  **top launch blocker** — interruption behavior and voice knowledge Q&A are
+  unverifiable until it is fixed.
+- Minor bug: on Bookings, the "Callback queue for these ↗" and
+  "All conversations ↗" links navigate to bare `/app` instead of the target
+  pages.
+
+**Untested**: expired magic link and expired invitation states (require DB
+time manipulation); real email delivery.
+
+---
+
+## 3. Plan to launch
+
+Phases are ordered so that each one produces a shippable increment. Estimates
+assume 1–2 engineers.
+
+### Phase A — Make real data flow (the product's core loop)
+
+> Goal: a business signs up, publishes its agent, and sees real calls,
+> transcripts, gaps, and callbacks in the dashboard.
+
+1. **Conversations backend** — ingest Dograh run records (transcript, audio
+   URL, duration, disposition) per business into a `calls`/`call_turns`
+   schema; poll or webhook from Dograh; wire the existing Conversations UI.
+2. **Knowledge Gaps backend** — extract unanswered questions from transcripts
+   (LLM classification pass in the worker); feed the Gaps tab; "Answer it"
+   writes back into knowledge Sources/Answers.
+3. **Callbacks backend** — create callback tasks from call dispositions
+   (caller asked for a human, booking failed, gap hit); assignment,
+   promise-time buckets, done states; wire the existing UI.
+4. **Contacts backend** — contact table keyed by phone/email, auto-created
+   from calls, CSV import, tags, per-contact agent notes.
+5. **Real Dashboard** — aggregate the above into the briefing stats, call
+   chart, and topic mix already designed.
+
+### Phase B — Bookings (the headline feature for service businesses)
+
+1. Drizzle tables: `resources` (staff/rooms), `availability`, `bookings`,
+   `booking_holds`, `waitlist`.
+2. CRUD API + diary UI wiring (hour grid, drag-to-reschedule, 10-min snap).
+3. **Agent booking tools in Dograh**: function-calling tools so Robin can
+   check availability, hold a slot during the call, confirm, and read back.
+4. Held-slot expiry + double-booking guards.
+5. (Post-launch option) two-way calendar sync — see integrations.
+
+### Phase C — Telephony (a real phone number)
+
+1. Integrate a telephony provider (see §4) with Dograh's SIP/PSTN path:
+   number provisioning per business, inbound routing to the business's
+   workflow, call recording consent handling.
+2. Number purchase/port UI in Configuration.
+3. Outbound: callback tasks get a "call back now" action; SMS confirmations
+   for bookings.
+4. Escalation chain: warm transfer to staff phones, night-chain rota,
+   voicemail fallback.
+
+### Phase D — Monetisation & production hardening
+
+1. **Billing**: Stripe subscriptions + metered call minutes; plan gating;
+   invoices; wire the existing Billing UI. Owner-only, already permission-gated.
+2. **Email**: verify Resend in production (domain, DKIM), real magic-link /
+   verification / invitation emails; `REQUIRE_EMAIL_VERIFICATION=true`.
+3. **Notifications backend**: event bus → Email (Resend), SMS (telephony
+   provider), Web Push; quiet hours; wire the existing matrix UI.
+4. **Retire `/secret/*`** (or gate behind an internal admin flag) and the
+   legacy single-workflow path in `dograh/workflow.ts`.
+5. Production deployment: HTTPS everywhere, secure cookies, `env.ts`
+   production refinements verified, secrets management, backups for Postgres
+   + MinIO, monitoring/alerting (Sentry + uptime), rate limiting on auth and
+   widget-token endpoints.
+6. Provider key management: move Gemini/OpenAI keys out of manual Dograh UI
+   setup into server-provisioned configuration (platform keys with usage
+   metering, or per-tenant BYOK stored server-side).
+
+### Phase E — Polish & mobile
+
+1. Empty/first-run/offline/integration-error states everywhere
+   (`Vocalonix Empty States.dc.html`); shared `EmptyState` component.
+2. Mobile responsive pass per `Vocalonix Mobile.dc.html` (four-tab bar,
+   time-down diary list) as breakpoints on the same routes.
+3. Onboarding flow completion (`/app/:slug/onboarding/:step`) so a new
+   business reaches a published agent in one guided pass.
+4. Landing page: align promises with shipped features; pricing page.
+
+---
+
+## 4. Integrations needed
+
+| Integration | Purpose | Phase | Notes |
+| --- | --- | --- | --- |
+| **Resend** (already coded) | Magic links, verification, invitations, notification email | D (verify now) | Needs production key + domain/DKIM verification. |
+| **Twilio** (or Telnyx/Vonage) | Phone numbers, inbound PSTN → Dograh, SMS, warm transfer | C | Pick based on Dograh's SIP support; Telnyx is cheaper at volume, Twilio fastest to integrate. |
+| **Stripe** | Subscriptions + metered minutes, invoices, customer portal | D | Stripe Billing with usage records maps directly to call minutes. |
+| **Google AI Studio (Gemini)** | Realtime STS + conversation LLM (already used via Dograh BYOK) | now | Move to server-provisioned keys with usage metering. |
+| **OpenAI** | Embeddings for knowledge retrieval (already used via Dograh) | now | Same key-management work. |
+| **Google Calendar / Outlook (Microsoft Graph)** | Two-way booking sync for businesses with existing calendars | post-launch | Bookings work standalone first; sync is an upgrade. |
+| **Sentry + uptime monitoring** | Error tracking API/web/worker, alerting | D | Low effort, high value before real customers. |
+| **S3-compatible object storage** (prod MinIO or AWS S3/R2) | Knowledge files, call recordings | D | Already MinIO locally; choose managed storage for prod. |
+| **Web Push (VAPID) / FCM** | Push channel of the notifications matrix | D | Optional at launch; email+SMS may be enough initially. |
+
+Explicitly **not** needed for launch: CRM integrations, Zapier, WhatsApp —
+defer until customer pull.
+
+---
+
+## 5. Suggested launch checklist
+
+- [ ] Phase A complete: real conversations, gaps, callbacks, contacts, dashboard
+- [ ] Phase B complete: bookings diary + agent booking tools
+- [ ] Phase C complete: at least one business answering a real phone number
+- [ ] Stripe billing live with at least one paid plan
+- [ ] Resend verified; email verification enforced
+- [ ] `/secret/*` retired or admin-gated
+- [ ] Production infra: HTTPS, backups, monitoring, rate limits
+- [ ] Legal: recording-consent handling per target market, privacy policy, DPA
+- [ ] Onboarding gets a new business to a live agent in < 15 minutes
