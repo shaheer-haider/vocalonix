@@ -8,3 +8,14 @@ coverage/
 .vscode/
 cookies*.txt
 cookie*.txt
+
+# OpenTofu / Terraform
+terraform/.ssh/
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfvars
+terraform/.terraform.lock.hcl
+
+# Hetzner deployment secrets
+deploy/hetzner/*/.env

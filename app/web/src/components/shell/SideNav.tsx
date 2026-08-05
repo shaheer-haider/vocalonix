@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 export interface SideNavItem {
   icon?: ReactNode;
   label: string;
-  to: "/secret/test-agent" | "/secret/knowledge-base" | "/secret/agent-settings";
+  to: string;
 }
 
 interface SideNavProps {

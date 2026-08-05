@@ -1,0 +1,134 @@
+services:
+  caddy:
+    image: caddy:2.9-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - app-network
+
+  vocalonix-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${VOCALONIX_POSTGRES_USER:-vocalonix}"
+      POSTGRES_PASSWORD: "${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}"
+      POSTGRES_DB: "${VOCALONIX_POSTGRES_DB:-vocalonix}"
+    volumes:
+      - vocalonix_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${VOCALONIX_POSTGRES_USER:-vocalonix} -d ${VOCALONIX_POSTGRES_DB:-vocalonix}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  vocalonix-api:
+    build:
+      context: ../../..
+      dockerfile: app/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "3001"
+      NODE_ENV: "${NODE_ENV:-development}"
+      DATABASE_URL: "postgres://${VOCALONIX_POSTGRES_USER:-vocalonix}:${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${VOCALONIX_POSTGRES_DB:-vocalonix}"
+      APP_ORIGIN: "${APP_ORIGIN}"
+      API_PUBLIC_URL: "${API_PUBLIC_URL}"
+      AUTH_SECRET: "${AUTH_SECRET}"
+      REQUIRE_EMAIL_VERIFICATION: "${REQUIRE_EMAIL_VERIFICATION:-false}"
+      RESEND_API_KEY: "${RESEND_API_KEY:-}"
+      EMAIL_FROM: "${EMAIL_FROM}"
+      MAGIC_LINK_TTL_SECONDS: "${MAGIC_LINK_TTL_SECONDS:-300}"
+      DOGRAH_INTERNAL_URL: "${DOGRAH_INTERNAL_URL}"
+      DOGRAH_PUBLIC_API_URL: "${DOGRAH_PUBLIC_API_URL}"
+      DOGRAH_WIDGET_URL: "${DOGRAH_WIDGET_URL}"
+      DOGRAH_STORAGE_INTERNAL_URL: "${DOGRAH_STORAGE_INTERNAL_URL}"
+      DOGRAH_API_KEY: "${DOGRAH_API_KEY:-}"
+      DOGRAH_SERVICE_EMAIL: "${DOGRAH_SERVICE_EMAIL}"
+      DOGRAH_SERVICE_PASSWORD: "${DOGRAH_SERVICE_PASSWORD}"
+      DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME}"
+      DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME}"
+      DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS}"
+    depends_on:
+      vocalonix-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3001/api/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - app-network
+
+  vocalonix-worker:
+    build:
+      context: ../../..
+      dockerfile: app/api/Dockerfile
+    restart: unless-stopped
+    command: ["bun", "src/worker.ts"]
+    environment:
+      PORT: "3001"
+      NODE_ENV: "${NODE_ENV:-development}"
+      DATABASE_URL: "postgres://${VOCALONIX_POSTGRES_USER:-vocalonix}:${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${VOCALONIX_POSTGRES_DB:-vocalonix}"
+      APP_ORIGIN: "${APP_ORIGIN}"
+      API_PUBLIC_URL: "${API_PUBLIC_URL}"
+      AUTH_SECRET: "${AUTH_SECRET}"
+      REQUIRE_EMAIL_VERIFICATION: "${REQUIRE_EMAIL_VERIFICATION:-false}"
+      RESEND_API_KEY: "${RESEND_API_KEY:-}"
+      EMAIL_FROM: "${EMAIL_FROM}"
+      MAGIC_LINK_TTL_SECONDS: "${MAGIC_LINK_TTL_SECONDS:-300}"
+      DOGRAH_INTERNAL_URL: "${DOGRAH_INTERNAL_URL}"
+      DOGRAH_PUBLIC_API_URL: "${DOGRAH_PUBLIC_API_URL}"
+      DOGRAH_WIDGET_URL: "${DOGRAH_WIDGET_URL}"
+      DOGRAH_STORAGE_INTERNAL_URL: "${DOGRAH_STORAGE_INTERNAL_URL}"
+      DOGRAH_API_KEY: "${DOGRAH_API_KEY:-}"
+      DOGRAH_SERVICE_EMAIL: "${DOGRAH_SERVICE_EMAIL}"
+      DOGRAH_SERVICE_PASSWORD: "${DOGRAH_SERVICE_PASSWORD}"
+      DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME}"
+      DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME}"
+      DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS}"
+    depends_on:
+      vocalonix-api:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  vocalonix-web:
+    build:
+      context: ../../..
+      dockerfile: app/web/Dockerfile
+      args:
+        VITE_API_BASE_URL: "${VOCALONIX_API_PUBLIC_URL}"
+    restart: unless-stopped
+    depends_on:
+      vocalonix-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3000 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - app-network
+
+volumes:
+  vocalonix_postgres_data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  app-network:

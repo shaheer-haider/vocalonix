@@ -4,7 +4,11 @@ import type { App } from "../../api/src/index";
 import type {
   AgentResponse,
   AgentSettings,
+  DemoSession,
+  DemoStartResponse,
   DocumentItem,
+  DograhHealth,
+  Vertical,
   WidgetResponse,
 } from "./types";
 
@@ -487,5 +491,52 @@ export const api = {
       token: string,
     ): Promise<{ success: boolean; businessSlug: string }> =>
       unwrap(await client.api.invitations[token].accept.post()),
+  },
+  dograhHealth: async (): Promise<DograhHealth> =>
+    unwrap(await client.api.dograh.health.get()),
+  verticals: async (): Promise<Vertical[]> => {
+    const result = unwrap(await client.api.verticals.get());
+    return result.verticals;
+  },
+  demo: {
+    createSession: async (vertical: string): Promise<{ id: string }> => {
+      const result = unwrap(await client.api.demo.sessions.post({ vertical }));
+      return result.session;
+    },
+    updateSession: async (
+      id: string,
+      input: Partial<DemoSession>,
+    ): Promise<{ id: string }> => {
+      const session = client.api.demo.sessions as unknown as Record<string, unknown>;
+      const result = await (session[id] as { patch: (input: Partial<DemoSession>) => Promise<ClientResult<unknown>> }).patch(input);
+      const data = unwrap(result) as { session: { id: string } };
+      return data.session;
+    },
+    start: async (id: string): Promise<DemoStartResponse> => {
+      const session = client.api.demo.sessions as unknown as Record<string, unknown>;
+      const result = await (session[id] as { start: { post: () => Promise<ClientResult<unknown>> } }).start.post();
+      return unwrap(result) as DemoStartResponse;
+    },
+    end: async (
+      id: string,
+      input: { durationSeconds?: number } = {},
+    ): Promise<{ ok: boolean }> => {
+      const session = client.api.demo.sessions as unknown as Record<string, unknown>;
+      const result = await (session[id] as { end: { post: (input: { durationSeconds?: number }) => Promise<ClientResult<unknown>> } }).end.post(input);
+      return unwrap(result) as { ok: boolean };
+    },
+    feedback: async (
+      id: string,
+      input: {
+        feedbackScore?: number;
+        feedbackChips?: string[];
+        feedbackText?: string;
+        outcome?: "positive" | "neutral" | "negative" | "abandoned";
+      },
+    ): Promise<{ ok: boolean; outcome: string }> => {
+      const session = client.api.demo.sessions as unknown as Record<string, unknown>;
+      const result = await (session[id] as { feedback: { post: (input: object) => Promise<ClientResult<unknown>> } }).feedback.post(input);
+      return unwrap(result) as { ok: boolean; outcome: string };
+    },
   },
 };

@@ -8,6 +8,7 @@ import { ApiClientError, api } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
 import { Alert, Box, Button, Pill, TextField } from "../components/ui";
+import { useDograhHealth } from "../hooks/useDograhHealth";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email."),
@@ -83,6 +84,7 @@ const landingStats = [
 
 export function LandingPage() {
   const auth = useAuth();
+  const { isLoading, turnEnabled } = useDograhHealth();
   const isAuthenticated = auth.status === "authenticated";
   const primaryHref = isAuthenticated ? "/app" : "/signup";
   const primaryLabel = isAuthenticated ? "Open app →" : "Start setup →";
@@ -95,7 +97,9 @@ export function LandingPage() {
         </Link>
         <nav className="landing-nav__links">
           <Link to="/design-system">Design system</Link>
-          <Link to="/secret/test-agent">MVP lab</Link>
+          {turnEnabled ? (
+            <Link to="/demo">Hear it now</Link>
+          ) : null}
           {isAuthenticated ? (
             <Link to="/app" className="ui-button ui-button--primary">
               Open app
@@ -124,9 +128,11 @@ export function LandingPage() {
           <Link to={primaryHref} className="ui-button ui-button--primary">
             {primaryLabel}
           </Link>
-          <Link to="/secret/test-agent" className="ui-button">
-            Hear it now
-          </Link>
+          {!isLoading && turnEnabled ? (
+            <Link to="/demo" className="ui-button">
+              Hear it now
+            </Link>
+          ) : null}
         </div>
         <p className="landing-hero__note">
           Self-hosted · your Dograh engine · cancel in two clicks
@@ -193,7 +199,7 @@ export function LandingPage() {
       <footer className="landing-footer">
         <span>© 2026 Vocalonix</span>
         <Link to="/design-system">Design system</Link>
-        <Link to="/secret/test-agent">MVP lab</Link>
+        {turnEnabled ? <Link to="/demo">Hear it now</Link> : null}
       </footer>
     </div>
   );
@@ -287,9 +293,13 @@ export function SignupPage() {
     previewUrl?: string | null;
     variant: "error" | "success" | "warn";
   } | null>(null);
+  const signupParams = new URLSearchParams(window.location.search);
+  const demoEmail = signupParams.get("demoEmail") ?? "";
+  const demoName = signupParams.get("demoName") ?? "";
+
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { email: "", name: "", password: "" },
+    defaultValues: { email: demoEmail, name: demoName, password: "" },
   });
 
   return (

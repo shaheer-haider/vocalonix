@@ -19,6 +19,7 @@ import {
 import { ApiError } from "./errors";
 import { workspaceRoutes } from "./workspace/routes";
 import { tenantRoutes } from "./tenant/routes";
+import { demoRoutes } from "./demo/routes";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -107,6 +108,7 @@ export const app = new Elysia()
   .use(authRoutes)
   .use(tenantRoutes)
   .use(workspaceRoutes)
+  .use(demoRoutes)
   .get("/api/health", () => ({
     status: "ok",
     service: "vocalonix-api",

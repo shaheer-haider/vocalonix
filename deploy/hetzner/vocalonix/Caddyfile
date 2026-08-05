@@ -1,0 +1,8 @@
+{
+    email nobody@sslip.io
+}
+
+62-238-101-107.sslip.io {
+    reverse_proxy /api/* vocalonix-api:3001
+    reverse_proxy /* vocalonix-web:3000
+}

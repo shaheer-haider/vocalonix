@@ -1305,34 +1305,79 @@ function ReviewPublish({
           <strong>Browser voice only</strong>
         </div>
         {error ? <Alert variant="error">{error}</Alert> : null}
-        <Button
-          variant="primary"
-          loading={publishing}
-          onClick={() => {
-            setPublishing(true);
-            setError(null);
-            void api.businesses
-              .publish(slug)
-              .then(async (result) => {
-                setWidget(result.widget);
-                await refresh();
-              })
-              .catch((caught: unknown) =>
-                setError(
-                  caught instanceof Error ? caught.message : "Unable to publish.",
-                ),
-              )
-              .finally(() => setPublishing(false));
-          }}
-        >
-          Publish this business
-        </Button>
+        {data.onboarding.publishedAt ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <Pill variant="good">Published</Pill>
+            <a
+              href={`/app/${slug}/dashboard`}
+              className="ui-button ui-button--primary"
+            >
+              Go to dashboard
+            </a>
+            <Button
+              variant="ghost"
+              loading={publishing}
+              onClick={() => {
+                setPublishing(true);
+                setError(null);
+                void api.businesses
+                  .publish(slug)
+                  .then(async (result) => {
+                    setWidget(result.widget);
+                    await refresh();
+                  })
+                  .catch((caught: unknown) =>
+                    setError(
+                      caught instanceof Error
+                        ? caught.message
+                        : "Unable to publish.",
+                    ),
+                  )
+                  .finally(() => setPublishing(false));
+              }}
+            >
+              Republish
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="primary"
+            loading={publishing}
+            onClick={() => {
+              setPublishing(true);
+              setError(null);
+              void api.businesses
+                .publish(slug)
+                .then(async (result) => {
+                  setWidget(result.widget);
+                  await refresh();
+                })
+                .catch((caught: unknown) =>
+                  setError(
+                    caught instanceof Error
+                      ? caught.message
+                      : "Unable to publish.",
+                  ),
+                )
+                .finally(() => setPublishing(false));
+            }}
+          >
+            Publish this business
+          </Button>
+        )}
       </Box>
       {widget ? (
         <>
           <Box style={{ padding: 20 }}>
             <h2>Tenant embed snippet</h2>
-            <TextArea readOnly className="ui-input--mono" value={widget.snippet} />
+            <CodeSnippet value={widget.snippet} />
           </Box>
           <BrowserTestCall widget={widget} />
         </>
@@ -1354,56 +1399,70 @@ export function TenantOnboardingPage() {
     ? params.step!
     : "business-profile";
   return (
-    <WorkspaceShell requiredPermission="agent.edit">
-      {(business) => (
-        <ConfigurationState>
-          {(data, refresh, slug) => (
-            <OnboardingShell
-              title={business.name}
-              currentSlug={step}
-              steps={onboardingSteps.map((item) => ({
-                ...item,
-                done: data.onboarding.completedSteps.includes(item.slug),
-              }))}
-            >
-              {step === "business-profile" ? (
-                <ProfileForm
-                  data={data}
-                  slug={slug}
-                  onSaved={refresh}
-                  nextHref={`/app/${slug}/onboarding/agent`}
-                />
-              ) : null}
-              {step === "agent" ? (
-                <AgentForm
-                  data={data}
-                  slug={slug}
-                  onSaved={refresh}
-                  nextHref={`/app/${slug}/onboarding/knowledge`}
-                />
-              ) : null}
-              {step === "knowledge" ? (
-                <KnowledgeManager
-                  slug={slug}
-                  onboardingNextHref={`/app/${slug}/onboarding/widget`}
-                />
-              ) : null}
-              {step === "widget" ? (
-                <WidgetForm
-                  data={data}
-                  slug={slug}
-                  onSaved={refresh}
-                  nextHref={`/app/${slug}/onboarding/review`}
-                />
-              ) : null}
-              {step === "review" ? (
-                <ReviewPublish data={data} refresh={refresh} slug={slug} />
-              ) : null}
-            </OnboardingShell>
-          )}
-        </ConfigurationState>
-      )}
-    </WorkspaceShell>
+    <ConfigurationState>
+      {(data, refresh, slug) => {
+        if (!can(data.business.role, "agent.edit")) {
+          return (
+            <div className="auth-shell">
+              <Box style={{ padding: 32, textAlign: "center" }}>
+                <Pill variant="warn">{data.business.role}</Pill>
+                <h1 className="account-title" style={{ marginTop: 12 }}>
+                  You do not have access here
+                </h1>
+                <p className="auth-card-copy">
+                  Ask an Owner or Admin to update your workspace role.
+                </p>
+              </Box>
+            </div>
+          );
+        }
+        return (
+          <OnboardingShell
+            title={data.business.name}
+            currentSlug={step}
+            businessSlug={slug}
+            steps={onboardingSteps.map((item) => ({
+              ...item,
+              done: data.onboarding.completedSteps.includes(item.slug),
+            }))}
+          >
+            {step === "business-profile" ? (
+              <ProfileForm
+                data={data}
+                slug={slug}
+                onSaved={refresh}
+                nextHref={`/app/${slug}/onboarding/agent`}
+              />
+            ) : null}
+            {step === "agent" ? (
+              <AgentForm
+                data={data}
+                slug={slug}
+                onSaved={refresh}
+                nextHref={`/app/${slug}/onboarding/knowledge`}
+              />
+            ) : null}
+            {step === "knowledge" ? (
+              <KnowledgeManager
+                slug={slug}
+                onboardingNextHref={`/app/${slug}/onboarding/widget`}
+              />
+            ) : null}
+            {step === "widget" ? (
+              <WidgetForm
+                data={data}
+                slug={slug}
+                onSaved={refresh}
+                nextHref={`/app/${slug}/onboarding/review`}
+              />
+            ) : null}
+            {step === "review" ? (
+              <ReviewPublish data={data} refresh={refresh} slug={slug} />
+            ) : null}
+          </OnboardingShell>
+        );
+      }}
+    </ConfigurationState>
   );
 }
 
@@ -1742,7 +1801,6 @@ function WidgetTab({
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [widget, setWidget] = useState<TenantWidget | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!data.onboarding.publishedAt) return;
@@ -1801,24 +1859,15 @@ function WidgetTab({
       {widget ? (
         <>
           <Box style={{ padding: 24 }}>
-            <div className="account-section__heading">
-              <div>
-                <h2>Put it on your site</h2>
-                <p>Paste once, at the end of the page. It never needs changing again.</p>
-              </div>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  void navigator.clipboard.writeText(widget.snippet).then(() => {
-                    setCopied(true);
-                    window.setTimeout(() => setCopied(false), 2000);
-                  });
-                }}
-              >
-                {copied ? "Copied" : "Copy snippet"}
-              </Button>
+            <div style={{ marginBottom: 12 }}>
+              <h2>Put it on your site</h2>
+              <p>Paste once, at the end of the page. It never needs changing again.</p>
             </div>
-            <TextArea readOnly className="ui-input--mono" value={widget.snippet} />
+            <CodeSnippet
+              value={widget.snippet}
+              label="Your embed code"
+              copyLabel="Copy snippet"
+            />
           </Box>
           <BrowserTestCall widget={widget} />
         </>
@@ -1827,6 +1876,41 @@ function WidgetTab({
           Publish this business to generate its embed snippet and browser test call.
         </EmptyState>
       )}
+    </div>
+  );
+}
+
+function CodeSnippet({
+  value,
+  label,
+  copyLabel,
+}: {
+  value: string;
+  label?: string;
+  copyLabel?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div className="code-snippet">
+      <div className="code-snippet__bar">
+        {label ? <span className="eyebrow">{label}</span> : <span />}
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            void navigator.clipboard.writeText(value).then(() => {
+              setCopied(true);
+              window.setTimeout(() => setCopied(false), 2000);
+            });
+          }}
+        >
+          {copied ? "Copied" : (copyLabel ?? "Copy")}
+        </Button>
+      </div>
+      <pre>
+        <code>{value}</code>
+      </pre>
     </div>
   );
 }

@@ -43,6 +43,7 @@ import {
   TenantOnboardingPage,
   TenantSettingsPage,
 } from "./routes/tenant";
+import { DemoPage } from "./routes/demo";
 
 const rootRoute = createRootRoute({
   component: Outlet,
@@ -50,8 +51,8 @@ const rootRoute = createRootRoute({
     <main className="route-message">
       <p className="eyebrow">Not found</p>
       <h1>This page does not exist</h1>
-      <a className="button button--primary" href="/secret/test-agent">
-        Open Test Agent
+      <a className="button button--primary" href="/demo">
+        Hear it now
       </a>
     </main>
   ),
@@ -61,6 +62,12 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: LandingPage,
+});
+
+const demoRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/demo",
+  component: DemoPage,
 });
 
 const loginRoute = createRoute({
@@ -301,8 +308,8 @@ const secretRoute = createRoute({
     <section className="route-message">
       <p className="eyebrow">Not found</p>
       <h1>This page does not exist</h1>
-      <a className="button button--primary" href="/secret/test-agent">
-        Open Test Agent
+      <a className="button button--primary" href="/demo">
+        Hear it now
       </a>
     </section>
   ),
@@ -312,7 +319,7 @@ const secretIndexRoute = createRoute({
   getParentRoute: () => secretRoute,
   path: "/",
   beforeLoad: () => {
-    throw redirect({ to: "/secret/test-agent" });
+    throw redirect({ to: "/demo" });
   },
 });
 
@@ -336,6 +343,7 @@ const agentSettingsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  demoRoute,
   loginRoute,
   signupRoute,
   magicLinkRoute,

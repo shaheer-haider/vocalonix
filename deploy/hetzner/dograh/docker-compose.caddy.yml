@@ -1,0 +1,24 @@
+services:
+  caddy:
+    image: caddy:2.9-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - app-network
+
+volumes:
+  caddy-data:
+  caddy-config:
+
+networks:
+  app-network:
+    external: true
+    name: hostinger_app-network

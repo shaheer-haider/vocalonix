@@ -1,0 +1,9 @@
+{
+    email nobody@sslip.io
+}
+
+62-238-109-55.sslip.io {
+    reverse_proxy /api/v1/* api:8000
+    reverse_proxy /voice-audio/* minio:9000
+    reverse_proxy /* ui:3010
+}
