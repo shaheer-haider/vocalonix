@@ -193,6 +193,22 @@ To make a real call in a VM with no audio hardware:
    shows duration, disposition (`user_hangup`), audio playback, and a full
    transcript. Runs are named `[Vocalonix:<business_id>] <agent> for <business>`.
    Failed mic attempts still create 0-second ghost runs.
+7. If the agent keeps saying "are you still there?" even though the mic
+   pipeline is correct, distinguish client vs server failure before blaming
+   audio plumbing:
+   - Confirm Chrome receives mic audio (getUserMedia + AnalyserNode peak > 0
+     in the console while playing TTS into `micfeed`).
+   - Confirm Dograh received user audio: run artifacts live in MinIO bucket
+     `voice-audio` (`recordings/<run_id>/user.wav`, `transcripts/<run_id>.txt`).
+     Fetch with boto3 against `http://localhost:9000` using
+     `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` from `.env` (do not read
+     `part.1` files from the MinIO data dir — they are not plain WAVs).
+   - If `user.wav` contains speech but every transcript line is
+     assistant-only and dispositions are `user_idle_max_duration_exceeded`,
+     the failure is in Dograh's Gemini Live integration, not the client.
+     Check `docker logs vocalonix-api-1` for
+     `Gemini Live connection failed ... 1008` and the warning that
+     `DograhGeminiLiveLLMService` emits no user-turn frames.
 
 ## Configuration versions and Knowledge tabs
 
