@@ -79,18 +79,24 @@ _See the attached test report / recording for full detail; summary:_
 
 **Failing / blocking**:
 
-- **Spoken call: the agent never hears the caller.** Client audio verified
-  good (mic audio reaches Chrome and is stored in Dograh's run recording),
-  but all runs produced assistant-only transcripts and ended as
-  `user_idle_max_duration_exceeded`. Dograh logs show
-  `Gemini Live connection failed after 3 consecutive attempts: 1008` and the
-  Gemini Live service (`gemini-3.1-flash-live-preview`) emitting no
-  user-turn frames. This is a Dograh/Gemini-Live integration issue and is the
-  **top launch blocker** — interruption behavior and voice knowledge Q&A are
-  unverifiable until it is fixed.
-- Minor bug: on Bookings, the "Callback queue for these ↗" and
+- **Spoken call: caller speech recognition is unreliable.** Client audio is
+  verified good (mic audio reaches Chrome, is stored in Dograh's run
+  recording, and instrumented logs confirm 16 kHz PCM streams continuously to
+  Gemini Live). Yet Gemini (`gemini-3.1-flash-live-preview`) only
+  intermittently emits `input_transcription` / user turns — in controlled
+  tests only ~1 of 3 clearly spoken questions was recognized and answered.
+  Misses correlate with the agent speaking or having just spoken (the
+  default 10 s user-idle prompt "Are you still there?" keeps colliding with
+  user turns), and some earlier runs failed entirely with
+  `Gemini Live connection failed after 3 consecutive attempts: 1008`.
+  Runs then end as `user_idle_max_duration_exceeded`. The remaining gap is
+  in the upstream Dograh/Gemini Live layer (server-side VAD / barge-in
+  handling and connection stability), not in Vocalonix's audio pipeline.
+  This is the **top launch blocker** — interruption behavior and voice
+  knowledge Q&A are unverifiable until it is reliable.
+- ~~Minor bug: on Bookings, the "Callback queue for these ↗" and
   "All conversations ↗" links navigate to bare `/app` instead of the target
-  pages.
+  pages.~~ Fixed in PR #21.
 
 **Untested**: expired magic link and expired invitation states (require DB
 time manipulation); real email delivery.

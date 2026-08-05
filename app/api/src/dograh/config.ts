@@ -171,7 +171,7 @@ export function buildTenantWorkflow(
 }
 
 export function tenantWorkflowConfigurations(
-  settings: TenantAgentSettings,
+  settings: Pick<TenantAgentSettings, "allowInterrupt">,
 ): Record<string, unknown> {
   return {
     max_call_duration: 600,
