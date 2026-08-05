@@ -15,6 +15,7 @@ import {
   businesses,
   callbackTasks,
   contacts,
+  knowledgeGaps,
   memberships,
   outboxEvents,
   users,
@@ -1549,6 +1550,95 @@ export const tenantRoutes = new Elysia()
     });
     return { ok: true };
   })
+  .get("/api/b/:slug/knowledge-gaps", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const gaps = await db
+      .select({
+        id: knowledgeGaps.id,
+        question: knowledgeGaps.question,
+        agentResponse: knowledgeGaps.agentResponse,
+        askCount: knowledgeGaps.askCount,
+        status: knowledgeGaps.status,
+        lastAskedAt: knowledgeGaps.lastAskedAt,
+        createdAt: knowledgeGaps.createdAt,
+      })
+      .from(knowledgeGaps)
+      .where(eq(knowledgeGaps.businessId, workspace.business.id))
+      .orderBy(desc(knowledgeGaps.lastAskedAt));
+    return {
+      gaps,
+      canManage: can(workspace.role, "knowledge.manage"),
+    };
+  })
+  .patch(
+    "/api/b/:slug/knowledge-gaps/:gapId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "knowledge.manage");
+      const [existing] = await db
+        .select({ id: knowledgeGaps.id })
+        .from(knowledgeGaps)
+        .where(
+          and(
+            eq(knowledgeGaps.id, params.gapId),
+            eq(knowledgeGaps.businessId, workspace.business.id),
+          ),
+        )
+        .limit(1);
+      if (!existing) {
+        throw new ApiError(
+          404,
+          "KNOWLEDGE_GAP_NOT_FOUND",
+          "Knowledge gap was not found for this business.",
+        );
+      }
+      const now = new Date();
+      const [updated] = await db
+        .update(knowledgeGaps)
+        .set({
+          status: body.status,
+          resolvedBy: body.status === "open" ? null : workspace.session.user.id,
+          resolvedAt: body.status === "open" ? null : now,
+          updatedAt: now,
+        })
+        .where(eq(knowledgeGaps.id, existing.id))
+        .returning({
+          id: knowledgeGaps.id,
+          question: knowledgeGaps.question,
+          agentResponse: knowledgeGaps.agentResponse,
+          askCount: knowledgeGaps.askCount,
+          status: knowledgeGaps.status,
+          lastAskedAt: knowledgeGaps.lastAskedAt,
+          createdAt: knowledgeGaps.createdAt,
+        });
+      if (!updated) {
+        throw new ApiError(
+          500,
+          "KNOWLEDGE_GAP_UPDATE_FAILED",
+          "Could not update the knowledge gap.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "knowledge_gap.update",
+        targetType: "knowledge_gap",
+        targetId: existing.id,
+        payload: body as Record<string, unknown>,
+      });
+      return { gap: updated };
+    },
+    {
+      body: t.Object({
+        status: t.Union([
+          t.Literal("open"),
+          t.Literal("answered"),
+          t.Literal("dismissed"),
+        ]),
+      }),
+    },
+  )
   .delete("/api/b/:slug", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "business.delete");

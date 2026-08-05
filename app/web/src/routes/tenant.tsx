@@ -9,6 +9,7 @@ import {
   type BusinessHoursDay,
   type TenantConfigSnapshot,
   type TenantConfigVersion,
+  type KnowledgeGap,
   type TenantKnowledgeItem,
   type TenantSettingsResponse,
   type TenantWidget,
@@ -914,7 +915,7 @@ export function KnowledgeWorkspace({ slug }: { slug: string }) {
       </nav>
       {tab === "sources" ? <KnowledgeManager slug={slug} /> : null}
       {tab === "answers" ? <AnswersTab slug={slug} /> : null}
-      {tab === "gaps" ? <GapsTab /> : null}
+      {tab === "gaps" ? <GapsTab slug={slug} /> : null}
     </div>
   );
 }
@@ -1123,58 +1124,179 @@ function AnswersTab({ slug }: { slug: string }) {
   );
 }
 
-const sampleGaps = [
-  {
-    q: "Do you take Bupa dental insurance?",
-    count: "Asked 4×, last 40 minutes ago",
-    said: "I am not able to say which insurers we work with. Can I take your number and someone will call you back?",
-    note: "Nothing in any source mentions Bupa.",
-  },
-  {
-    q: "Do you do sedation for nervous patients?",
-    count: "Asked 3×, last 2 hours ago",
-    said: "I am not sure whether we offer that. Shall I get someone to ring you?",
-    note: "The website mentions nervous patients but never sedation.",
-  },
-  {
-    q: "Can I pay in instalments?",
-    count: "Asked 2×, last 2 days ago",
-    said: "I cannot set up a payment plan on this call. I will pass it to the front desk.",
-    note: "Nothing on finance in any source.",
-  },
-];
+function relativeTime(value: string): string {
+  const elapsed = Date.now() - Date.parse(value);
+  if (Number.isNaN(elapsed) || elapsed < 0) return "just now";
+  const minutes = Math.floor(elapsed / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
 
-function GapsTab() {
+function GapsTab({ slug }: { slug: string }) {
+  const [gaps, setGaps] = useState<KnowledgeGap[]>([]);
+  const [canManage, setCanManage] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+  const [answer, setAnswer] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await api.businesses.knowledgeGaps(slug);
+      setGaps(result.gaps);
+      setCanManage(result.canManage);
+      setError(null);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to load gaps.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const open = gaps.filter((gap) => gap.status === "open");
+  const resolvedCount = gaps.length - open.length;
+
+  async function answerGap(gap: KnowledgeGap) {
+    if (!answer.trim()) {
+      setError("Write what the agent should say.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await api.businesses.createKnowledge(slug, {
+        kind: "text",
+        title: gap.question,
+        text: answer,
+        retrievalMode: "full_document",
+      });
+      await api.businesses.updateKnowledgeGap(slug, gap.id, "answered");
+      setAnsweringId(null);
+      setAnswer("");
+      await refresh();
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to save the answer.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function dismissGap(gap: KnowledgeGap) {
+    setError(null);
+    try {
+      await api.businesses.updateKnowledgeGap(slug, gap.id, "dismissed");
+      await refresh();
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to dismiss the gap.",
+      );
+    }
+  }
+
   return (
     <div className="settings-stack">
-      <Alert variant="info" title="Design preview">
-        Gaps will fill from real conversations once the unanswered-question feed
-        lands. The rows below are sample data.
-      </Alert>
       <Box style={{ padding: 24 }}>
         <h2>Asked, and the agent had nothing</h2>
         <p className="auth-card-copy">
           Pulled straight out of conversations. Answer one and it leaves this
-          queue.
+          queue — the answer reaches callers after the next publish.
         </p>
-        <div className="knowledge-list">
-          {sampleGaps.map((gap) => (
-            <div className="knowledge-item" key={gap.q}>
-              <div className="knowledge-row">
-                <div>
-                  <strong>“{gap.q}”</strong>
-                  <span>{gap.count}</span>
-                  <small>{gap.note}</small>
+        {error ? <Alert variant="error">{error}</Alert> : null}
+        {loading ? (
+          <LoadingState label="Loading gaps…" />
+        ) : open.length === 0 ? (
+          <EmptyState title="No open gaps">
+            {resolvedCount > 0
+              ? `Every unanswered question has been handled (${resolvedCount} resolved).`
+              : "When callers ask something the agent cannot answer, it shows up here."}
+          </EmptyState>
+        ) : (
+          <div className="knowledge-list">
+            {open.map((gap) => (
+              <div className="knowledge-item" key={gap.id}>
+                <div className="knowledge-row">
+                  <div>
+                    <strong>“{gap.question}”</strong>
+                    <span>
+                      Asked {gap.askCount}×, last {relativeTime(gap.lastAskedAt)}
+                    </span>
+                  </div>
+                  <Pill variant="warn">No answer</Pill>
                 </div>
-                <Pill variant="warn">No answer</Pill>
+                {gap.agentResponse ? (
+                  <div className="knowledge-preview">
+                    <p className="knowledge-preview__label">
+                      What the agent said instead
+                    </p>
+                    <pre>{gap.agentResponse}</pre>
+                  </div>
+                ) : null}
+                {canManage ? (
+                  answeringId === gap.id ? (
+                    <div className="answer-editor">
+                      <TextArea
+                        label="What the agent should say"
+                        required
+                        value={answer}
+                        onChange={(event) => setAnswer(event.target.value)}
+                      />
+                      <div className="stack-row">
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setAnsweringId(null);
+                            setAnswer("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="primary"
+                          loading={saving}
+                          onClick={() => void answerGap(gap)}
+                        >
+                          Save answer
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="stack-row">
+                      <Button
+                        variant="ghost"
+                        onClick={() => void dismissGap(gap)}
+                      >
+                        Dismiss
+                      </Button>
+                      <Button
+                        variant="primary"
+                        onClick={() => {
+                          setAnsweringId(gap.id);
+                          setAnswer("");
+                        }}
+                      >
+                        Answer it
+                      </Button>
+                    </div>
+                  )
+                ) : null}
               </div>
-              <div className="knowledge-preview">
-                <p className="knowledge-preview__label">What the agent said instead</p>
-                <pre>{gap.said}</pre>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Box>
     </div>
   );

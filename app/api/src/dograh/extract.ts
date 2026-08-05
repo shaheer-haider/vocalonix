@@ -6,7 +6,11 @@ const EXTRACTION_PROMPT =
   "You are reading the transcript of a phone call between a business's AI receptionist (assistant) and a caller (user). " +
   "Speech recognition is imperfect, so caller lines may contain garbled words; use the assistant's confirmations to resolve them. " +
   "Extract who the caller is and whether they asked to be called back. " +
-  "Only use what the caller actually said or the assistant explicitly confirmed; leave anything unstated empty.";
+  "Only use what the caller actually said or the assistant explicitly confirmed; leave anything unstated empty. " +
+  "Also list knowledge gaps: questions the caller asked that the assistant could not answer from its knowledge " +
+  "(it deflected, said it did not know, or promised a human follow-up instead of answering). " +
+  "Phrase each gap as a clean standalone question and quote what the assistant said instead. " +
+  "Do not include questions the assistant answered, small talk, or requests it fulfilled.";
 
 const EXTRACTION_SCHEMA = {
   type: "object",
@@ -31,6 +35,24 @@ const EXTRACTION_SCHEMA = {
     callback_reason: {
       type: "string",
       description: "A one-sentence reason the caller needs a callback.",
+    },
+    knowledge_gaps: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          question: {
+            type: "string",
+            description:
+              "The caller's unanswered question, rephrased as a clean standalone question.",
+          },
+          agent_response: {
+            type: "string",
+            description: "What the assistant said instead of answering.",
+          },
+        },
+        required: ["question"],
+      },
     },
   },
   required: ["callback_requested"],

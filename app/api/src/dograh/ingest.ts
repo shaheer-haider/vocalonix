@@ -7,6 +7,7 @@ import {
   businessDograhMappings,
   callbackTasks,
   contacts,
+  knowledgeGaps,
 } from "../db/schema";
 import { dograh } from "./client";
 import { extractVariablesFromTranscript } from "./extract";
@@ -58,6 +59,56 @@ function sanitizedReason(value: unknown): string | null {
   return reason;
 }
 
+const MIN_QUESTION_LENGTH = 8;
+const MAX_QUESTION_LENGTH = 200;
+const MAX_GAPS_PER_RUN = 10;
+
+function sanitizedQuestion(value: unknown): string | null {
+  const question = extractedString(value);
+  if (!question) return null;
+  if (
+    question.length < MIN_QUESTION_LENGTH ||
+    question.length > MAX_QUESTION_LENGTH
+  ) {
+    return null;
+  }
+  if (/[{}\n]/.test(question)) return null;
+  return question;
+}
+
+export function normalizeQuestion(question: string): string {
+  return question
+    .toLowerCase()
+    .replace(/[?!.\s]+$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export interface ExtractedGap {
+  question: string;
+  agentResponse: string | null;
+}
+
+export function gapsFromContext(
+  context: Record<string, unknown>,
+): ExtractedGap[] {
+  const raw = context.knowledge_gaps;
+  if (!Array.isArray(raw)) return [];
+  const gaps: ExtractedGap[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const record = entry as Record<string, unknown>;
+    const question = sanitizedQuestion(record.question);
+    if (!question) continue;
+    gaps.push({
+      question,
+      agentResponse: sanitizedReason(record.agent_response),
+    });
+    if (gaps.length >= MAX_GAPS_PER_RUN) break;
+  }
+  return gaps;
+}
+
 export interface ExtractedCaller {
   name: string | null;
   phone: string | null;
@@ -88,22 +139,33 @@ export function hasCallerSignal(caller: ExtractedCaller): boolean {
   );
 }
 
-async function extractCallerWithFallback(
+interface RunInsights {
+  caller: ExtractedCaller;
+  gaps: ExtractedGap[];
+}
+
+async function extractRunInsights(
   run: DograhWorkflowRun,
-): Promise<ExtractedCaller> {
-  const caller = extractCaller(run);
-  if (hasCallerSignal(caller)) return caller;
+): Promise<RunInsights> {
+  const contextCaller = extractCaller(run);
   let transcriptUrl = run.transcript_public_url ?? null;
   if (!transcriptUrl) {
     const detail = await dograh.getWorkflowRun(run.workflow_id, run.id);
     transcriptUrl = detail.transcript_public_url ?? null;
   }
-  if (!transcriptUrl) return caller;
-  const transcript = await dograh.fetchRunTranscript(transcriptUrl);
-  if (!transcript) return caller;
-  const variables = await extractVariablesFromTranscript(transcript);
-  if (!variables) return caller;
-  return callerFromContext(variables);
+  const transcript = transcriptUrl
+    ? await dograh.fetchRunTranscript(transcriptUrl)
+    : null;
+  const variables = transcript
+    ? await extractVariablesFromTranscript(transcript)
+    : null;
+  return {
+    caller:
+      hasCallerSignal(contextCaller) || !variables
+        ? contextCaller
+        : callerFromContext(variables),
+    gaps: variables ? gapsFromContext(variables) : [],
+  };
 }
 
 async function upsertCallContact(
@@ -178,6 +240,54 @@ async function createCallCallback(
   });
 }
 
+async function recordKnowledgeGaps(
+  businessId: string,
+  run: DograhWorkflowRun,
+  gaps: ExtractedGap[],
+): Promise<void> {
+  const now = new Date();
+  for (const gap of gaps) {
+    const normalized = normalizeQuestion(gap.question);
+    if (!normalized) continue;
+    const [existing] = await db
+      .select({
+        id: knowledgeGaps.id,
+        askCount: knowledgeGaps.askCount,
+        agentResponse: knowledgeGaps.agentResponse,
+      })
+      .from(knowledgeGaps)
+      .where(
+        and(
+          eq(knowledgeGaps.businessId, businessId),
+          eq(knowledgeGaps.normalizedQuestion, normalized),
+        ),
+      )
+      .limit(1);
+    if (existing) {
+      await db
+        .update(knowledgeGaps)
+        .set({
+          askCount: existing.askCount + 1,
+          agentResponse: gap.agentResponse ?? existing.agentResponse,
+          runId: run.id,
+          lastAskedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(knowledgeGaps.id, existing.id));
+      continue;
+    }
+    await db.insert(knowledgeGaps).values({
+      id: randomUUID(),
+      businessId,
+      normalizedQuestion: normalized,
+      question: gap.question,
+      agentResponse: gap.agentResponse ?? "",
+      runId: run.id,
+      lastAskedAt: now,
+    });
+  }
+}
+
 export async function ingestBusinessRuns(
   businessId: string,
   workflowId: number,
@@ -189,9 +299,10 @@ export async function ingestBusinessRuns(
     .sort((left, right) => left.id - right.id);
   let highest = lastIngestedRunId;
   for (const run of fresh) {
-    const caller = await extractCallerWithFallback(run);
+    const { caller, gaps } = await extractRunInsights(run);
     await upsertCallContact(businessId, caller);
     await createCallCallback(businessId, run, caller);
+    await recordKnowledgeGaps(businessId, run, gaps);
     highest = run.id;
   }
   if (highest > lastIngestedRunId) {

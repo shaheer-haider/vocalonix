@@ -564,4 +564,49 @@ export const contacts = pgTable(
   ],
 );
 
+export const knowledgeGapStatusEnum = pgEnum("knowledge_gap_status", [
+  "open",
+  "answered",
+  "dismissed",
+]);
+
+export const knowledgeGaps = pgTable(
+  "knowledge_gaps",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    normalizedQuestion: text("normalized_question").notNull(),
+    question: text("question").notNull(),
+    agentResponse: text("agent_response").notNull().default(""),
+    askCount: integer("ask_count").notNull().default(1),
+    runId: integer("run_id"),
+    status: knowledgeGapStatusEnum("status").notNull().default("open"),
+    lastAskedAt: timestamp("last_asked_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    resolvedBy: text("resolved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("knowledge_gaps_business_question_unique").on(
+      table.businessId,
+      table.normalizedQuestion,
+    ),
+    index("knowledge_gaps_business_status_idx").on(
+      table.businessId,
+      table.status,
+    ),
+  ],
+);
+
 export type Role = (typeof roleEnum.enumValues)[number];
