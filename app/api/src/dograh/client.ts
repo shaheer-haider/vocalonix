@@ -5,6 +5,8 @@ import type {
   DograhEmbedToken,
   DograhUpload,
   DograhWorkflow,
+  DograhWorkflowRun,
+  DograhWorkflowRunsPage,
   DograhWorkflowSummary,
 } from "./types";
 
@@ -67,6 +69,12 @@ export interface DograhManagementClient {
   ): Promise<Record<string, unknown>>;
   getDocument(documentUuid: string): Promise<DograhDocument>;
   deleteDocument(documentUuid: string): Promise<Record<string, unknown>>;
+  listWorkflowRuns(
+    workflowId: number,
+    page?: number,
+    limit?: number,
+  ): Promise<DograhWorkflowRunsPage>;
+  getWorkflowRun(workflowId: number, runId: number): Promise<DograhWorkflowRun>;
   getEmbedToken(workflowId: number): Promise<DograhEmbedToken | null>;
   createEmbedToken(
     workflowId: number,
@@ -272,6 +280,20 @@ export class DograhClient implements DograhManagementClient {
 
   getDocument(documentUuid: string): Promise<DograhDocument> {
     return this.rawRequest(`/knowledge-base/documents/${documentUuid}`);
+  }
+
+  listWorkflowRuns(
+    workflowId: number,
+    page = 1,
+    limit = 50,
+  ): Promise<DograhWorkflowRunsPage> {
+    return this.rawRequest(
+      `/workflow/${workflowId}/runs?page=${page}&limit=${limit}`,
+    );
+  }
+
+  getWorkflowRun(workflowId: number, runId: number): Promise<DograhWorkflowRun> {
+    return this.rawRequest(`/workflow/${workflowId}/runs/${runId}`);
   }
 
   getEmbedToken(workflowId: number): Promise<DograhEmbedToken | null> {
