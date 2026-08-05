@@ -13,6 +13,8 @@ import {
   businessConfigVersions,
   businessOnboarding,
   businesses,
+  callbackTasks,
+  memberships,
   outboxEvents,
   users,
 } from "../db/schema";
@@ -30,6 +32,7 @@ import {
   isAllowedDocumentFilename,
 } from "../uploads";
 import { requirePermission, requireWorkspace } from "../workspace/context";
+import { can } from "../workspace/permissions";
 
 export const onboardingSteps = [
   "business-profile",
@@ -160,6 +163,27 @@ async function requireTenantWorkflowId(businessId: string): Promise<number> {
     );
   }
   return Number(mapping.workflowId);
+}
+
+function callbackView(
+  task: typeof callbackTasks.$inferSelect,
+  assigneeName: string | null,
+) {
+  return {
+    id: task.id,
+    contactName: task.contactName,
+    contactChannel: task.contactChannel,
+    reason: task.reason,
+    source: task.source,
+    runId: task.runId,
+    promisedAt: task.promisedAt.toISOString(),
+    assignedTo: task.assignedTo,
+    assigneeName,
+    status: task.status,
+    attempts: task.attempts,
+    createdAt: task.createdAt.toISOString(),
+    closedAt: task.closedAt?.toISOString() ?? null,
+  };
 }
 
 function conversationSummary(run: DograhWorkflowRun) {
@@ -614,6 +638,214 @@ export const tenantRoutes = new Elysia()
       recent: runs.slice(0, 8).map(conversationSummary),
     };
   })
+  .get("/api/b/:slug/callbacks", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const [rows, members] = await Promise.all([
+      db
+        .select({
+          task: callbackTasks,
+          assigneeName: users.name,
+        })
+        .from(callbackTasks)
+        .leftJoin(users, eq(callbackTasks.assignedTo, users.id))
+        .where(eq(callbackTasks.businessId, workspace.business.id))
+        .orderBy(asc(callbackTasks.promisedAt)),
+      db
+        .select({
+          userId: users.id,
+          name: users.name,
+          role: memberships.role,
+        })
+        .from(memberships)
+        .innerJoin(users, eq(memberships.userId, users.id))
+        .where(
+          and(
+            eq(memberships.businessId, workspace.business.id),
+            eq(memberships.status, "active"),
+          ),
+        )
+        .orderBy(asc(users.name)),
+    ]);
+    return {
+      callbacks: rows.map(({ task, assigneeName }) =>
+        callbackView(task, assigneeName),
+      ),
+      members,
+      viewerId: workspace.session.user.id,
+      canManage: can(workspace.role, "callbacks.manage"),
+    };
+  })
+  .post(
+    "/api/b/:slug/callbacks",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "callbacks.manage");
+      const promisedAt = new Date(body.promisedAt);
+      if (Number.isNaN(promisedAt.getTime())) {
+        throw new ApiError(
+          400,
+          "INVALID_PROMISED_AT",
+          "Invalid promised-at time.",
+        );
+      }
+      const id = randomUUID();
+      const [created] = await db
+        .insert(callbackTasks)
+        .values({
+          id,
+          businessId: workspace.business.id,
+          contactName: body.contactName.trim(),
+          contactChannel: body.contactChannel.trim(),
+          reason: body.reason.trim(),
+          promisedAt,
+          assignedTo: body.assignedTo ?? null,
+          createdBy: workspace.session.user.id,
+        })
+        .returning();
+      if (!created) {
+        throw new ApiError(
+          500,
+          "CALLBACK_CREATE_FAILED",
+          "Could not create the callback.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "callback.create",
+        targetType: "callback_task",
+        targetId: id,
+      });
+      return { callback: callbackView(created, null) };
+    },
+    {
+      body: t.Object({
+        contactName: t.String({ minLength: 1, maxLength: 120 }),
+        contactChannel: t.String({ minLength: 1, maxLength: 160 }),
+        reason: t.String({ minLength: 1, maxLength: 1000 }),
+        promisedAt: t.String(),
+        assignedTo: t.Optional(t.Nullable(t.String())),
+      }),
+    },
+  )
+  .patch(
+    "/api/b/:slug/callbacks/:callbackId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "callbacks.manage");
+      const [existing] = await db
+        .select()
+        .from(callbackTasks)
+        .where(
+          and(
+            eq(callbackTasks.id, params.callbackId),
+            eq(callbackTasks.businessId, workspace.business.id),
+          ),
+        )
+        .limit(1);
+      if (!existing) {
+        throw new ApiError(
+          404,
+          "CALLBACK_NOT_FOUND",
+          "Callback was not found for this business.",
+        );
+      }
+      const now = new Date();
+      const updates: Partial<typeof callbackTasks.$inferInsert> = {
+        updatedAt: now,
+      };
+      if (body.assignedTo !== undefined) {
+        if (body.assignedTo !== null) {
+          const [member] = await db
+            .select({ userId: memberships.userId })
+            .from(memberships)
+            .where(
+              and(
+                eq(memberships.businessId, workspace.business.id),
+                eq(memberships.userId, body.assignedTo),
+                eq(memberships.status, "active"),
+              ),
+            )
+            .limit(1);
+          if (!member) {
+            throw new ApiError(
+              400,
+              "INVALID_ASSIGNEE",
+              "The assignee is not an active member of this business.",
+            );
+          }
+        }
+        updates.assignedTo = body.assignedTo;
+      }
+      if (body.promisedAt !== undefined) {
+        const promisedAt = new Date(body.promisedAt);
+        if (Number.isNaN(promisedAt.getTime())) {
+          throw new ApiError(
+            400,
+            "INVALID_PROMISED_AT",
+            "Invalid promised-at time.",
+          );
+        }
+        updates.promisedAt = promisedAt;
+      }
+      if (body.status !== undefined) {
+        updates.status = body.status;
+        updates.closedAt = body.status === "open" ? null : now;
+      }
+      if (body.attemptNote !== undefined) {
+        updates.attempts = existing.attempts.concat([
+          { at: now.toISOString(), note: body.attemptNote.trim() },
+        ]);
+      }
+      const [updated] = await db
+        .update(callbackTasks)
+        .set(updates)
+        .where(eq(callbackTasks.id, existing.id))
+        .returning();
+      if (!updated) {
+        throw new ApiError(
+          500,
+          "CALLBACK_UPDATE_FAILED",
+          "Could not update the callback.",
+        );
+      }
+      const assigneeName = updated.assignedTo
+        ? ((
+            await db
+              .select({ name: users.name })
+              .from(users)
+              .where(eq(users.id, updated.assignedTo))
+              .limit(1)
+          )[0]?.name ?? null)
+        : null;
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "callback.update",
+        targetType: "callback_task",
+        targetId: existing.id,
+        payload: body as Record<string, unknown>,
+      });
+      return { callback: callbackView(updated, assigneeName) };
+    },
+    {
+      body: t.Object({
+        assignedTo: t.Optional(t.Nullable(t.String())),
+        promisedAt: t.Optional(t.String()),
+        status: t.Optional(
+          t.Union([
+            t.Literal("open"),
+            t.Literal("spoke"),
+            t.Literal("voicemail"),
+            t.Literal("dropped"),
+          ]),
+        ),
+        attemptNote: t.Optional(t.String({ minLength: 1, maxLength: 500 })),
+      }),
+    },
+  )
   .post("/api/b/:slug/dograh/retry", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "agent.edit");
