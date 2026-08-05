@@ -256,6 +256,30 @@ export interface TenantConfigVersionsResponse {
   draft: TenantConfigSnapshot;
 }
 
+export interface ConversationSummary {
+  id: number;
+  startedAt: string;
+  mode: string;
+  completed: boolean;
+  durationSeconds: number | null;
+  disposition: string | null;
+  nodesVisited: string[];
+  hasTranscript: boolean;
+  hasRecording: boolean;
+}
+
+export interface ConversationsResponse {
+  conversations: ConversationSummary[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  transcriptUrl: string | null;
+  recordingUrl: string | null;
+}
+
 export interface TenantWidget {
   workflowId: number;
   scriptUrl: string;
@@ -402,6 +426,23 @@ export const api = {
       },
     widget: async (slug: string): Promise<TenantWidget> =>
       unwrap(await client.api.b[slug].widget.get()) as TenantWidget,
+    conversations: async (
+      slug: string,
+      page = 1,
+      limit = 25,
+    ): Promise<ConversationsResponse> =>
+      unwrap(
+        await client.api.b[slug].conversations.get({
+          $query: { page: String(page), limit: String(limit) },
+        }),
+      ) as unknown as ConversationsResponse,
+    conversation: async (
+      slug: string,
+      runId: number,
+    ): Promise<{ conversation: ConversationDetail }> =>
+      unwrap(
+        await client.api.b[slug].conversations[String(runId)].get(),
+      ) as unknown as { conversation: ConversationDetail },
     knowledge: async (slug: string): Promise<TenantKnowledgeItem[]> => {
       const result = unwrap(await client.api.b[slug].knowledge.get());
       return result.knowledge as TenantKnowledgeItem[];

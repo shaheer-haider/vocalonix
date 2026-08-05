@@ -23,6 +23,7 @@ import {
   tenantWidgetScript,
 } from "../dograh/tenant";
 import { dograh } from "../dograh/client";
+import type { DograhWorkflowRun } from "../dograh/types";
 import { ApiError } from "../errors";
 import {
   ALLOWED_DOCUMENT_TYPES_LABEL,
@@ -142,6 +143,39 @@ async function snapshotBusinessConfig(
     widgetButtonText: row.settings.widgetButtonText,
     widgetColor: row.settings.widgetColor,
     allowedDomains: row.settings.allowedDomains,
+  };
+}
+
+async function requireTenantWorkflowId(businessId: string): Promise<number> {
+  const [mapping] = await db
+    .select()
+    .from(businessDograhMappings)
+    .where(eq(businessDograhMappings.businessId, businessId))
+    .limit(1);
+  if (!mapping?.workflowId) {
+    throw new ApiError(
+      404,
+      "DOGRAH_WORKFLOW_NOT_FOUND",
+      "This business does not have a published agent workflow yet.",
+    );
+  }
+  return Number(mapping.workflowId);
+}
+
+function conversationSummary(run: DograhWorkflowRun) {
+  return {
+    id: run.id,
+    startedAt: run.created_at,
+    mode: run.mode,
+    completed: run.is_completed,
+    durationSeconds: run.cost_info?.call_duration_seconds ?? null,
+    disposition:
+      run.gathered_context?.mapped_call_disposition ??
+      run.gathered_context?.call_disposition ??
+      null,
+    nodesVisited: run.gathered_context?.nodes_visited ?? [],
+    hasTranscript: Boolean(run.transcript_url),
+    hasRecording: Boolean(run.recording_url),
   };
 }
 
@@ -469,6 +503,42 @@ export const tenantRoutes = new Elysia()
       );
     }
     return { dograh: mapping };
+  })
+  .get("/api/b/:slug/conversations", async ({ params, query, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const workflowId = await requireTenantWorkflowId(workspace.business.id);
+    const page = Math.max(1, Number(query.page ?? 1) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit ?? 25) || 25));
+    const result = await dograh.listWorkflowRuns(workflowId, page, limit);
+    return {
+      conversations: result.runs.map(conversationSummary),
+      totalCount: result.total_count,
+      page: result.page,
+      totalPages: result.total_pages,
+    };
+  })
+  .get("/api/b/:slug/conversations/:runId", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const workflowId = await requireTenantWorkflowId(workspace.business.id);
+    const runId = Number(params.runId);
+    if (!Number.isInteger(runId) || runId <= 0) {
+      throw new ApiError(400, "INVALID_RUN_ID", "Invalid conversation id.");
+    }
+    const run = await dograh.getWorkflowRun(workflowId, runId);
+    if (run.workflow_id !== workflowId) {
+      throw new ApiError(
+        404,
+        "CONVERSATION_NOT_FOUND",
+        "Conversation was not found for this business.",
+      );
+    }
+    return {
+      conversation: {
+        ...conversationSummary(run),
+        transcriptUrl: run.transcript_public_url ?? null,
+        recordingUrl: run.recording_public_url ?? null,
+      },
+    };
   })
   .post("/api/b/:slug/dograh/retry", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);

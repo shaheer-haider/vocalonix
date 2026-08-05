@@ -66,6 +66,33 @@ export interface DograhUpload {
   s3_key: string;
 }
 
+export interface DograhWorkflowRun {
+  id: number;
+  workflow_id: number;
+  name: string;
+  mode: string;
+  is_completed: boolean;
+  created_at: string;
+  transcript_url?: string | null;
+  recording_url?: string | null;
+  transcript_public_url?: string | null;
+  recording_public_url?: string | null;
+  cost_info?: { call_duration_seconds?: number | null } | null;
+  gathered_context?: {
+    nodes_visited?: string[] | null;
+    mapped_call_disposition?: string | null;
+    call_disposition?: string | null;
+  } | null;
+}
+
+export interface DograhWorkflowRunsPage {
+  runs: DograhWorkflowRun[];
+  total_count: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
 export interface DograhEmbedToken {
   token: string;
   is_active: boolean;
