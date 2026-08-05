@@ -14,6 +14,7 @@ import {
   businessOnboarding,
   businesses,
   callbackTasks,
+  contacts,
   memberships,
   outboxEvents,
   users,
@@ -184,6 +185,31 @@ function callbackView(
     createdAt: task.createdAt.toISOString(),
     closedAt: task.closedAt?.toISOString() ?? null,
   };
+}
+
+function contactView(contact: typeof contacts.$inferSelect) {
+  return {
+    id: contact.id,
+    name: contact.name,
+    phone: contact.phone,
+    email: contact.email,
+    tags: contact.tags,
+    note: contact.note,
+    source: contact.source,
+    createdAt: contact.createdAt.toISOString(),
+    updatedAt: contact.updatedAt.toISOString(),
+  };
+}
+
+function normalizeContactField(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeTags(tags: string[]): string[] {
+  return [
+    ...new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0)),
+  ].slice(0, 20);
 }
 
 function conversationSummary(run: DograhWorkflowRun) {
@@ -875,6 +901,239 @@ export const tenantRoutes = new Elysia()
       }),
     },
   )
+  .get("/api/b/:slug/contacts", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const rows = await db
+      .select()
+      .from(contacts)
+      .where(
+        and(
+          eq(contacts.businessId, workspace.business.id),
+          isNull(contacts.deletedAt),
+        ),
+      )
+      .orderBy(desc(contacts.updatedAt));
+    return {
+      contacts: rows.map(contactView),
+      canManage: can(workspace.role, "contacts.manage"),
+    };
+  })
+  .post(
+    "/api/b/:slug/contacts",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "contacts.manage");
+      const name = normalizeContactField(body.name);
+      const phone = normalizeContactField(body.phone);
+      const email = normalizeContactField(body.email);
+      if (!name && !phone && !email) {
+        throw new ApiError(
+          400,
+          "EMPTY_CONTACT",
+          "A contact needs at least a name, phone or email.",
+        );
+      }
+      const id = randomUUID();
+      const [created] = await db
+        .insert(contacts)
+        .values({
+          id,
+          businessId: workspace.business.id,
+          name,
+          phone,
+          email,
+          tags: normalizeTags(body.tags ?? []),
+          note: body.note?.trim() ?? "",
+          createdBy: workspace.session.user.id,
+        })
+        .returning();
+      if (!created) {
+        throw new ApiError(
+          500,
+          "CONTACT_CREATE_FAILED",
+          "Could not create the contact.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "contact.create",
+        targetType: "contact",
+        targetId: id,
+      });
+      return { contact: contactView(created) };
+    },
+    {
+      body: t.Object({
+        name: t.Optional(t.Nullable(t.String({ maxLength: 120 }))),
+        phone: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
+        email: t.Optional(t.Nullable(t.String({ maxLength: 160 }))),
+        tags: t.Optional(t.Array(t.String({ maxLength: 40 }), { maxItems: 20 })),
+        note: t.Optional(t.String({ maxLength: 2000 })),
+      }),
+    },
+  )
+  .post(
+    "/api/b/:slug/contacts/import",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "contacts.manage");
+      const rows = body.rows
+        .map((row) => ({
+          name: normalizeContactField(row.name),
+          phone: normalizeContactField(row.phone),
+          email: normalizeContactField(row.email),
+        }))
+        .filter((row) => row.name || row.phone || row.email);
+      if (rows.length === 0) {
+        throw new ApiError(
+          400,
+          "EMPTY_IMPORT",
+          "No usable rows found. Each row needs a name, phone or email.",
+        );
+      }
+      const created = await db
+        .insert(contacts)
+        .values(
+          rows.map((row) => ({
+            id: randomUUID(),
+            businessId: workspace.business.id,
+            name: row.name,
+            phone: row.phone,
+            email: row.email,
+            source: "import" as const,
+            createdBy: workspace.session.user.id,
+          })),
+        )
+        .returning();
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "contact.import",
+        targetType: "contact",
+        payload: { count: created.length },
+      });
+      return { contacts: created.map(contactView) };
+    },
+    {
+      body: t.Object({
+        rows: t.Array(
+          t.Object({
+            name: t.Optional(t.Nullable(t.String({ maxLength: 120 }))),
+            phone: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
+            email: t.Optional(t.Nullable(t.String({ maxLength: 160 }))),
+          }),
+          { minItems: 1, maxItems: 1000 },
+        ),
+      }),
+    },
+  )
+  .patch(
+    "/api/b/:slug/contacts/:contactId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "contacts.manage");
+      const [existing] = await db
+        .select()
+        .from(contacts)
+        .where(
+          and(
+            eq(contacts.id, params.contactId),
+            eq(contacts.businessId, workspace.business.id),
+            isNull(contacts.deletedAt),
+          ),
+        )
+        .limit(1);
+      if (!existing) {
+        throw new ApiError(
+          404,
+          "CONTACT_NOT_FOUND",
+          "Contact was not found for this business.",
+        );
+      }
+      const updates: Partial<typeof contacts.$inferInsert> = {
+        updatedAt: new Date(),
+      };
+      if (body.name !== undefined) updates.name = normalizeContactField(body.name);
+      if (body.phone !== undefined) updates.phone = normalizeContactField(body.phone);
+      if (body.email !== undefined) updates.email = normalizeContactField(body.email);
+      if (body.tags !== undefined) updates.tags = normalizeTags(body.tags);
+      if (body.note !== undefined) updates.note = body.note.trim();
+      const nextName = body.name !== undefined ? updates.name : existing.name;
+      const nextPhone = body.phone !== undefined ? updates.phone : existing.phone;
+      const nextEmail = body.email !== undefined ? updates.email : existing.email;
+      if (!nextName && !nextPhone && !nextEmail) {
+        throw new ApiError(
+          400,
+          "EMPTY_CONTACT",
+          "A contact needs at least a name, phone or email.",
+        );
+      }
+      const [updated] = await db
+        .update(contacts)
+        .set(updates)
+        .where(eq(contacts.id, existing.id))
+        .returning();
+      if (!updated) {
+        throw new ApiError(
+          500,
+          "CONTACT_UPDATE_FAILED",
+          "Could not update the contact.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "contact.update",
+        targetType: "contact",
+        targetId: existing.id,
+      });
+      return { contact: contactView(updated) };
+    },
+    {
+      body: t.Object({
+        name: t.Optional(t.Nullable(t.String({ maxLength: 120 }))),
+        phone: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
+        email: t.Optional(t.Nullable(t.String({ maxLength: 160 }))),
+        tags: t.Optional(t.Array(t.String({ maxLength: 40 }), { maxItems: 20 })),
+        note: t.Optional(t.String({ maxLength: 2000 })),
+      }),
+    },
+  )
+  .delete("/api/b/:slug/contacts/:contactId", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    requirePermission(workspace.role, "contacts.manage");
+    const [deleted] = await db
+      .update(contacts)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(
+        and(
+          eq(contacts.id, params.contactId),
+          eq(contacts.businessId, workspace.business.id),
+          isNull(contacts.deletedAt),
+        ),
+      )
+      .returning();
+    if (!deleted) {
+      throw new ApiError(
+        404,
+        "CONTACT_NOT_FOUND",
+        "Contact was not found for this business.",
+      );
+    }
+    await db.insert(auditLogs).values({
+      id: randomUUID(),
+      businessId: workspace.business.id,
+      actorUserId: workspace.session.user.id,
+      action: "contact.delete",
+      targetType: "contact",
+      targetId: deleted.id,
+    });
+    return { ok: true };
+  })
   .post("/api/b/:slug/dograh/retry", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "agent.edit");

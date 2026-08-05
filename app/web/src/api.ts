@@ -320,6 +320,31 @@ export interface CallbackUpdate {
   attemptNote?: string;
 }
 
+export interface Contact {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  tags: string[];
+  note: string;
+  source: "call" | "manual" | "import";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactsResponse {
+  contacts: Contact[];
+  canManage: boolean;
+}
+
+export interface ContactInput {
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  tags?: string[];
+  note?: string;
+}
+
 export interface TenantWidget {
   workflowId: number;
   scriptUrl: string;
@@ -475,6 +500,36 @@ export const api = {
           $query: { range },
         }),
       ) as unknown as DashboardStats,
+    contacts: async (slug: string): Promise<ContactsResponse> =>
+      unwrap(
+        await client.api.b[slug].contacts.get(),
+      ) as unknown as ContactsResponse,
+    createContact: async (
+      slug: string,
+      input: ContactInput,
+    ): Promise<{ contact: Contact }> =>
+      unwrap(
+        await client.api.b[slug].contacts.post(input),
+      ) as unknown as { contact: Contact },
+    importContacts: async (
+      slug: string,
+      rows: { name?: string | null; phone?: string | null; email?: string | null }[],
+    ): Promise<{ contacts: Contact[] }> =>
+      unwrap(
+        await client.api.b[slug].contacts.import.post({ rows }),
+      ) as unknown as { contacts: Contact[] },
+    updateContact: async (
+      slug: string,
+      contactId: string,
+      update: ContactInput,
+    ): Promise<{ contact: Contact }> =>
+      unwrap(
+        await client.api.b[slug].contacts[contactId].patch(update),
+      ) as unknown as { contact: Contact },
+    deleteContact: async (slug: string, contactId: string): Promise<{ ok: boolean }> =>
+      unwrap(
+        await client.api.b[slug].contacts[contactId].delete(),
+      ) as unknown as { ok: boolean },
     callbacks: async (slug: string): Promise<CallbacksResponse> =>
       unwrap(
         await client.api.b[slug].callbacks.get(),

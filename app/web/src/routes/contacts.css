@@ -676,6 +676,16 @@
   cursor: pointer;
 }
 
+.contacts-tag__remove {
+  background: none;
+  border: none;
+  padding: 0 0 0 4px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
 .contacts-tag-input {
   width: 140px;
   min-height: 32px;
