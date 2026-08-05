@@ -733,10 +733,12 @@ export function WorkspaceDashboardPage() {
                   const hour = 8 + i;
                   return (
                     <div key={i} className="dash-bar">
-                      <div
-                        className="dash-bar__fill"
-                        style={{ height: `${(h / hourlyMax) * 100}%` }}
-                      />
+                      <div className="dash-bar__track">
+                        <div
+                          className="dash-bar__fill"
+                          style={{ height: `${(h / hourlyMax) * 100}%` }}
+                        />
+                      </div>
                       <span>{hour}:00</span>
                     </div>
                   );
