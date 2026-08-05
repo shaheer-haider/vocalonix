@@ -322,7 +322,7 @@ export function WorkspaceBookingsPage() {
 
   return (
     <WorkspaceShell>
-      {() => (
+      {(business) => (
         <>
           <Alert variant="warn">
             Design preview — the bookings diary shows sample data while the booking backend is being built.
@@ -649,8 +649,8 @@ export function WorkspaceBookingsPage() {
                       )}
 
                       <div className="bookings-detail__links">
-                        <a href="/app">Open contact</a>
-                        <a href="/app">Hear the call</a>
+                        <a href={`/app/${business.slug}/contacts`}>Open contact</a>
+                        <a href={`/app/${business.slug}/conversations`}>Hear the call</a>
                       </div>
                     </>
                   )}
@@ -714,7 +714,7 @@ export function WorkspaceBookingsPage() {
                         </div>
                       );
                     })}
-                    <a href="/app" className="bookings-rail__link">Callback queue for these ↗</a>
+                    <a href={`/app/${business.slug}/callbacks`} className="bookings-rail__link">Callback queue for these ↗</a>
                   </div>
 
                   <div className="bookings-log">
@@ -725,7 +725,7 @@ export function WorkspaceBookingsPage() {
                         <span className="bookings-log__line">{l.v}</span>
                       </div>
                     ))}
-                    <a href="/app" className="bookings-rail__link">All conversations ↗</a>
+                    <a href={`/app/${business.slug}/conversations`} className="bookings-rail__link">All conversations ↗</a>
                   </div>
                 </>
               )}
@@ -792,11 +792,11 @@ const SRC: Record<CallbackSrc, { text: string; cls: string }> = {
   hand: { text: "ADDED BY HAND", cls: "callbacks-tag--hand" },
 };
 
-const LINKS: Record<string, { label: string; href: string }> = {
-  call: { label: "The call ↗", href: "/app" },
-  booking: { label: "The booking ↗", href: "/app" },
-  contact: { label: "Contact ↗", href: "/app" },
-  knowledge: { label: "The gap ↗", href: "/app" },
+const LINKS: Record<string, { label: string; path: string }> = {
+  call: { label: "The call ↗", path: "conversations" },
+  booking: { label: "The booking ↗", path: "bookings" },
+  contact: { label: "Contact ↗", path: "contacts" },
+  knowledge: { label: "The gap ↗", path: "settings/knowledge#gaps" },
 };
 
 const CBNOW = 884;
@@ -989,7 +989,7 @@ export function WorkspaceCallbacksPage() {
 
   return (
     <WorkspaceShell>
-      {() => (
+      {(business) => (
         <>
           <Alert variant="warn">
             Design preview — the callbacks queue shows sample data while the callback backend is being built.
@@ -1202,7 +1202,7 @@ export function WorkspaceCallbacksPage() {
                     ))}
                     <div className="callbacks-links">
                       {selected.links.map((k) => (
-                        <a key={k} href={LINKS[k]?.href ?? "/app"}>
+                        <a key={k} href={LINKS[k] ? `/app/${business.slug}/${LINKS[k].path}` : "/app"}>
                           {LINKS[k]?.label ?? k}
                         </a>
                       ))}
