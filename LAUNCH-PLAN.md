@@ -22,6 +22,8 @@ page and option (2026-08-05).
 | Browser-call widget | `/secret/test-agent`, `/embed/dograh-widget.js` | Real WebRTC calls via embed tokens; snippet embeddable on third-party sites. |
 | Conversations | `/app/:slug/conversations` | Real Dograh runs per workspace: list with dispositions/filters/pagination, transcript bubbles, playable recording (PR #25). |
 | Dashboard call stats | `/app/:slug/dashboard` | Real calls answered / completed / minutes / avg-length, hourly chart (business timezone), outcome mix, latest-calls feed (PR #26). |
+| Callbacks ("Promises to keep") | `/app/:slug/callbacks` | Real `callback_tasks` table: create, assign, re-time, attempt log, close/reopen, role-gated mutations (PR #28). |
+| Contacts | `/app/:slug/contacts` | Real `contacts` table: add by hand, CSV import, tags, agent-readable notes, soft delete, role-gated mutations (PR #29). |
 | MVP lab | `/secret/*` | Session-protected single-workflow test surface (to be retired). |
 
 ### Design previews only (UI built, sample data, no backend)
@@ -31,9 +33,7 @@ Each of these pages currently shows a "Design preview" banner:
 | Area | Route | Missing backend |
 | --- | --- | --- |
 | Dashboard (callbacks / gaps / diary surfaces) | `/app/:slug/dashboard` | Booking and callback feeds; call stats are live since PR #26. |
-| Contacts | `/app/:slug/contacts` | Contact table, CSV import, tags, per-contact notes, call history linkage. |
 | Bookings | `/app/:slug/bookings` | Booking/resource/availability tables, CRUD API, agent booking tools, slot holds, waitlist. |
-| Callbacks ("Promises to keep") | `/app/:slug/callbacks` | Callback-task table fed by call dispositions, assignment, done states. |
 | Notifications | `/app/:slug/notifications` | Per-person event × Email/SMS/Push matrix, quiet hours, delivery. |
 | Knowledge — Gaps | `/app/:slug/settings/knowledge#gaps` | Feed of unanswered caller questions from real conversations. |
 | Billing | `/app/:slug/account` | Plans, payment method, metered minutes, invoices. |
@@ -124,11 +124,13 @@ assume 1–2 engineers.
 2. **Knowledge Gaps backend** — extract unanswered questions from transcripts
    (LLM classification pass in the worker); feed the Gaps tab; "Answer it"
    writes back into knowledge Sources/Answers.
-3. **Callbacks backend** — create callback tasks from call dispositions
-   (caller asked for a human, booking failed, gap hit); assignment,
-   promise-time buckets, done states; wire the existing UI.
-4. **Contacts backend** — contact table keyed by phone/email, auto-created
-   from calls, CSV import, tags, per-contact agent notes.
+3. ~~**Callbacks backend**~~ — done in PR #28: `callback_tasks` table with
+   assignment, promise-time buckets, attempt logging and done states; the
+   existing UI is wired to it. Remaining: auto-creating tasks from call
+   dispositions (the schema already carries `source`/`runId` for it).
+4. ~~**Contacts backend**~~ — done in PR #29: `contacts` table with CSV
+   import, tags and per-contact agent notes. Remaining: auto-creation from
+   calls and call-history linkage.
 5. **Real Dashboard** — partially done in PR #26: call stats, hourly chart,
    outcome mix and latest-calls feed are live from Dograh runs. Remaining:
    callback queue, knowledge-gap and diary surfaces once those backends land.
