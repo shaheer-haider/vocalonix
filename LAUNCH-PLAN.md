@@ -20,7 +20,9 @@ page and option (2026-08-05).
 | Knowledge — Sources & Answers | `/app/:slug/settings/knowledge` | Upload → MinIO → Dograh processing → workflow attach, delete/replace lifecycle via the outbox worker. |
 | Dograh sync engine | server-side | Deterministic config hashing, sync leases, workflow-ownership guards, outbox retry with backoff, failure classification. |
 | Browser-call widget | `/secret/test-agent`, `/embed/dograh-widget.js` | Real WebRTC calls via embed tokens; snippet embeddable on third-party sites. |
-| MVP lab | `/secret/*` | Intentionally unauthenticated single-workflow test surface (to be retired). |
+| Conversations | `/app/:slug/conversations` | Real Dograh runs per workspace: list with dispositions/filters/pagination, transcript bubbles, playable recording (PR #25). |
+| Dashboard call stats | `/app/:slug/dashboard` | Real calls answered / completed / minutes / avg-length, hourly chart (business timezone), outcome mix, latest-calls feed (PR #26). |
+| MVP lab | `/secret/*` | Session-protected single-workflow test surface (to be retired). |
 
 ### Design previews only (UI built, sample data, no backend)
 
@@ -28,8 +30,7 @@ Each of these pages currently shows a "Design preview" banner:
 
 | Area | Route | Missing backend |
 | --- | --- | --- |
-| Dashboard | `/app/:slug/dashboard` | Real call/booking/callback stats, call-volume chart, topic mix. |
-| Conversations | `/app/:slug/conversations` | Transcript feed from Dograh runs, per-call disposition, coaching ("Rewrite it") loop. |
+| Dashboard (callbacks / gaps / diary surfaces) | `/app/:slug/dashboard` | Booking and callback feeds; call stats are live since PR #26. |
 | Contacts | `/app/:slug/contacts` | Contact table, CSV import, tags, per-contact notes, call history linkage. |
 | Bookings | `/app/:slug/bookings` | Booking/resource/availability tables, CRUD API, agent booking tools, slot holds, waitlist. |
 | Callbacks ("Promises to keep") | `/app/:slug/callbacks` | Callback-task table fed by call dispositions, assignment, done states. |
@@ -50,8 +51,9 @@ Each of these pages currently shows a "Design preview" banner:
   configured by hand in the Dograh dashboard, not provisioned per tenant.
 - **Escalation chain / night chain, human handoff** exist in designs
   (`docs/design/`) but have no implementation.
-- **Spoken calls are currently broken** (agent never registers user speech —
-  see §2); the core voice loop must be fixed before anything else.
+- **Spoken-call recognition is unreliable** (Gemini Live only intermittently
+  transcribes caller speech — see §2); the core voice loop must be reliable
+  before launch.
 
 ---
 
@@ -114,9 +116,11 @@ assume 1–2 engineers.
 > Goal: a business signs up, publishes its agent, and sees real calls,
 > transcripts, gaps, and callbacks in the dashboard.
 
-1. **Conversations backend** — ingest Dograh run records (transcript, audio
-   URL, duration, disposition) per business into a `calls`/`call_turns`
-   schema; poll or webhook from Dograh; wire the existing Conversations UI.
+1. ~~**Conversations backend**~~ — done in PR #25: workspace-scoped
+   `/api/b/:slug/conversations` endpoints read runs (transcript, recording,
+   duration, disposition) straight from Dograh; the Conversations UI is wired
+   to them. (A local `calls` schema/webhook ingest remains a later
+   optimization.)
 2. **Knowledge Gaps backend** — extract unanswered questions from transcripts
    (LLM classification pass in the worker); feed the Gaps tab; "Answer it"
    writes back into knowledge Sources/Answers.
@@ -125,8 +129,9 @@ assume 1–2 engineers.
    promise-time buckets, done states; wire the existing UI.
 4. **Contacts backend** — contact table keyed by phone/email, auto-created
    from calls, CSV import, tags, per-contact agent notes.
-5. **Real Dashboard** — aggregate the above into the briefing stats, call
-   chart, and topic mix already designed.
+5. **Real Dashboard** — partially done in PR #26: call stats, hourly chart,
+   outcome mix and latest-calls feed are live from Dograh runs. Remaining:
+   callback queue, knowledge-gap and diary surfaces once those backends land.
 
 ### Phase B — Bookings (the headline feature for service businesses)
 
