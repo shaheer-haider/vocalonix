@@ -14,6 +14,7 @@ import {
   api,
   ApiClientError,
   type BusinessSummary,
+  type DashboardStats,
   type PendingInvitation,
   type Role,
   type TeamMember,
@@ -611,23 +612,49 @@ export function CreateBusinessPage() {
   );
 }
 
+function formatCallLength(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}m ${s < 10 ? "0" : ""}${s}s`;
+}
+
+function dispositionText(value: string | null): string {
+  if (!value) return "In progress";
+  return value
+    .split("_")
+    .map((word) => word[0]?.toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function WorkspaceDashboardPage() {
   const [range, setRange] = useState<"today" | "7d" | "30d">("today");
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const slug = useBusinessSlug();
 
-  const stats = {
-    today: { answered: 12, handled: 9, callbacks: 3, avg: "4m 20s" },
-    "7d": { answered: 84, handled: 71, callbacks: 19, avg: "4m 08s" },
-    "30d": { answered: 341, handled: 298, callbacks: 76, avg: "4m 15s" },
-  }[range];
+  useEffect(() => {
+    let cancelled = false;
+    setStatsError(null);
+    api.businesses
+      .dashboard(slug, range)
+      .then((result) => {
+        if (!cancelled) setStats(result);
+      })
+      .catch((caught: unknown) => {
+        if (cancelled) return;
+        setStatsError(
+          caught instanceof Error
+            ? caught.message
+            : "Unable to load call stats.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, range]);
 
-  const hourly = [1, 2, 4, 7, 5, 3, 2, 1, 0, 0, 0, 0];
-  const topics = [
-    { label: "Bookings", value: 35 },
-    { label: "Prices", value: 22 },
-    { label: "Opening hours", value: 18 },
-    { label: "Treatments", value: 15 },
-    { label: "Other", value: 10 },
-  ];
+  const hourly = stats?.hourly.slice(8, 20) ?? new Array<number>(12).fill(0);
+  const hourlyMax = Math.max(1, ...hourly);
 
   const callbackQueue = [
     { who: "Dawn Whitfield", due: "9:00", task: "Follow-up", contact: "dawn" },
@@ -645,21 +672,15 @@ export function WorkspaceDashboardPage() {
     { time: "11:00", title: "Iris Bhatt", sub: "Check-up — booked by the agent", held: false },
   ];
 
-  const activity = [
-    "Answered a call from Grace Odum",
-    "Booked Elena Fox for a whitening consult",
-    "Promised Dawn Whitfield a follow-up call",
-    "Sent the widget snippet to the site",
-  ];
-
   return (
     <WorkspaceShell>
       {(business) => (
         <>
           <Alert variant="warn">
-            Design preview — the dashboard uses sample data until call, booking
-            and callback feeds are wired in.
+            Call stats and activity are live. The callbacks, knowledge-gap and
+            diary surfaces still show sample data until those backends land.
           </Alert>
+          {statsError ? <Alert variant="error">{statsError}</Alert> : null}
 
           <div className="dash-header" style={{ marginTop: 16 }}>
             <div>
@@ -682,22 +703,22 @@ export function WorkspaceDashboardPage() {
 
           <div className="dash-stats">
             <Box className="dash-stat" style={{ padding: 16 }}>
-              <strong>{stats.answered}</strong>
+              <strong>{stats ? stats.callsAnswered : "—"}</strong>
               <span>Calls answered</span>
               <small>Agent picked up every one</small>
             </Box>
             <Box className="dash-stat" style={{ padding: 16 }}>
-              <strong>{stats.handled}</strong>
-              <span>Handled alone</span>
-              <small>No human needed</small>
+              <strong>{stats ? stats.completedCalls : "—"}</strong>
+              <span>Completed</span>
+              <small>Ran to the end of the call</small>
             </Box>
             <Box className="dash-stat" style={{ padding: 16 }}>
-              <strong>{stats.callbacks}</strong>
-              <span>Callbacks asked</span>
-              <small>Promised out loud</small>
+              <strong>{stats ? Math.round(stats.totalSeconds / 60) : "—"}</strong>
+              <span>Minutes used</span>
+              <small>Across every call</small>
             </Box>
             <Box className="dash-stat" style={{ padding: 16 }}>
-              <strong>{stats.avg}</strong>
+              <strong>{stats ? formatCallLength(stats.averageSeconds) : "—"}</strong>
               <span>Average length</span>
               <small>From connect to finish</small>
             </Box>
@@ -714,7 +735,7 @@ export function WorkspaceDashboardPage() {
                     <div key={i} className="dash-bar">
                       <div
                         className="dash-bar__fill"
-                        style={{ height: `${(h / 7) * 100}%` }}
+                        style={{ height: `${(h / hourlyMax) * 100}%` }}
                       />
                       <span>{hour}:00</span>
                     </div>
@@ -722,26 +743,44 @@ export function WorkspaceDashboardPage() {
                 })}
               </div>
               <p className="dash-insight">
-                Peak is 11am–12pm, but you close the phone lines at 1pm.
+                {stats && stats.callsAnswered > 0
+                  ? "Calls between 8am and 8pm in your business timezone."
+                  : "No calls in this period yet."}
               </p>
             </Box>
 
             <Box className="dash-surface" style={{ padding: 20 }}>
-              <p className="eyebrow">What they asked about</p>
-              <h2>Topic mix</h2>
+              <p className="eyebrow">How calls ended</p>
+              <h2>Outcomes</h2>
               <div className="dash-topics">
-                {topics.map((t) => (
-                  <div key={t.label} className="dash-topic">
-                    <span>{t.label}</span>
-                    <div className="dash-topic__track">
-                      <div
-                        className="dash-topic__fill"
-                        style={{ width: `${t.value}%` }}
-                      />
-                    </div>
-                    <span>{t.value}%</span>
-                  </div>
-                ))}
+                {(() => {
+                  const counts = new Map<string, number>();
+                  for (const run of stats?.recent ?? []) {
+                    const key = run.completed
+                      ? dispositionText(run.disposition)
+                      : "In progress";
+                    counts.set(key, (counts.get(key) ?? 0) + 1);
+                  }
+                  const total = stats?.recent.length ?? 0;
+                  if (total === 0) {
+                    return <p>No calls in this period yet.</p>;
+                  }
+                  return [...counts.entries()].map(([label, count]) => {
+                    const pct = Math.round((count / total) * 100);
+                    return (
+                      <div key={label} className="dash-topic">
+                        <span>{label}</span>
+                        <div className="dash-topic__track">
+                          <div
+                            className="dash-topic__fill"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span>{pct}%</span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </Box>
 
@@ -865,15 +904,31 @@ export function WorkspaceDashboardPage() {
           <Box style={{ padding: 20, marginTop: 16 }}>
             <div className="account-section__heading">
               <div>
-                <p className="eyebrow">What Robin did today</p>
+                <p className="eyebrow">Latest calls</p>
                 <h2>Activity feed</h2>
               </div>
+              <a
+                className="ui-button"
+                href={`/app/${business.slug}/conversations`}
+              >
+                All conversations
+              </a>
             </div>
-            <ul className="dash-activity">
-              {activity.map((entry, i) => (
-                <li key={i}>{entry}</li>
-              ))}
-            </ul>
+            {stats && stats.recent.length > 0 ? (
+              <ul className="dash-activity">
+                {stats.recent.map((run) => (
+                  <li key={run.id}>
+                    Call #{run.id} · {formatDate(run.startedAt)} ·{" "}
+                    {run.completed ? dispositionText(run.disposition) : "In progress"}
+                    {run.durationSeconds !== null
+                      ? ` · ${formatCallLength(run.durationSeconds)}`
+                      : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No calls in this period yet.</p>
+            )}
           </Box>
         </>
       )}
