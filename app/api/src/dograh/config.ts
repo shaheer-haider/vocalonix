@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { TenantAgentSettings } from "./types";
 
-export const TENANT_CONFIG_VERSION = 1;
+export const TENANT_CONFIG_VERSION = 2;
 
 export interface TenantBusinessProfile {
   id: string;
@@ -104,9 +104,37 @@ export function buildTenantWorkflow(
           prompt: settings.prompt,
           allow_interrupt: settings.allowInterrupt,
           add_global_prompt: true,
-          extraction_enabled: false,
-          extraction_prompt: "",
-          extraction_variables: [],
+          extraction_enabled: true,
+          extraction_prompt:
+            "From the conversation so far, extract who the caller is and whether they asked to be called back. Only use what the caller actually said; leave anything unstated empty.",
+          extraction_variables: [
+            {
+              name: "caller_name",
+              type: "string",
+              prompt: "The caller's name, exactly as they gave it.",
+            },
+            {
+              name: "caller_phone",
+              type: "string",
+              prompt: "A phone number the caller gave for contacting them.",
+            },
+            {
+              name: "caller_email",
+              type: "string",
+              prompt: "An email address the caller gave for contacting them.",
+            },
+            {
+              name: "callback_requested",
+              type: "boolean",
+              prompt:
+                "True if the caller asked to be called back, asked for a human to follow up, or was promised a follow-up.",
+            },
+            {
+              name: "callback_reason",
+              type: "string",
+              prompt: "A one-sentence reason the caller needs a callback.",
+            },
+          ],
           document_uuids: documentUuids,
         },
       },

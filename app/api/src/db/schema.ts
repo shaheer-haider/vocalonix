@@ -346,6 +346,7 @@ export const businessDograhMappings = pgTable(
     lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
     lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
     offboardedAt: timestamp("offboarded_at", { withTimezone: true }),
+    lastIngestedRunId: integer("last_ingested_run_id").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
