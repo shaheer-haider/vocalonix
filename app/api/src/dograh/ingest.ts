@@ -9,6 +9,7 @@ import {
   contacts,
 } from "../db/schema";
 import { dograh } from "./client";
+import { extractVariablesFromTranscript } from "./extract";
 import type { DograhWorkflowRun } from "./types";
 
 const RUNS_PAGE_LIMIT = 50;
@@ -24,6 +25,39 @@ function extractedString(value: unknown): string | null {
   return trimmed;
 }
 
+const MAX_NAME_LENGTH = 80;
+const MAX_REASON_LENGTH = 300;
+const PHONE_PATTERN = /^\+?[0-9][0-9 ().\/-]{5,18}[0-9]$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function sanitizedName(value: unknown): string | null {
+  const name = extractedString(value);
+  if (!name) return null;
+  if (name.length > MAX_NAME_LENGTH) return null;
+  if (/[{}\[\]"\n]/.test(name)) return null;
+  return name;
+}
+
+export function sanitizedPhone(value: unknown): string | null {
+  const phone = extractedString(value);
+  if (!phone) return null;
+  return PHONE_PATTERN.test(phone) ? phone : null;
+}
+
+export function sanitizedEmail(value: unknown): string | null {
+  const email = extractedString(value);
+  if (!email) return null;
+  return EMAIL_PATTERN.test(email) ? email : null;
+}
+
+function sanitizedReason(value: unknown): string | null {
+  const reason = extractedString(value);
+  if (!reason) return null;
+  if (reason.length > MAX_REASON_LENGTH) return null;
+  if (/[{}\n]/.test(reason)) return null;
+  return reason;
+}
+
 export interface ExtractedCaller {
   name: string | null;
   phone: string | null;
@@ -32,15 +66,44 @@ export interface ExtractedCaller {
   callbackReason: string | null;
 }
 
-export function extractCaller(run: DograhWorkflowRun): ExtractedCaller {
-  const context = run.gathered_context ?? {};
+export function callerFromContext(
+  context: Record<string, unknown>,
+): ExtractedCaller {
   return {
-    name: extractedString(context.caller_name),
-    phone: extractedString(context.caller_phone),
-    email: extractedString(context.caller_email),
+    name: sanitizedName(context.caller_name),
+    phone: sanitizedPhone(context.caller_phone),
+    email: sanitizedEmail(context.caller_email),
     callbackRequested: context.callback_requested === true,
-    callbackReason: extractedString(context.callback_reason),
+    callbackReason: sanitizedReason(context.callback_reason),
   };
+}
+
+export function extractCaller(run: DograhWorkflowRun): ExtractedCaller {
+  return callerFromContext(run.gathered_context ?? {});
+}
+
+export function hasCallerSignal(caller: ExtractedCaller): boolean {
+  return Boolean(
+    caller.name || caller.phone || caller.email || caller.callbackRequested,
+  );
+}
+
+async function extractCallerWithFallback(
+  run: DograhWorkflowRun,
+): Promise<ExtractedCaller> {
+  const caller = extractCaller(run);
+  if (hasCallerSignal(caller)) return caller;
+  let transcriptUrl = run.transcript_public_url ?? null;
+  if (!transcriptUrl) {
+    const detail = await dograh.getWorkflowRun(run.workflow_id, run.id);
+    transcriptUrl = detail.transcript_public_url ?? null;
+  }
+  if (!transcriptUrl) return caller;
+  const transcript = await dograh.fetchRunTranscript(transcriptUrl);
+  if (!transcript) return caller;
+  const variables = await extractVariablesFromTranscript(transcript);
+  if (!variables) return caller;
+  return callerFromContext(variables);
 }
 
 async function upsertCallContact(
@@ -126,7 +189,7 @@ export async function ingestBusinessRuns(
     .sort((left, right) => left.id - right.id);
   let highest = lastIngestedRunId;
   for (const run of fresh) {
-    const caller = extractCaller(run);
+    const caller = await extractCallerWithFallback(run);
     await upsertCallContact(businessId, caller);
     await createCallCallback(businessId, run, caller);
     highest = run.id;

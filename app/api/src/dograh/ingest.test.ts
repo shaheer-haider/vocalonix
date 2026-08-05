@@ -59,4 +59,37 @@ describe("extractCaller", () => {
     expect(caller.callbackRequested).toBe(false);
     expect(caller.name).toBeNull();
   });
+
+  test("rejects values that do not look like their field", () => {
+    const caller = extractCaller(
+      run({
+        caller_name: "Mark",
+        caller_phone:
+          'caller_email: null, caller_phone: null} ... wait, let\'s format properly. Standard JSON format rules apply.',
+        caller_email: "not-an-email",
+        callback_requested: true,
+        callback_reason: "Reason with a {brace} in it",
+      }),
+    );
+    expect(caller).toEqual({
+      name: "Mark",
+      phone: null,
+      email: null,
+      callbackRequested: true,
+      callbackReason: null,
+    });
+  });
+
+  test("accepts common phone and email shapes", () => {
+    const caller = extractCaller(
+      run({
+        caller_name: "Ann O'Neil",
+        caller_phone: "0770 090 0482",
+        caller_email: "ann.oneil@example.co.uk",
+        callback_requested: false,
+      }),
+    );
+    expect(caller.phone).toBe("0770 090 0482");
+    expect(caller.email).toBe("ann.oneil@example.co.uk");
+  });
 });

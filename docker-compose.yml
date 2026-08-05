@@ -77,6 +77,8 @@ services:
       DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME:-Vocalonix}"
       DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME:-Vocalonix Agent}"
       DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS:-localhost,127.0.0.1}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_EXTRACTION_MODEL: "${GEMINI_EXTRACTION_MODEL:-gemini-flash-latest}"
     ports:
       - "3001:3001"
     depends_on:
@@ -119,6 +121,8 @@ services:
       DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME:-Vocalonix}"
       DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME:-Vocalonix Agent}"
       DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS:-localhost,127.0.0.1}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_EXTRACTION_MODEL: "${GEMINI_EXTRACTION_MODEL:-gemini-flash-latest}"
     depends_on:
       vocalonix-api:
         condition: service_healthy
