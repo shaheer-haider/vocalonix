@@ -78,11 +78,13 @@ export interface DograhWorkflowRun {
   transcript_public_url?: string | null;
   recording_public_url?: string | null;
   cost_info?: { call_duration_seconds?: number | null } | null;
-  gathered_context?: {
-    nodes_visited?: string[] | null;
-    mapped_call_disposition?: string | null;
-    call_disposition?: string | null;
-  } | null;
+  gathered_context?:
+    | ({
+        nodes_visited?: string[] | null;
+        mapped_call_disposition?: string | null;
+        call_disposition?: string | null;
+      } & Record<string, unknown>)
+    | null;
 }
 
 export interface DograhWorkflowRunsPage {

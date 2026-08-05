@@ -57,6 +57,13 @@
       "when": 1785968122310,
       "tag": "0007_complex_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785969181066,
+      "tag": "0008_lucky_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

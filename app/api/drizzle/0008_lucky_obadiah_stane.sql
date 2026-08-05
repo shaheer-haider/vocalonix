@@ -1,0 +1,1 @@
+ALTER TABLE "business_dograh_mappings" ADD COLUMN "last_ingested_run_id" integer DEFAULT 0 NOT NULL;
