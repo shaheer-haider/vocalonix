@@ -1591,6 +1591,31 @@ export const tenantRoutes = new Elysia()
     });
     return { ok: true };
   })
+  .get("/api/b/:slug/overview", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const [openCallbacks] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(callbackTasks)
+      .where(
+        and(
+          eq(callbackTasks.businessId, workspace.business.id),
+          eq(callbackTasks.status, "open"),
+        ),
+      );
+    const [openGaps] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(knowledgeGaps)
+      .where(
+        and(
+          eq(knowledgeGaps.businessId, workspace.business.id),
+          eq(knowledgeGaps.status, "open"),
+        ),
+      );
+    return {
+      openCallbacks: openCallbacks?.n ?? 0,
+      openGaps: openGaps?.n ?? 0,
+    };
+  })
   .get("/api/b/:slug/bookings", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     const from = new Date(String(query.from ?? ""));

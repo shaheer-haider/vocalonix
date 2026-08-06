@@ -723,6 +723,23 @@ function BookingsSetup({
               >
                 {s.agentBookable ? "Yes" : "Only humans"}
               </button>
+              {canConfigure ? (
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    void api.businesses
+                      .updateBookingService(slug, s.id, { active: false })
+                      .then(onChanged)
+                      .catch((caught: unknown) =>
+                        setError(
+                          caught instanceof Error ? caught.message : "Unable to remove.",
+                        ),
+                      )
+                  }
+                >
+                  Remove
+                </Button>
+              ) : null}
             </div>
           ))}
         </div>

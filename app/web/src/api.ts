@@ -665,6 +665,12 @@ export const api = {
       ),
     deleteKnowledge: async (slug: string, knowledgeId: string) =>
       unwrap(await client.api.b[slug].knowledge[knowledgeId].delete()),
+    overview: async (
+      slug: string,
+    ): Promise<{ openCallbacks: number; openGaps: number }> =>
+      unwrap(
+        await client.api.b[slug].overview.get(),
+      ) as unknown as { openCallbacks: number; openGaps: number },
     bookings: async (
       slug: string,
       from: string,
