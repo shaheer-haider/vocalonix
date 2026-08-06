@@ -1,7 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { api, type CallbackTask, type CallbacksResponse } from "../api";
-import { Alert, Box, Button, TextArea, TextField } from "../components/ui";
+import {
+  api,
+  type Booking,
+  type BookingsResponse,
+  type CallbackTask,
+  type CallbacksResponse,
+} from "../api";
+import {
+  Alert,
+  Box,
+  Button,
+  SelectField,
+  TextArea,
+  TextField,
+} from "../components/ui";
 import { WorkspaceShell } from "./business";
 
 import "./operations.css";
@@ -26,717 +39,774 @@ function span(m: number): string {
   return `${h}h ${min}m`;
 }
 
-function dayLabel(off: number): string {
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const base = new Date(2026, 6, 30 + off);
-  const month = base.toLocaleString("en-GB", { month: "short" });
-  return `${off === 0 ? "Today · " : ""}${days[base.getDay()]} ${base.getDate()} ${month}`;
-}
-
 // ─── Bookings ───
-
-interface Resource {
-  name: string;
-  sub: string;
-  kind: "Person" | "Thing";
-  hours: string;
-  does: string;
-}
-
-interface Booking {
-  id: string;
-  r: number;
-  s: number;
-  d: number;
-  t: string;
-  w: string;
-  src: "agent" | "desk" | "web" | null;
-  k: "ok" | "done" | "hold" | "kept" | "block" | "missed" | "now" | "deposit";
-  p?: string;
-}
-
-interface WaitEntry {
-  name: string;
-  want: string;
-}
-
-interface LogEntry {
-  t: string;
-  v: string;
-}
 
 const START = 480;
 const END = 1200;
-const NOW = 750;
 const HOUR_HEIGHT = 84;
 const TOTAL_HEIGHT = ((END - START) / 60) * HOUR_HEIGHT;
 
-const RES: Resource[] = [
-  { name: "Dr. Reyes", sub: "Dentist", kind: "Person", hours: "Mon–Thu 8:30–5:30, Fri to 1pm", does: "Everything except hygiene. Two emergency slots kept back each morning." },
-  { name: "Dr. Osei", sub: "Dentist", kind: "Person", hours: "Tue–Sat, late Thursdays to 7:30", does: "Whitening and cosmetic work, plus general." },
-  { name: "Aleks", sub: "Hygienist", kind: "Person", hours: "Mon–Fri 8–5", does: "Hygiene only, 30 minutes a head." },
-  { name: "Surgery 2", sub: "Room", kind: "Thing", hours: "Open whenever the practice is", does: "Needed for X-rays and root canals. Booked on its own for the locum." },
-];
+type DiaryKind = "ok" | "agentok" | "done" | "missed";
 
-const BOOKINGS: Booking[] = [
-  { id: "b1", r: 0, s: 480, d: 20, t: "Check-up", w: "Ade Fashola", src: "desk", k: "done", p: "£45" },
-  { id: "b2", r: 0, s: 540, d: 30, t: "Kept free", w: "Emergency slot", src: null, k: "kept" },
-  { id: "b3", r: 0, s: 580, d: 45, t: "Implant consult", w: "Nadia Kaur", src: "agent", k: "done", p: "£90 · deposit paid" },
-  { id: "b4", r: 0, s: 660, d: 60, t: "Crown fit", w: "Ben Lyle", src: "desk", k: "done", p: "£620" },
-  { id: "b5", r: 0, s: 780, d: 45, t: "Lunch", w: "", src: null, k: "block" },
-  { id: "b6", r: 0, s: 840, d: 20, t: "Check-up", w: "Joyce Amadi", src: "agent", k: "done", p: "£45" },
-  { id: "b7", r: 0, s: 920, d: 20, t: "Emergency", w: "Marcus Bell", src: "agent", k: "hold", p: "£80" },
-  { id: "b8", r: 0, s: 1020, d: 20, t: "Check-up", w: "Ruth Kelly", src: "desk", k: "ok", p: "£45" },
-  { id: "c1", r: 1, s: 540, d: 45, t: "Whitening consult", w: "Elena Fox", src: "web", k: "done", p: "£50" },
-  { id: "c2", r: 1, s: 660, d: 20, t: "Check-up", w: "Dan Price", src: "desk", k: "missed", p: "£45" },
-  { id: "c3", r: 1, s: 720, d: 60, t: "Root canal", w: "Sam Oyelaran", src: "desk", k: "done", p: "£480" },
-  { id: "c4", r: 1, s: 870, d: 20, t: "Check-up", w: "Iris Bhatt", src: "agent", k: "now", p: "£45" },
-  { id: "c5", r: 1, s: 990, d: 30, t: "Filling", w: "Hugo Marsh", src: "agent", k: "deposit", p: "£140" },
-  { id: "c6", r: 1, s: 1110, d: 45, t: "Whitening", w: "Tom Whitaker", src: "agent", k: "ok", p: "£320 · deposit paid" },
-  { id: "d1", r: 2, s: 480, d: 30, t: "Hygiene", w: "Grace Odum", src: "desk", k: "done", p: "£75" },
-  { id: "d2", r: 2, s: 540, d: 30, t: "Hygiene", w: "Peter Vance", src: "agent", k: "done", p: "£75" },
-  { id: "d3", r: 2, s: 660, d: 30, t: "Hygiene", w: "Nina Roche", src: "agent", k: "done", p: "£75" },
-  { id: "d4", r: 2, s: 780, d: 30, t: "Lunch", w: "", src: null, k: "block" },
-  { id: "d5", r: 2, s: 900, d: 30, t: "Hygiene", w: "Yusuf Adeyemi", src: "desk", k: "ok", p: "£75" },
-  { id: "d6", r: 2, s: 990, d: 30, t: "Hygiene", w: "Ola Mensah", src: "agent", k: "deposit", p: "£75" },
-  { id: "e1", r: 3, s: 540, d: 120, t: "Locum clinic", w: "Dr. Iqbal", src: "desk", k: "done" },
-  { id: "e2", r: 3, s: 840, d: 60, t: "Deep clean", w: "", src: null, k: "block" },
-  { id: "e3", r: 3, s: 1080, d: 120, t: "Evening clinic", w: "Dr. Osei", src: "desk", k: "ok" },
-];
-
-const SERVICES = [
-  { name: "Check-up", who: "Dr. Reyes, Dr. Osei", dur: "20 min", buffer: "5 min", price: "£45", deposit: "None", agent: true },
-  { name: "Hygiene", who: "Aleks", dur: "30 min", buffer: "5 min", price: "£75", deposit: "None", agent: true },
-  { name: "Emergency", who: "Whoever is free", dur: "20 min", buffer: "10 min", price: "£80", deposit: "None", agent: true },
-  { name: "Whitening", who: "Dr. Osei", dur: "45 min", buffer: "15 min", price: "£320", deposit: "£50", agent: true },
-  { name: "Root canal", who: "Dr. Osei + Surgery 2", dur: "60 min", buffer: "15 min", price: "£480", deposit: "£100", agent: false },
-  { name: "Implant consult", who: "Dr. Reyes", dur: "45 min", buffer: "10 min", price: "£90", deposit: "£90", agent: true },
-];
-
-const AVAIL = [
-  { k: "Opening hours", v: "Mon–Fri 8:00–6:00, late Thursday to 7:30, Sat 9–2" },
-  { k: "Slot granularity", v: "10 minutes" },
-  { k: "How far ahead", v: "Up to 16 weeks" },
-  { k: "How last-minute", v: "Nothing inside 2 hours, except emergencies" },
-  { k: "Held back", v: "Two emergency slots each morning, released at 11am" },
-];
-
-const POLICY = [
-  { k: "Cancellation", v: "24 hours, or the deposit is kept" },
-  { k: "Deposits", v: "Anything over £300, and anyone with two no-shows" },
-  { k: "No-shows", v: "Flagged on the contact, front desk told, slot offered to the waitlist" },
-  { k: "Reminders", v: "Text 48 hours before, then the morning of" },
-  { k: "Without a card", v: "Plan members and anyone who has been in before" },
-];
-
-const WAIT: WaitEntry[] = [
-  { name: "Nina Roche", want: "Hygiene · any afternoon this week" },
-  { name: "Callum Ford", want: "Check-up · Thursday evening only" },
-  { name: "Marta Silva", want: "Whitening · first free Saturday" },
-];
-
-const LOG: LogEntry[] = [
-  { t: "14:31", v: "Booked Iris Bhatt into the 2:30 check-up" },
-  { t: "13:58", v: "Moved Hugo Marsh from Tuesday to 4:30 today" },
-  { t: "11:20", v: "Dan Price did not arrive — front desk told, slot offered out" },
-  { t: "09:12", v: "Added Callum Ford to the waitlist, no Thursday evening left" },
-];
-
-type BookingKind = "ok" | "done" | "agentok" | "now" | "deposit" | "hold" | "missed" | "kept" | "block";
-
-function blockKind(b: Booking, holdState: "live" | "taken" | "expired" | "gone"): BookingKind | null {
-  let kind: BookingKind = b.k;
-  if (kind === "hold") {
-    if (holdState === "taken") kind = "agentok";
-    else if (holdState === "expired") kind = "kept";
-    else if (holdState === "gone") return null;
-  }
-  if (kind === "ok" && b.src === "agent") kind = "agentok";
-  return kind;
+function diaryKind(b: Booking): DiaryKind {
+  if (b.status === "arrived") return "done";
+  if (b.status === "no_show") return "missed";
+  return b.source === "agent" ? "agentok" : "ok";
 }
 
-function rawBookings(off: number, cancelled: Set<string>): Booking[] {
-  let list = BOOKINGS.filter((b) => !cancelled.has(b.id));
-  if (off === 0) return list;
-  return list
-    .filter((_, i) => (i + Math.abs(off)) % 3 !== 0)
-    .map((b, i) => {
-      const sign = off > 0 ? 1 : -1;
-      const shift = (i % 2 ? 20 : -10) * sign;
-      const nb: Booking = { ...b, s: b.s + shift };
-      if (b.k === "hold" || b.k === "now") nb.k = off < 0 ? "done" : "ok";
-      else if (off < 0 && b.k !== "block" && b.k !== "kept" && b.k !== "missed") nb.k = "done";
-      else if (off > 0 && b.k === "done") nb.k = "ok";
-      return nb;
-    });
+function dayBounds(offset: number): { from: Date; to: Date } {
+  const from = new Date();
+  from.setHours(0, 0, 0, 0);
+  from.setDate(from.getDate() + offset);
+  const to = new Date(from);
+  to.setDate(to.getDate() + 1);
+  return { from, to };
+}
+
+function realDayLabel(offset: number): string {
+  const { from } = dayBounds(offset);
+  const label = from.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+  return `${offset === 0 ? "Today · " : ""}${label}`;
+}
+
+function startMinutes(b: Booking): number {
+  const date = new Date(b.startAt);
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function minutesToIso(offset: number, minutes: number): string {
+  const { from } = dayBounds(offset);
+  from.setMinutes(minutes);
+  return from.toISOString();
 }
 
 export function WorkspaceBookingsPage() {
+  return (
+    <WorkspaceShell>{(business) => <BookingsPage slug={business.slug} />}</WorkspaceShell>
+  );
+}
+
+function BookingsPage({ slug }: { slug: string }) {
   const [tab, setTab] = useState<"Diary" | "Setup">("Diary");
   const [day, setDay] = useState(0);
   const [filter, setFilter] = useState<"all" | "agent" | "attn">("all");
   const [sel, setSel] = useState<string | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
-  const [holdLeft, setHoldLeft] = useState(88);
-  const [holdState, setHoldState] = useState<"live" | "taken" | "expired" | "gone">("live");
-  const [offered, setOffered] = useState<Set<string>>(new Set());
-  const [cancelled, setCancelled] = useState<Set<string>>(new Set());
-  const [arrived, setArrived] = useState<Set<string>>(new Set());
-  const [moved, setMoved] = useState<Record<string, { r: number; s: number }>>({});
-  const [freed, setFreed] = useState<string | null>(null);
-  const [svcOff, setSvcOff] = useState<Set<string>>(new Set());
+  const [data, setData] = useState<BookingsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [newOpen, setNewOpen] = useState(false);
 
   const say = (m: string) => {
     setToast(m);
     window.setTimeout(() => setToast(null), 2600);
   };
 
+  const refresh = useCallback(async () => {
+    const { from, to } = dayBounds(day);
+    try {
+      setData(
+        await api.businesses.bookings(
+          slug,
+          from.toISOString(),
+          to.toISOString(),
+        ),
+      );
+      setError(null);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to load the diary.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [slug, day]);
+
   useEffect(() => {
-    if (holdState !== "live") return;
-    const id = window.setInterval(() => {
-      setHoldLeft((n) => {
-        if (n <= 1) {
-          setHoldState("expired");
-          return 0;
-        }
-        return n - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [holdState]);
+    setLoading(true);
+    void refresh();
+  }, [refresh]);
 
-  const dayKey = (off: number, id: string) => `${off}:${id}`;
+  const resources = useMemo(
+    () => (data?.resources ?? []).filter((r) => r.active),
+    [data],
+  );
 
-  const clash = (id: string, r: number, s: number, d: number): boolean => {
-    return dayBookings.some((b) => {
-      if (b.id === id) return false;
-      const k = blockKind(b, holdState);
-      if (!k || k === "kept") return false;
-      return b.r === r && s < b.s + b.d && b.s < s + d;
-    });
+  const visible = useMemo(
+    () =>
+      (data?.bookings ?? []).filter(
+        (b) =>
+          b.status !== "cancelled" &&
+          startMinutes(b) >= START &&
+          startMinutes(b) < END,
+      ),
+    [data],
+  );
+
+  const dim = (b: Booking) => {
+    if (filter === "agent") return b.source !== "agent";
+    if (filter === "attn") return b.status !== "no_show";
+    return false;
   };
 
-  const place = (id: string, r: number, s: number) => {
-    setMoved((prev) => ({ ...prev, [dayKey(day, id)]: { r, s } }));
+  const stats = [
+    { v: visible.filter((b) => b.status !== "no_show").length, k: "booked", c: "ops-stat__v" },
+    { v: visible.filter((b) => b.source === "agent").length, k: "by the agent", c: "ops-stat__v--accent" },
+    { v: visible.filter((b) => b.status === "arrived").length, k: "arrived", c: "ops-stat__v" },
+    { v: visible.filter((b) => b.status === "no_show").length, k: "no-shows", c: "ops-stat__v--warn" },
+  ];
+
+  const selected = sel ? visible.find((b) => b.id === sel) : undefined;
+
+  const update = async (
+    bookingId: string,
+    input: Parameters<typeof api.businesses.updateBooking>[2],
+    done: string,
+  ) => {
+    try {
+      await api.businesses.updateBooking(slug, bookingId, input);
+      await refresh();
+      say(done);
+    } catch (caught) {
+      say(caught instanceof Error ? caught.message : "That did not work.");
+    }
   };
-
-  const dayBookings = useMemo(() => {
-    return rawBookings(day, cancelled).map((b) => {
-      const m = moved[dayKey(day, b.id)];
-      return m ? { ...b, ...m } : b;
-    });
-  }, [day, cancelled, moved]);
-
-  const derived = useMemo(() => {
-    const mapped = dayBookings
-      .map((b) => {
-        let kind = blockKind(b, holdState);
-        if (arrived.has(b.id)) kind = "done";
-        if (!kind) return null;
-        return { ...b, kind };
-      })
-      .filter((b): b is Booking & { kind: BookingKind } => !!b);
-
-    const dim = (b: Booking) => {
-      if (filter === "agent") return b.src !== "agent";
-      if (filter === "attn") return !["deposit", "missed", "hold", "kept"].includes(b.k);
-      return false;
-    };
-
-    const cols = RES.map((_, ri) => mapped.filter((b) => b.r === ri));
-    const booked = mapped.filter((b) => b.kind !== "block" && b.kind !== "kept");
-
-    const stats = [
-      { v: booked.length, k: "booked", c: "ops-stat__v" },
-      { v: mapped.filter((b) => b.kind === "hold").length, k: "held", c: "ops-stat__v--warn" },
-      { v: mapped.filter((b) => b.kind === "kept" || b.kind === "block").length, k: "kept free", c: "ops-stat__v" },
-      { v: WAIT.length, k: "waitlist", c: "ops-stat__v--accent" },
-    ];
-
-    const selBooking = sel ? mapped.find((b) => b.id === sel) : undefined;
-
-    return { cols, stats, selBooking, dim };
-  }, [dayBookings, holdState, arrived, filter, sel]);
-
-  const selected = derived.selBooking;
 
   const handleNudge = (m: number) => {
     if (!selected) return;
-    const s2 = Math.max(START, Math.min(END - selected.d, selected.s + m));
-    if (s2 === selected.s) return;
-    if (clash(selected.id, selected.r, s2, selected.d)) {
-      say("Something else is already there");
-      return;
-    }
-    place(selected.id, selected.r, s2);
-    say(`Nudged to ${clock(s2)}`);
+    const s2 = Math.max(
+      START,
+      Math.min(END - selected.durationMinutes, startMinutes(selected) + m),
+    );
+    if (s2 === startMinutes(selected)) return;
+    void update(
+      selected.id,
+      { startAt: minutesToIso(day, s2) },
+      `Nudged to ${clock(s2)}`,
+    );
   };
 
-  const handleReassign = (r: number) => {
-    if (!selected || r === selected.r) return;
-    if (clash(selected.id, r, selected.s, selected.d)) {
-      say(`${RES[r].name} is already booked then`);
-      return;
-    }
-    place(selected.id, r, selected.s);
-    say(`Now with ${RES[r].name} — patient texted`);
+  const handleReassign = (resourceId: string) => {
+    if (!selected || resourceId === selected.resourceId) return;
+    const name = resources.find((r) => r.id === resourceId)?.name ?? "";
+    void update(selected.id, { resourceId }, `Now with ${name}`);
   };
-
-  const handleArrived = () => {
-    if (!selected) return;
-    setArrived((prev) => new Set([...prev, selected.id]));
-    say("Marked as arrived");
-  };
-
-  const handleCancel = () => {
-    if (!selected) return;
-    setCancelled((prev) => new Set([...prev, selected.id]));
-    setFreed(`${clock(selected.s)} with ${RES[selected.r].name}`);
-    setSel(null);
-    say("Cancelled — the waitlist has been told");
-  };
-
-  const handleConfirmHold = () => {
-    setHoldState("taken");
-    say("Booked — Marcus Bell, 3:20pm");
-  };
-
-  const handleReleaseHold = () => {
-    setHoldState("gone");
-    setFreed(`3:20pm with Dr. Reyes`);
-    say("Slot released");
-  };
-
-  const sourceTag = (b: Booking) => {
-    if (b.k === "missed") return { text: "DID NOT ARRIVE", cls: "bookings-detail__tag", style: { color: "var(--accent-ink)", background: "var(--accent-soft)", borderColor: "var(--accent)" } };
-    if (b.src === "agent")
-      return { text: "BOOKED BY THE AGENT", cls: "bookings-detail__tag", style: { color: "var(--good)", background: "var(--good-soft)", borderColor: "var(--good)" } };
-    if (b.src === "web")
-      return { text: "BOOKED ON THE WEBSITE", cls: "bookings-detail__tag", style: { color: "var(--ink-2)", background: "var(--paper-2)", borderColor: "var(--line)" } };
-    return { text: "BOOKED AT THE DESK", cls: "bookings-detail__tag", style: { color: "var(--ink-2)", background: "var(--paper-2)", borderColor: "var(--line)" } };
-  };
-
-  const showHold = tab === "Diary" && day === 0 && holdState !== "gone" && !sel;
-
-  const holdClock = holdState === "taken" ? "confirmed" : holdState === "expired" ? "expired" : `${Math.floor(holdLeft / 60)}:${String(holdLeft % 60).padStart(2, "0")}`;
 
   return (
-    <WorkspaceShell>
-      {(business) => (
-        <>
-          <Alert variant="warn">
-            Design preview — the bookings diary shows sample data while the booking backend is being built.
-          </Alert>
-
-          <div className="ops-page">
-            <div className="ops-main">
-              <div className="ops-header">
-                <div className="ops-header__row">
-                  <div className="ops-header__left">
-                    <h1 className="ops-title">Bookings</h1>
-                    <div className="ops-tabs">
-                      <button
-                        type="button"
-                        className={`ops-tab ${tab === "Diary" ? "ops-tab--active" : ""}`}
-                        onClick={() => {
-                          setTab("Diary");
-                          setSel(null);
-                        }}
-                      >
-                        Diary
-                      </button>
-                      <button
-                        type="button"
-                        className={`ops-tab ${tab === "Setup" ? "ops-tab--active" : ""}`}
-                        onClick={() => {
-                          setTab("Setup");
-                          setSel(null);
-                        }}
-                      >
-                        Setup
-                      </button>
+    <>
+            <div className="ops-page">
+              <div className="ops-main">
+                <div className="ops-header">
+                  <div className="ops-header__row">
+                    <div className="ops-header__left">
+                      <h1 className="ops-title">Bookings</h1>
+                      <div className="ops-tabs">
+                        {(["Diary", "Setup"] as const).map((item) => (
+                          <button
+                            type="button"
+                            key={item}
+                            className={`ops-tab ${tab === item ? "ops-tab--active" : ""}`}
+                            onClick={() => {
+                              setTab(item);
+                              setSel(null);
+                            }}
+                          >
+                            {item}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ops-toolbar">
+                      {tab === "Diary" && (
+                        <div className="ops-day">
+                          <button type="button" className="ops-step" onClick={() => setDay((d) => d - 1)}>
+                            ←
+                          </button>
+                          <span className="ops-day__label">{realDayLabel(day)}</span>
+                          <button type="button" className="ops-step" onClick={() => setDay((d) => d + 1)}>
+                            →
+                          </button>
+                          <Button variant="default" onClick={() => setDay(0)}>
+                            Today
+                          </Button>
+                        </div>
+                      )}
+                      {data?.canManage && tab === "Diary" ? (
+                        <Button variant="primary" onClick={() => setNewOpen((o) => !o)}>
+                          {newOpen ? "Close" : "New booking"}
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
-                  <div className="ops-toolbar">
-                    {tab === "Diary" && (
-                      <div className="ops-day">
-                        <button type="button" className="ops-step" onClick={() => setDay((d) => d - 1)}>
-                          ←
-                        </button>
-                        <span className="ops-day__label">{dayLabel(day)}</span>
-                        <button type="button" className="ops-step" onClick={() => setDay((d) => d + 1)}>
-                          →
-                        </button>
-                        <Button variant="default" onClick={() => setDay(0)}>
-                          Today
-                        </Button>
+
+                  {tab === "Diary" && (
+                    <div className="ops-header__row">
+                      <div className="ops-stats">
+                        {stats.map((s) => (
+                          <div className="ops-stat" key={s.k}>
+                            <span className={`ops-stat__v ${s.c}`}>{s.v}</span>
+                            <span className="ops-stat__k">{s.k}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    <Button
-                      variant="primary"
-                      onClick={() => say("New booking — pick a service, then a person")}
-                    >
-                      New booking
-                    </Button>
-                  </div>
+                      <div className="ops-toolbar">
+                        {(["all", "agent", "attn"] as const).map((f) => (
+                          <button
+                            type="button"
+                            key={f}
+                            className={`ops-chip ${filter === f ? "ops-chip--active" : ""}`}
+                            onClick={() => setFilter(f)}
+                          >
+                            {f === "all" ? "Everything" : f === "agent" ? "Agent booked" : "Needs a look"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {tab === "Diary" && (
-                  <div className="ops-header__row">
-                    <div className="ops-stats">
-                      {derived.stats.map((s) => (
-                        <div className="ops-stat" key={s.k}>
-                          <span className={`ops-stat__v ${s.c}`}>{s.v}</span>
-                          <span className="ops-stat__k">{s.k}</span>
+                {error ? <Alert variant="error">{error}</Alert> : null}
+
+                {tab === "Diary" ? (
+                  loading ? (
+                    <Box style={{ padding: 24 }}>
+                      <p className="auth-card-copy">Loading the diary…</p>
+                    </Box>
+                  ) : resources.length === 0 ? (
+                    <Box style={{ padding: 24 }}>
+                      <h2>No diary columns yet</h2>
+                      <p className="auth-card-copy">
+                        Add the people and rooms that take bookings under Setup,
+                        then the diary fills in here.
+                      </p>
+                      {data?.canConfigure ? (
+                        <Button variant="primary" onClick={() => setTab("Setup")}>
+                          Open Setup
+                        </Button>
+                      ) : null}
+                    </Box>
+                  ) : (
+                    <div className="bookings-grid-wrap">
+                      <div
+                        className="bookings-grid"
+                        style={{
+                          height: 44 + TOTAL_HEIGHT,
+                          gridTemplateColumns: `56px repeat(${resources.length}, 1fr)`,
+                        }}
+                      >
+                        <div className="bookings-grid__head--gutter" />
+                        {resources.map((r) => (
+                          <div className="bookings-grid__head" key={r.id}>
+                            <span className="bookings-grid__name">{r.name}</span>
+                            <span className="bookings-grid__sub">{r.subtitle}</span>
+                          </div>
+                        ))}
+
+                        <div className="bookings-gutter" style={{ height: TOTAL_HEIGHT }}>
+                          {Array.from({ length: (END - START) / 60 }, (_, i) => (
+                            <span key={i} className="bookings-hour" style={{ top: i * HOUR_HEIGHT }}>
+                              {clock(START + i * 60)}
+                            </span>
+                          ))}
+                        </div>
+
+                        {resources.map((r) => (
+                          <div className="bookings-track" key={r.id} style={{ height: TOTAL_HEIGHT }}>
+                            {visible
+                              .filter((b) => b.resourceId === r.id)
+                              .map((b) => {
+                                const s = startMinutes(b);
+                                const h = Math.max(20, (b.durationMinutes / 60) * HOUR_HEIGHT - 4);
+                                const compact = h < 46;
+                                const top = ((s - START) / 60) * HOUR_HEIGHT;
+                                const className = [
+                                  "bookings-block",
+                                  `bookings-block--${diaryKind(b)}`,
+                                  compact ? "bookings-block--compact" : "",
+                                  sel === b.id ? "bookings-block--selected" : "",
+                                  dim(b) ? "bookings-block--dim" : "",
+                                ].join(" ");
+                                return (
+                                  <button
+                                    type="button"
+                                    key={b.id}
+                                    className={className}
+                                    style={{ top, height: h }}
+                                    onClick={() => setSel(b.id)}
+                                  >
+                                    <span className="bookings-block__time">{clock(s)}</span>
+                                    <span className="bookings-block__title">
+                                      {compact
+                                        ? b.customerName
+                                          ? `${b.title} · ${b.customerName}`
+                                          : b.title
+                                        : b.title}
+                                    </span>
+                                    {!compact && b.customerName && (
+                                      <span className="bookings-block__sub">{b.customerName}</span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <BookingsSetup
+                    slug={slug}
+                    data={data}
+                    onChanged={refresh}
+                    say={say}
+                  />
+                )}
+              </div>
+
+              <div className="ops-rail">
+                {tab === "Diary" && newOpen && data ? (
+                  <NewBookingForm
+                    slug={slug}
+                    day={day}
+                    data={data}
+                    onCreated={async () => {
+                      setNewOpen(false);
+                      await refresh();
+                      say("Booked");
+                    }}
+                  />
+                ) : null}
+
+                {tab === "Diary" && selected && (
+                  <div className="bookings-detail">
+                    <div className="bookings-detail__head">
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+                        <span
+                          className="bookings-detail__tag"
+                          style={
+                            selected.status === "no_show"
+                              ? { color: "var(--accent-ink)", background: "var(--accent-soft)", borderColor: "var(--accent)" }
+                              : selected.source === "agent"
+                                ? { color: "var(--good)", background: "var(--good-soft)", borderColor: "var(--good)" }
+                                : { color: "var(--ink-2)", background: "var(--paper-2)", borderColor: "var(--line)" }
+                          }
+                        >
+                          {selected.status === "no_show"
+                            ? "DID NOT ARRIVE"
+                            : selected.source === "agent"
+                              ? "BOOKED BY THE AGENT"
+                              : selected.source === "web"
+                                ? "BOOKED ON THE WEBSITE"
+                                : "BOOKED AT THE DESK"}
+                        </span>
+                        <h2 className="bookings-detail__title">
+                          {selected.customerName || selected.title}
+                        </h2>
+                        <span className="bookings-detail__when">
+                          {clock(startMinutes(selected))}–
+                          {clock(startMinutes(selected) + selected.durationMinutes)} ·{" "}
+                          {realDayLabel(day).replace("Today · ", "")}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="bookings-detail__close"
+                        onClick={() => {
+                          setSel(null);
+                          setMoveOpen(false);
+                        }}
+                        style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "var(--mono)", fontSize: 13, color: "var(--ink-4)" }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="bookings-detail__facts">
+                      {[
+                        { k: "service", v: `${selected.title} · ${selected.durationMinutes} min` },
+                        { k: "with", v: resources.find((r) => r.id === selected.resourceId)?.name ?? "—" },
+                        { k: "price", v: selected.price || "—" },
+                        { k: "note", v: selected.note || "—" },
+                      ].map((f) => (
+                        <div className="bookings-fact" key={f.k}>
+                          <span className="bookings-fact__k">{f.k}</span>
+                          <span className="bookings-fact__v">{f.v}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="ops-toolbar">
-                      {(["all", "agent", "attn"] as const).map((f) => (
-                        <button
-                          type="button"
-                          key={f}
-                          className={`ops-chip ${filter === f ? "ops-chip--active" : ""}`}
-                          onClick={() => setFilter(f)}
-                        >
-                          {f === "all" ? "Everything" : f === "agent" ? "Agent booked" : "Needs a look"}
-                        </button>
-                      ))}
+
+                    {data?.canManage && (
+                      <>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          <Button variant="default" onClick={() => setMoveOpen((o) => !o)}>
+                            {moveOpen ? "Done" : "Move"}
+                          </Button>
+                          {selected.status !== "arrived" && (
+                            <Button
+                              variant="default"
+                              onClick={() =>
+                                void update(selected.id, { status: "arrived" }, "Marked as arrived")
+                              }
+                            >
+                              Mark arrived
+                            </Button>
+                          )}
+                          {selected.status !== "no_show" && (
+                            <Button
+                              variant="default"
+                              onClick={() =>
+                                void update(selected.id, { status: "no_show" }, "Marked as a no-show")
+                              }
+                            >
+                              No-show
+                            </Button>
+                          )}
+                          <Button
+                            variant="destructive"
+                            onClick={() => {
+                              setSel(null);
+                              void update(selected.id, { status: "cancelled" }, "Cancelled");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+
+                        {moveOpen && (
+                          <div className="bookings-move">
+                            <div className="bookings-nudge">
+                              <Button variant="default" onClick={() => handleNudge(-10)}>−10 min</Button>
+                              <span className="bookings-nudge__time">{clock(startMinutes(selected))}</span>
+                              <Button variant="default" onClick={() => handleNudge(10)}>+10 min</Button>
+                            </div>
+                            <div className="bookings-people">
+                              {resources.map((r) => (
+                                <button
+                                  type="button"
+                                  key={r.id}
+                                  className={`ops-chip ${r.id === selected.resourceId ? "ops-chip--active" : ""}`}
+                                  onClick={() => handleReassign(r.id)}
+                                >
+                                  {r.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    <div className="bookings-detail__links">
+                      <a href={`/app/${slug}/contacts`}>Open contact</a>
+                      {selected.runId ? (
+                        <a href={`/app/${slug}/conversations`}>Hear the call</a>
+                      ) : null}
                     </div>
                   </div>
                 )}
               </div>
-
-              {tab === "Diary" ? (
-                <div className="bookings-grid-wrap">
-                  <div className="bookings-grid" style={{ height: 44 + TOTAL_HEIGHT }}>
-                    <div className="bookings-grid__head--gutter" />
-                    {RES.map((r) => (
-                      <div className="bookings-grid__head" key={r.name}>
-                        <span className="bookings-grid__name">{r.name}</span>
-                        <span className="bookings-grid__sub">{r.sub}</span>
-                      </div>
-                    ))}
-
-                    <div className="bookings-gutter" style={{ height: TOTAL_HEIGHT }}>
-                      {Array.from({ length: (END - START) / 60 }, (_, i) => (
-                        <span
-                          key={i}
-                          className="bookings-hour"
-                          style={{ top: i * HOUR_HEIGHT }}
-                        >
-                          {clock(START + i * 60)}
-                        </span>
-                      ))}
-                    </div>
-
-                    {derived.cols.map((col, ri) => (
-                      <div className="bookings-track" key={ri} style={{ height: TOTAL_HEIGHT }}>
-                        {col.map((b) => {
-                          const h = Math.max(20, (b.d / 60) * HOUR_HEIGHT - 4);
-                          const compact = h < 46;
-                          const top = ((b.s - START) / 60) * HOUR_HEIGHT;
-                          const dim = derived.dim(b);
-                          const selected = sel === b.id;
-                          const className = [
-                            "bookings-block",
-                            `bookings-block--${b.kind}`,
-                            compact ? "bookings-block--compact" : "",
-                            selected ? "bookings-block--selected" : "",
-                            dim ? "bookings-block--dim" : "",
-                          ].join(" ");
-
-                          const onClick = b.kind === "block" ? undefined : () => setSel(b.id);
-
-                          return (
-                            <button
-                              type="button"
-                              key={b.id}
-                              className={className}
-                              style={{ top, height: h }}
-                              onClick={onClick}
-                            >
-                              {b.kind !== "block" && (
-                                <span className="bookings-block__time">{clock(b.s)}</span>
-                              )}
-                              <span className="bookings-block__title">
-                                {compact ? (b.w ? `${b.t} · ${b.w}` : b.t) : b.t}
-                              </span>
-                              {!compact && b.kind !== "block" && b.w && (
-                                <span className="bookings-block__sub">{b.w}</span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ))}
-
-                    {day === 0 && (
-                      <div className="bookings-now" style={{ top: 44 + ((NOW - START) / 60) * HOUR_HEIGHT }}>
-                        <span className="bookings-now__label">{clock(NOW)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="bookings-setup">
-                  <div className="bookings-table-wrap">
-                    <div className="ops-header__row" style={{ padding: 0, border: 0, marginBottom: 4 }}>
-                      <h2>Services</h2>
-                    </div>
-                    <p>Turn one off and the agent will offer a callback instead of a slot.</p>
-                    <div className="bookings-table">
-                      <div className="bookings-table__head">
-                        <span className="bookings-th">Service</span>
-                        <span className="bookings-th">Time</span>
-                        <span className="bookings-th">Buffer</span>
-                        <span className="bookings-th">Price</span>
-                        <span className="bookings-th">Deposit</span>
-                        <span className="bookings-th">Agent may book</span>
-                      </div>
-                      {SERVICES.map((s) => {
-                        const on = s.agent ? !svcOff.has(s.name) : svcOff.has(s.name);
-                        return (
-                          <div className="bookings-table__row" key={s.name}>
-                            <span>
-                              <span className="bookings-service__name">{s.name}</span>
-                              <span className="bookings-service__who">{s.who}</span>
-                            </span>
-                            <span className="bookings-td">{s.dur}</span>
-                            <span className="bookings-td">{s.buffer}</span>
-                            <span className="bookings-td">{s.price}</span>
-                            <span className="bookings-td">{s.deposit}</span>
-                            <button
-                              type="button"
-                              className={`bookings-toggle ${on ? "bookings-toggle--on" : "bookings-toggle--off"}`}
-                              onClick={() =>
-                                setSvcOff((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(s.name)) next.delete(s.name);
-                                  else next.add(s.name);
-                                  return next;
-                                })
-                              }
-                            >
-                              {on ? "Yes" : "Only humans"}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="bookings-cards">
-                    {RES.map((r) => (
-                      <div className="bookings-card" key={r.name}>
-                        <span className="bookings-card__kind">{r.kind}</span>
-                        <span className="bookings-card__name">{r.name}</span>
-                        <span className="bookings-card__line">{r.hours}</span>
-                        <span className="bookings-card__muted">{r.does}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="bookings-pair">
-                    <Box tone="tinted" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <span className="bookings-section-label">Availability</span>
-                      {AVAIL.map((a) => (
-                        <div className="bookings-kv" key={a.k}>
-                          <span className="bookings-kv__k">{a.k}</span>
-                          <span className="bookings-kv__v">{a.v}</span>
-                        </div>
-                      ))}
-                    </Box>
-                    <Box tone="tinted" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <span className="bookings-section-label">Policies</span>
-                      {POLICY.map((a) => (
-                        <div className="bookings-kv" key={a.k}>
-                          <span className="bookings-kv__k">{a.k}</span>
-                          <span className="bookings-kv__v">{a.v}</span>
-                        </div>
-                      ))}
-                    </Box>
-                  </div>
-
-                  <div className="bookings-note">
-                    <span className="bookings-note__label">Diary source</span>
-                    <span className="bookings-note__line">Vocalonix is the diary. PMS mirrors it.</span>
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div className="ops-rail">
-              {tab === "Diary" && selected && (
-                <div className="bookings-detail">
-                  <div className="bookings-detail__head">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-                      <span className={sourceTag(selected).cls} style={sourceTag(selected).style}>
-                        {sourceTag(selected).text}
-                      </span>
-                      <h2 className="bookings-detail__title">{selected.w}</h2>
-                      <span className="bookings-detail__when">
-                        {clock(selected.s)}–{clock(selected.s + selected.d)} · {dayLabel(day).replace("Today · ", "")}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      className="bookings-detail__close"
-                      onClick={() => {
-                        setSel(null);
-                        setMoveOpen(false);
-                      }}
-                      style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "var(--mono)", fontSize: 13, color: "var(--ink-4)" }}
-                    >
-                      ✕
-                    </button>
-                  </div>
+      {toast && <div className="ops-toast">{toast}</div>}
+    </>
+  );
+}
 
-                  <div className="bookings-detail__facts">
-                    {[
-                      { k: "service", v: `${selected.t} · ${selected.d} min` },
-                      { k: "with", v: RES[selected.r].name },
-                      { k: "price", v: selected.p || "—" },
-                      { k: "history", v: selected.src === "agent" ? "Taken on a call, no one at the desk touched it" : "Entered by the front desk" },
-                    ].map((f) => (
-                      <div className="bookings-fact" key={f.k}>
-                        <span className="bookings-fact__k">{f.k}</span>
-                        <span className="bookings-fact__v">{f.v}</span>
-                      </div>
-                    ))}
-                  </div>
+function NewBookingForm({
+  slug,
+  day,
+  data,
+  onCreated,
+}: {
+  slug: string;
+  day: number;
+  data: BookingsResponse;
+  onCreated: () => Promise<void>;
+}) {
+  const services = data.services.filter((s) => s.active);
+  const resources = data.resources.filter((r) => r.active);
+  const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
+  const [resourceId, setResourceId] = useState(resources[0]?.id ?? "");
+  const [customer, setCustomer] = useState("");
+  const [time, setTime] = useState("10:00");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-                  {selected.kind !== "kept" && (
-                    <>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        <Button variant="default" onClick={() => setMoveOpen((o) => !o)}>
-                          {moveOpen ? "Done" : "Move"}
-                        </Button>
-                        <Button variant="default" onClick={handleArrived}>
-                          Mark arrived
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={handleCancel}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
+  const service = services.find((s) => s.id === serviceId);
 
-                      {moveOpen && (
-                        <div className="bookings-move">
-                          <span style={{ fontSize: 16, color: "var(--ink-4)" }}>
-                            Drag the block in the diary, or nudge it here.
-                          </span>
-                          <div className="bookings-nudge">
-                            <Button variant="default" onClick={() => handleNudge(-10)}>−10 min</Button>
-                            <span className="bookings-nudge__time">{clock(selected.s)}</span>
-                            <Button variant="default" onClick={() => handleNudge(10)}>+10 min</Button>
-                          </div>
-                          <div className="bookings-people">
-                            {RES.map((r, i) => (
-                              <button
-                                type="button"
-                                key={r.name}
-                                className={`ops-chip ${i === selected.r ? "ops-chip--active" : ""}`}
-                                onClick={() => handleReassign(i)}
-                              >
-                                {r.name}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+  async function save() {
+    if (!resourceId) {
+      setError("Pick who or what the booking is with.");
+      return;
+    }
+    const [h, m] = time.split(":").map(Number);
+    if (h === undefined || m === undefined || Number.isNaN(h) || Number.isNaN(m)) {
+      setError("Pick a start time.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await api.businesses.createBooking(slug, {
+        resourceId,
+        serviceId: service?.id ?? null,
+        title: service?.name ?? "Booking",
+        customerName: customer,
+        startAt: minutesToIso(day, h * 60 + m),
+        durationMinutes: service?.durationMinutes ?? 30,
+        price: service?.price ?? "",
+      });
+      await onCreated();
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to create the booking.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
 
-                      <div className="bookings-detail__links">
-                        <a href={`/app/${business.slug}/contacts`}>Open contact</a>
-                        <a href={`/app/${business.slug}/conversations`}>Hear the call</a>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {tab === "Diary" && showHold && (
-                <div className="bookings-hold">
-                  <div className="bookings-hold__head">
-                    <span className="bookings-hold__label">Slot held — caller deciding</span>
-                    <span className="bookings-hold__clock">{holdClock}</span>
-                  </div>
-                  <span className="bookings-hold__name">Marcus Bell · 3:20pm</span>
-                  <span className="bookings-hold__line">
-                    {holdState === "expired"
-                      ? "The hold ran out and the slot went back into the diary."
-                      : holdState === "taken"
-                        ? "Confirmed. A text is on its way."
-                        : "The agent is on the phone with him now. Nobody else can take 3:20 until this clears."}
-                  </span>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <Button variant="primary" onClick={handleConfirmHold}>
-                      Confirm it
-                    </Button>
-                    <Button variant="default" onClick={handleReleaseHold}>
-                      Release
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {tab === "Diary" && (
-                <>
-                  <div className="bookings-waitlist">
-                    <div className="bookings-waitlist__head">
-                      <span className="bookings-section-label">Waiting for a slot</span>
-                      <span className="bookings-count">{WAIT.length} waiting</span>
-                    </div>
-                    {freed && <div className="bookings-freed">{freed} just opened up. Offer it to somebody?</div>}
-                    {WAIT.map((w) => {
-                      const done = offered.has(w.name);
-                      return (
-                        <div className="bookings-wait" key={w.name}>
-                          <span>
-                            <span className="bookings-wait__name">{w.name}</span>
-                            <span className="bookings-wait__want">{w.want}</span>
-                          </span>
-                          <Button
-                            variant={done ? "default" : "primary"}
-                            onClick={() =>
-                              setOffered((prev) => {
-                                const next = new Set(prev);
-                                if (done) next.delete(w.name);
-                                else next.add(w.name);
-                                return next;
-                              })
-                            }
-                          >
-                            {done ? "Sent" : "Offer"}
-                          </Button>
-                        </div>
-                      );
-                    })}
-                    <a href={`/app/${business.slug}/callbacks`} className="bookings-rail__link">Callback queue for these ↗</a>
-                  </div>
-
-                  <div className="bookings-log">
-                    <span className="bookings-section-label">What the agent did today</span>
-                    {LOG.map((l) => (
-                      <div className="bookings-log__row" key={l.v}>
-                        <span className="bookings-log__time">{l.t}</span>
-                        <span className="bookings-log__line">{l.v}</span>
-                      </div>
-                    ))}
-                    <a href={`/app/${business.slug}/conversations`} className="bookings-rail__link">All conversations ↗</a>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {toast && <div className="ops-toast">{toast}</div>}
+  return (
+    <Box style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+      <span className="bookings-section-label">New booking</span>
+      {services.length === 0 ? (
+        <p className="auth-card-copy">
+          Add a service under Setup first, so the booking knows its length and price.
+        </p>
+      ) : (
+        <>
+          <SelectField
+            label="Service"
+            value={serviceId}
+            onChange={(event) => setServiceId(event.target.value)}
+            options={services.map((s) => ({
+              value: s.id,
+              label: `${s.name} · ${s.durationMinutes} min`,
+            }))}
+          />
+          <SelectField
+            label="With"
+            value={resourceId}
+            onChange={(event) => setResourceId(event.target.value)}
+            options={resources.map((r) => ({ value: r.id, label: r.name }))}
+          />
+          <TextField
+            label="Who is it for"
+            value={customer}
+            onChange={(event) => setCustomer(event.target.value)}
+          />
+          <TextField
+            label="Start time"
+            type="time"
+            step={600}
+            value={time}
+            onChange={(event) => setTime(event.target.value)}
+          />
+          {error ? <Alert variant="error">{error}</Alert> : null}
+          <Button variant="primary" loading={saving} onClick={() => void save()}>
+            Book it
+          </Button>
         </>
       )}
-    </WorkspaceShell>
+    </Box>
+  );
+}
+
+function BookingsSetup({
+  slug,
+  data,
+  onChanged,
+  say,
+}: {
+  slug: string;
+  data: BookingsResponse | null;
+  onChanged: () => Promise<void>;
+  say: (m: string) => void;
+}) {
+  const [svcName, setSvcName] = useState("");
+  const [svcDuration, setSvcDuration] = useState("30");
+  const [svcPrice, setSvcPrice] = useState("");
+  const [resName, setResName] = useState("");
+  const [resSubtitle, setResSubtitle] = useState("");
+  const [resKind, setResKind] = useState<"person" | "room">("person");
+  const [error, setError] = useState<string | null>(null);
+
+  if (!data) return null;
+  const canConfigure = data.canConfigure;
+
+  async function addService() {
+    const duration = Number(svcDuration);
+    if (!svcName.trim() || !Number.isInteger(duration) || duration < 5) {
+      setError("A service needs a name and a length in minutes.");
+      return;
+    }
+    setError(null);
+    try {
+      await api.businesses.createBookingService(slug, {
+        name: svcName,
+        durationMinutes: duration,
+        price: svcPrice,
+      });
+      setSvcName("");
+      setSvcPrice("");
+      await onChanged();
+      say("Service added");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to add the service.");
+    }
+  }
+
+  async function addResource() {
+    if (!resName.trim()) {
+      setError("Give the diary column a name.");
+      return;
+    }
+    setError(null);
+    try {
+      await api.businesses.createBookingResource(slug, {
+        name: resName,
+        subtitle: resSubtitle,
+        kind: resKind,
+      });
+      setResName("");
+      setResSubtitle("");
+      await onChanged();
+      say("Diary column added");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to add the column.");
+    }
+  }
+
+  return (
+    <div className="bookings-setup">
+      {error ? <Alert variant="error">{error}</Alert> : null}
+      <div className="bookings-table-wrap">
+        <div className="ops-header__row" style={{ padding: 0, border: 0, marginBottom: 4 }}>
+          <h2>Services</h2>
+        </div>
+        <p>Turn one off and the agent will offer a callback instead of a slot.</p>
+        <div className="bookings-table">
+          <div className="bookings-table__head">
+            <span className="bookings-th">Service</span>
+            <span className="bookings-th">Time</span>
+            <span className="bookings-th">Buffer</span>
+            <span className="bookings-th">Price</span>
+            <span className="bookings-th">Deposit</span>
+            <span className="bookings-th">Agent may book</span>
+          </div>
+          {data.services.filter((s) => s.active).map((s) => (
+            <div className="bookings-table__row" key={s.id}>
+              <span>
+                <span className="bookings-service__name">{s.name}</span>
+              </span>
+              <span className="bookings-td">{s.durationMinutes} min</span>
+              <span className="bookings-td">{s.bufferMinutes ? `${s.bufferMinutes} min` : "—"}</span>
+              <span className="bookings-td">{s.price || "—"}</span>
+              <span className="bookings-td">{s.deposit || "—"}</span>
+              <button
+                type="button"
+                className={`bookings-toggle ${s.agentBookable ? "bookings-toggle--on" : "bookings-toggle--off"}`}
+                disabled={!canConfigure}
+                onClick={() =>
+                  void api.businesses
+                    .updateBookingService(slug, s.id, { agentBookable: !s.agentBookable })
+                    .then(onChanged)
+                    .catch((caught: unknown) =>
+                      setError(caught instanceof Error ? caught.message : "Unable to update."),
+                    )
+                }
+              >
+                {s.agentBookable ? "Yes" : "Only humans"}
+              </button>
+            </div>
+          ))}
+        </div>
+        {canConfigure ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", marginTop: 10 }}>
+            <TextField
+              label="New service"
+              placeholder="Check-up"
+              value={svcName}
+              onChange={(event) => setSvcName(event.target.value)}
+            />
+            <TextField
+              label="Minutes"
+              value={svcDuration}
+              onChange={(event) => setSvcDuration(event.target.value)}
+            />
+            <TextField
+              label="Price"
+              placeholder="£45"
+              value={svcPrice}
+              onChange={(event) => setSvcPrice(event.target.value)}
+            />
+            <Button variant="primary" onClick={() => void addService()}>
+              Add service
+            </Button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="bookings-cards">
+        {data.resources.filter((r) => r.active).map((r) => (
+          <div className="bookings-card" key={r.id}>
+            <span className="bookings-card__kind">{r.kind === "person" ? "Person" : "Room"}</span>
+            <span className="bookings-card__name">{r.name}</span>
+            <span className="bookings-card__line">{r.subtitle || "—"}</span>
+            <span className="bookings-card__muted">{r.hours || r.notes || ""}</span>
+            {canConfigure ? (
+              <Button
+                variant="ghost"
+                onClick={() =>
+                  void api.businesses
+                    .updateBookingResource(slug, r.id, { active: false })
+                    .then(onChanged)
+                    .catch((caught: unknown) =>
+                      setError(caught instanceof Error ? caught.message : "Unable to remove."),
+                    )
+                }
+              >
+                Remove
+              </Button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      {canConfigure ? (
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <TextField
+            label="New diary column"
+            placeholder="Dr. Reyes"
+            value={resName}
+            onChange={(event) => setResName(event.target.value)}
+          />
+          <TextField
+            label="Role"
+            placeholder="Dentist"
+            value={resSubtitle}
+            onChange={(event) => setResSubtitle(event.target.value)}
+          />
+          <SelectField
+            label="Kind"
+            value={resKind}
+            onChange={(event) => setResKind(event.target.value as "person" | "room")}
+            options={[
+              { value: "person", label: "Person" },
+              { value: "room", label: "Room" },
+            ]}
+          />
+          <Button variant="primary" onClick={() => void addResource()}>
+            Add column
+          </Button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
