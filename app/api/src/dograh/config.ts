@@ -109,6 +109,7 @@ export function buildTenantWorkflow(
           extraction_enabled: false,
           pre_call_fetch_enabled: false,
           document_uuids: documentUuids,
+          tool_uuids: [],
         },
       },
       {
@@ -237,7 +238,9 @@ export function withAgentToolUuids(
     ? workflowDefinition.nodes.map((node) => {
         if (!node || typeof node !== "object" || Array.isArray(node)) return node;
         const record = node as Record<string, unknown>;
-        if (record.type !== "agentNode") return node;
+        if (record.type !== "agentNode" && record.type !== "startCall") {
+          return node;
+        }
         const data =
           record.data && typeof record.data === "object" && !Array.isArray(record.data)
             ? (record.data as Record<string, unknown>)
