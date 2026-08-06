@@ -13,6 +13,7 @@ CREATE TABLE "demo_sessions" (
 	"email" text,
 	"phone" text,
 	"demo_mode" text,
+	"voice" text,
 	"workflow_id" integer,
 	"duration_seconds" integer,
 	"transcript" jsonb,

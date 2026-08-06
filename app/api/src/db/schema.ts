@@ -346,6 +346,11 @@ export const businessDograhMappings = pgTable(
     lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
     lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
     offboardedAt: timestamp("offboarded_at", { withTimezone: true }),
+    lastIngestedRunId: integer("last_ingested_run_id").notNull().default(0),
+    agentToolUuids: jsonb("agent_tool_uuids")
+      .$type<Record<string, string>>()
+      .notNull()
+      .default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -470,6 +475,246 @@ export const businessKnowledge = pgTable(
     index("business_knowledge_business_idx").on(table.businessId),
     index("business_knowledge_state_idx").on(table.state),
     uniqueIndex("business_knowledge_remote_uuid_unique").on(table.remoteDocumentUuid),
+  ],
+);
+
+export const callbackStatusEnum = pgEnum("callback_status", [
+  "open",
+  "spoke",
+  "voicemail",
+  "dropped",
+]);
+
+export const callbackSourceEnum = pgEnum("callback_source", [
+  "call",
+  "manual",
+]);
+
+export const callbackTasks = pgTable(
+  "callback_tasks",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    contactName: text("contact_name").notNull(),
+    contactChannel: text("contact_channel").notNull(),
+    reason: text("reason").notNull(),
+    source: callbackSourceEnum("source").notNull().default("manual"),
+    runId: integer("run_id"),
+    promisedAt: timestamp("promised_at", { withTimezone: true }).notNull(),
+    assignedTo: text("assigned_to").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    status: callbackStatusEnum("status").notNull().default("open"),
+    attempts: jsonb("attempts")
+      .$type<{ at: string; note: string }[]>()
+      .notNull()
+      .default([]),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("callback_tasks_business_status_idx").on(table.businessId, table.status),
+    index("callback_tasks_business_promised_idx").on(
+      table.businessId,
+      table.promisedAt,
+    ),
+  ],
+);
+
+export const contactSourceEnum = pgEnum("contact_source", [
+  "call",
+  "manual",
+  "import",
+]);
+
+export const contacts = pgTable(
+  "contacts",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    name: text("name"),
+    phone: text("phone"),
+    email: text("email"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    note: text("note").notNull().default(""),
+    source: contactSourceEnum("source").notNull().default("manual"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("contacts_business_idx").on(table.businessId),
+    index("contacts_business_phone_idx").on(table.businessId, table.phone),
+    index("contacts_business_email_idx").on(table.businessId, table.email),
+  ],
+);
+
+export const bookingResourceKindEnum = pgEnum("booking_resource_kind", [
+  "person",
+  "room",
+]);
+
+export const bookingResources = pgTable(
+  "booking_resources",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    subtitle: text("subtitle").notNull().default(""),
+    kind: bookingResourceKindEnum("kind").notNull().default("person"),
+    hours: text("hours").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    active: boolean("active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("booking_resources_business_idx").on(table.businessId)],
+);
+
+export const bookingServices = pgTable(
+  "booking_services",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    durationMinutes: integer("duration_minutes").notNull().default(30),
+    bufferMinutes: integer("buffer_minutes").notNull().default(0),
+    price: text("price").notNull().default(""),
+    deposit: text("deposit").notNull().default(""),
+    agentBookable: boolean("agent_bookable").notNull().default(true),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("booking_services_business_idx").on(table.businessId)],
+);
+
+export const bookingStatusEnum = pgEnum("booking_status", [
+  "booked",
+  "arrived",
+  "cancelled",
+  "no_show",
+]);
+
+export const bookingSourceEnum = pgEnum("booking_source", [
+  "agent",
+  "desk",
+  "web",
+]);
+
+export const bookings = pgTable(
+  "bookings",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    resourceId: text("resource_id")
+      .notNull()
+      .references(() => bookingResources.id, { onDelete: "cascade" }),
+    serviceId: text("service_id").references(() => bookingServices.id, {
+      onDelete: "set null",
+    }),
+    title: text("title").notNull(),
+    customerName: text("customer_name").notNull().default(""),
+    startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+    durationMinutes: integer("duration_minutes").notNull(),
+    status: bookingStatusEnum("status").notNull().default("booked"),
+    source: bookingSourceEnum("source").notNull().default("desk"),
+    price: text("price").notNull().default(""),
+    note: text("note").notNull().default(""),
+    runId: integer("run_id"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("bookings_business_start_idx").on(table.businessId, table.startAt),
+    index("bookings_resource_start_idx").on(table.resourceId, table.startAt),
+  ],
+);
+
+export const knowledgeGapStatusEnum = pgEnum("knowledge_gap_status", [
+  "open",
+  "answered",
+  "dismissed",
+]);
+
+export const knowledgeGaps = pgTable(
+  "knowledge_gaps",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    normalizedQuestion: text("normalized_question").notNull(),
+    question: text("question").notNull(),
+    agentResponse: text("agent_response").notNull().default(""),
+    askCount: integer("ask_count").notNull().default(1),
+    runId: integer("run_id"),
+    status: knowledgeGapStatusEnum("status").notNull().default("open"),
+    lastAskedAt: timestamp("last_asked_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    resolvedBy: text("resolved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("knowledge_gaps_business_question_unique").on(
+      table.businessId,
+      table.normalizedQuestion,
+    ),
+    index("knowledge_gaps_business_status_idx").on(
+      table.businessId,
+      table.status,
+    ),
   ],
 );
 

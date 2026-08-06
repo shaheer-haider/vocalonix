@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, lt, ne, sql } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 
 import { normalizeEmail } from "../auth/email";
@@ -13,6 +13,13 @@ import {
   businessConfigVersions,
   businessOnboarding,
   businesses,
+  bookingResources,
+  bookingServices,
+  bookings,
+  callbackTasks,
+  contacts,
+  knowledgeGaps,
+  memberships,
   outboxEvents,
   users,
 } from "../db/schema";
@@ -23,12 +30,52 @@ import {
   tenantWidgetScript,
 } from "../dograh/tenant";
 import { dograh } from "../dograh/client";
+import type { DograhWorkflowRun } from "../dograh/types";
 import { ApiError } from "../errors";
 import {
   ALLOWED_DOCUMENT_TYPES_LABEL,
   isAllowedDocumentFilename,
 } from "../uploads";
 import { requirePermission, requireWorkspace } from "../workspace/context";
+import { can } from "../workspace/permissions";
+
+async function assertNoClash(
+  businessId: string,
+  resourceId: string,
+  startAt: Date,
+  durationMinutes: number,
+  ignoreBookingId: string | null,
+): Promise<void> {
+  const endAt = new Date(startAt.getTime() + durationMinutes * 60_000);
+  const overlapping = await db
+    .select({
+      id: bookings.id,
+      startAt: bookings.startAt,
+      durationMinutes: bookings.durationMinutes,
+    })
+    .from(bookings)
+    .where(
+      and(
+        eq(bookings.businessId, businessId),
+        eq(bookings.resourceId, resourceId),
+        ne(bookings.status, "cancelled"),
+        lt(bookings.startAt, endAt),
+      ),
+    );
+  const clash = overlapping.some(
+    (row) =>
+      row.id !== ignoreBookingId &&
+      row.startAt.getTime() + row.durationMinutes * 60_000 >
+        startAt.getTime(),
+  );
+  if (clash) {
+    throw new ApiError(
+      409,
+      "BOOKING_CLASH",
+      "Something else is already booked there.",
+    );
+  }
+}
 
 export const onboardingSteps = [
   "business-profile",
@@ -108,6 +155,19 @@ async function queueBusinessSync(
     .onConflictDoNothing();
 }
 
+async function queueBookingSync(businessId: string): Promise<void> {
+  await db
+    .insert(outboxEvents)
+    .values({
+      id: randomUUID(),
+      businessId,
+      eventType: "dograh.workflow.sync",
+      payload: { businessId },
+      dedupeKey: `dograh.workflow.sync:${businessId}`,
+    })
+    .onConflictDoNothing();
+}
+
 async function snapshotBusinessConfig(
   businessId: string,
 ): Promise<Record<string, unknown>> {
@@ -143,6 +203,112 @@ async function snapshotBusinessConfig(
     widgetColor: row.settings.widgetColor,
     allowedDomains: row.settings.allowedDomains,
   };
+}
+
+async function requireTenantWorkflowId(businessId: string): Promise<number> {
+  const [mapping] = await db
+    .select()
+    .from(businessDograhMappings)
+    .where(eq(businessDograhMappings.businessId, businessId))
+    .limit(1);
+  if (!mapping?.workflowId) {
+    throw new ApiError(
+      404,
+      "DOGRAH_WORKFLOW_NOT_FOUND",
+      "This business does not have a published agent workflow yet.",
+    );
+  }
+  return Number(mapping.workflowId);
+}
+
+function callbackView(
+  task: typeof callbackTasks.$inferSelect,
+  assigneeName: string | null,
+) {
+  return {
+    id: task.id,
+    contactName: task.contactName,
+    contactChannel: task.contactChannel,
+    reason: task.reason,
+    source: task.source,
+    runId: task.runId,
+    promisedAt: task.promisedAt.toISOString(),
+    assignedTo: task.assignedTo,
+    assigneeName,
+    status: task.status,
+    attempts: task.attempts,
+    createdAt: task.createdAt.toISOString(),
+    closedAt: task.closedAt?.toISOString() ?? null,
+  };
+}
+
+function contactView(contact: typeof contacts.$inferSelect) {
+  return {
+    id: contact.id,
+    name: contact.name,
+    phone: contact.phone,
+    email: contact.email,
+    tags: contact.tags,
+    note: contact.note,
+    source: contact.source,
+    createdAt: contact.createdAt.toISOString(),
+    updatedAt: contact.updatedAt.toISOString(),
+  };
+}
+
+function normalizeContactField(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeTags(tags: string[]): string[] {
+  return [
+    ...new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0)),
+  ].slice(0, 20);
+}
+
+function conversationSummary(run: DograhWorkflowRun) {
+  return {
+    id: run.id,
+    startedAt: run.created_at,
+    mode: run.mode,
+    completed: run.is_completed,
+    durationSeconds: run.cost_info?.call_duration_seconds ?? null,
+    disposition:
+      run.gathered_context?.mapped_call_disposition ??
+      run.gathered_context?.call_disposition ??
+      null,
+    nodesVisited: run.gathered_context?.nodes_visited ?? [],
+    hasTranscript: Boolean(run.transcript_url),
+    hasRecording: Boolean(run.recording_url),
+  };
+}
+
+function hourInTimezone(value: string, timezone: string): number {
+  const formatted = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    hourCycle: "h23",
+  }).format(new Date(value));
+  return Number(formatted);
+}
+
+function startOfDayInTimezone(now: Date, timezone: string): number {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const get = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const elapsedMs =
+    ((get("hour") * 60 + get("minute")) * 60 + get("second")) * 1000;
+  return now.getTime() - elapsedMs;
 }
 
 function dograhApiError(error: unknown): never {
@@ -469,6 +635,559 @@ export const tenantRoutes = new Elysia()
       );
     }
     return { dograh: mapping };
+  })
+  .get("/api/b/:slug/conversations", async ({ params, query, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const workflowId = await requireTenantWorkflowId(workspace.business.id);
+    const page = Math.max(1, Number(query.page ?? 1) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit ?? 25) || 25));
+    const result = await dograh.listWorkflowRuns(workflowId, page, limit);
+    return {
+      conversations: result.runs.map(conversationSummary),
+      totalCount: result.total_count,
+      page: result.page,
+      totalPages: result.total_pages,
+    };
+  })
+  .get("/api/b/:slug/conversations/:runId", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const workflowId = await requireTenantWorkflowId(workspace.business.id);
+    const runId = Number(params.runId);
+    if (!Number.isInteger(runId) || runId <= 0) {
+      throw new ApiError(400, "INVALID_RUN_ID", "Invalid conversation id.");
+    }
+    const run = await dograh.getWorkflowRun(workflowId, runId);
+    if (run.workflow_id !== workflowId) {
+      throw new ApiError(
+        404,
+        "CONVERSATION_NOT_FOUND",
+        "Conversation was not found for this business.",
+      );
+    }
+    return {
+      conversation: {
+        ...conversationSummary(run),
+        transcriptUrl: run.transcript_public_url ?? null,
+        recordingUrl: run.recording_public_url ?? null,
+      },
+    };
+  })
+  .get("/api/b/:slug/dashboard", async ({ params, query, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const range =
+      query.range === "7d" || query.range === "30d" ? query.range : "today";
+    const timezone = workspace.business.timezone;
+    const now = new Date();
+    const cutoff =
+      range === "today"
+        ? startOfDayInTimezone(now, timezone)
+        : now.getTime() - (range === "7d" ? 7 : 30) * 24 * 60 * 60 * 1000;
+
+    let runs: DograhWorkflowRun[] = [];
+    try {
+      const workflowId = await requireTenantWorkflowId(workspace.business.id);
+      const result = await dograh.listWorkflowRuns(workflowId, 1, 100);
+      runs = result.runs.filter(
+        (run) => Date.parse(run.created_at) >= cutoff,
+      );
+    } catch (error) {
+      if (
+        !(error instanceof ApiError && error.code === "DOGRAH_WORKFLOW_NOT_FOUND")
+      ) {
+        throw error;
+      }
+    }
+
+    const durations = runs
+      .map((run) => run.cost_info?.call_duration_seconds)
+      .filter((value): value is number => typeof value === "number");
+    const totalSeconds = durations.reduce((sum, value) => sum + value, 0);
+    const hourly = new Array<number>(24).fill(0);
+    for (const run of runs) {
+      const hour = hourInTimezone(run.created_at, timezone);
+      if (hour >= 0 && hour < 24) hourly[hour] = (hourly[hour] ?? 0) + 1;
+    }
+
+    return {
+      range,
+      callsAnswered: runs.length,
+      completedCalls: runs.filter((run) => run.is_completed).length,
+      totalSeconds,
+      averageSeconds:
+        durations.length > 0 ? Math.round(totalSeconds / durations.length) : 0,
+      hourly,
+      recent: runs.slice(0, 8).map(conversationSummary),
+    };
+  })
+  .get("/api/b/:slug/callbacks", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const [rows, members] = await Promise.all([
+      db
+        .select({
+          task: callbackTasks,
+          assigneeName: users.name,
+        })
+        .from(callbackTasks)
+        .leftJoin(users, eq(callbackTasks.assignedTo, users.id))
+        .where(eq(callbackTasks.businessId, workspace.business.id))
+        .orderBy(asc(callbackTasks.promisedAt)),
+      db
+        .select({
+          userId: users.id,
+          name: users.name,
+          role: memberships.role,
+        })
+        .from(memberships)
+        .innerJoin(users, eq(memberships.userId, users.id))
+        .where(
+          and(
+            eq(memberships.businessId, workspace.business.id),
+            eq(memberships.status, "active"),
+          ),
+        )
+        .orderBy(asc(users.name)),
+    ]);
+    return {
+      callbacks: rows.map(({ task, assigneeName }) =>
+        callbackView(task, assigneeName),
+      ),
+      members,
+      viewerId: workspace.session.user.id,
+      canManage: can(workspace.role, "callbacks.manage"),
+    };
+  })
+  .post(
+    "/api/b/:slug/callbacks",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "callbacks.manage");
+      const promisedAt = new Date(body.promisedAt);
+      if (Number.isNaN(promisedAt.getTime())) {
+        throw new ApiError(
+          400,
+          "INVALID_PROMISED_AT",
+          "Invalid promised-at time.",
+        );
+      }
+      if (body.assignedTo) {
+        const [member] = await db
+          .select({ userId: memberships.userId })
+          .from(memberships)
+          .where(
+            and(
+              eq(memberships.businessId, workspace.business.id),
+              eq(memberships.userId, body.assignedTo),
+              eq(memberships.status, "active"),
+            ),
+          )
+          .limit(1);
+        if (!member) {
+          throw new ApiError(
+            400,
+            "INVALID_ASSIGNEE",
+            "The assignee is not an active member of this business.",
+          );
+        }
+      }
+      const id = randomUUID();
+      const [created] = await db
+        .insert(callbackTasks)
+        .values({
+          id,
+          businessId: workspace.business.id,
+          contactName: body.contactName.trim(),
+          contactChannel: body.contactChannel.trim(),
+          reason: body.reason.trim(),
+          promisedAt,
+          assignedTo: body.assignedTo ?? null,
+          createdBy: workspace.session.user.id,
+        })
+        .returning();
+      if (!created) {
+        throw new ApiError(
+          500,
+          "CALLBACK_CREATE_FAILED",
+          "Could not create the callback.",
+        );
+      }
+      const assigneeName = created.assignedTo
+        ? ((
+            await db
+              .select({ name: users.name })
+              .from(users)
+              .where(eq(users.id, created.assignedTo))
+              .limit(1)
+          )[0]?.name ?? null)
+        : null;
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "callback.create",
+        targetType: "callback_task",
+        targetId: id,
+      });
+      return { callback: callbackView(created, assigneeName) };
+    },
+    {
+      body: t.Object({
+        contactName: t.String({ minLength: 1, maxLength: 120 }),
+        contactChannel: t.String({ minLength: 1, maxLength: 160 }),
+        reason: t.String({ minLength: 1, maxLength: 1000 }),
+        promisedAt: t.String(),
+        assignedTo: t.Optional(t.Nullable(t.String())),
+      }),
+    },
+  )
+  .patch(
+    "/api/b/:slug/callbacks/:callbackId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "callbacks.manage");
+      const [existing] = await db
+        .select()
+        .from(callbackTasks)
+        .where(
+          and(
+            eq(callbackTasks.id, params.callbackId),
+            eq(callbackTasks.businessId, workspace.business.id),
+          ),
+        )
+        .limit(1);
+      if (!existing) {
+        throw new ApiError(
+          404,
+          "CALLBACK_NOT_FOUND",
+          "Callback was not found for this business.",
+        );
+      }
+      const now = new Date();
+      const updates: Partial<typeof callbackTasks.$inferInsert> = {
+        updatedAt: now,
+      };
+      if (body.assignedTo !== undefined) {
+        if (body.assignedTo !== null) {
+          const [member] = await db
+            .select({ userId: memberships.userId })
+            .from(memberships)
+            .where(
+              and(
+                eq(memberships.businessId, workspace.business.id),
+                eq(memberships.userId, body.assignedTo),
+                eq(memberships.status, "active"),
+              ),
+            )
+            .limit(1);
+          if (!member) {
+            throw new ApiError(
+              400,
+              "INVALID_ASSIGNEE",
+              "The assignee is not an active member of this business.",
+            );
+          }
+        }
+        updates.assignedTo = body.assignedTo;
+      }
+      if (body.promisedAt !== undefined) {
+        const promisedAt = new Date(body.promisedAt);
+        if (Number.isNaN(promisedAt.getTime())) {
+          throw new ApiError(
+            400,
+            "INVALID_PROMISED_AT",
+            "Invalid promised-at time.",
+          );
+        }
+        updates.promisedAt = promisedAt;
+      }
+      if (body.status !== undefined) {
+        updates.status = body.status;
+        updates.closedAt = body.status === "open" ? null : now;
+      }
+      if (body.attemptNote !== undefined) {
+        updates.attempts = existing.attempts.concat([
+          { at: now.toISOString(), note: body.attemptNote.trim() },
+        ]);
+      }
+      const [updated] = await db
+        .update(callbackTasks)
+        .set(updates)
+        .where(eq(callbackTasks.id, existing.id))
+        .returning();
+      if (!updated) {
+        throw new ApiError(
+          500,
+          "CALLBACK_UPDATE_FAILED",
+          "Could not update the callback.",
+        );
+      }
+      const assigneeName = updated.assignedTo
+        ? ((
+            await db
+              .select({ name: users.name })
+              .from(users)
+              .where(eq(users.id, updated.assignedTo))
+              .limit(1)
+          )[0]?.name ?? null)
+        : null;
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "callback.update",
+        targetType: "callback_task",
+        targetId: existing.id,
+        payload: body as Record<string, unknown>,
+      });
+      return { callback: callbackView(updated, assigneeName) };
+    },
+    {
+      body: t.Object({
+        assignedTo: t.Optional(t.Nullable(t.String())),
+        promisedAt: t.Optional(t.String()),
+        status: t.Optional(
+          t.Union([
+            t.Literal("open"),
+            t.Literal("spoke"),
+            t.Literal("voicemail"),
+            t.Literal("dropped"),
+          ]),
+        ),
+        attemptNote: t.Optional(t.String({ minLength: 1, maxLength: 500 })),
+      }),
+    },
+  )
+  .get("/api/b/:slug/contacts", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const rows = await db
+      .select()
+      .from(contacts)
+      .where(
+        and(
+          eq(contacts.businessId, workspace.business.id),
+          isNull(contacts.deletedAt),
+        ),
+      )
+      .orderBy(desc(contacts.updatedAt));
+    return {
+      contacts: rows.map(contactView),
+      canManage: can(workspace.role, "contacts.manage"),
+    };
+  })
+  .post(
+    "/api/b/:slug/contacts",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "contacts.manage");
+      const name = normalizeContactField(body.name);
+      const phone = normalizeContactField(body.phone);
+      const email = normalizeContactField(body.email);
+      if (!name && !phone && !email) {
+        throw new ApiError(
+          400,
+          "EMPTY_CONTACT",
+          "A contact needs at least a name, phone or email.",
+        );
+      }
+      const id = randomUUID();
+      const [created] = await db
+        .insert(contacts)
+        .values({
+          id,
+          businessId: workspace.business.id,
+          name,
+          phone,
+          email,
+          tags: normalizeTags(body.tags ?? []),
+          note: body.note?.trim() ?? "",
+          createdBy: workspace.session.user.id,
+        })
+        .returning();
+      if (!created) {
+        throw new ApiError(
+          500,
+          "CONTACT_CREATE_FAILED",
+          "Could not create the contact.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "contact.create",
+        targetType: "contact",
+        targetId: id,
+      });
+      return { contact: contactView(created) };
+    },
+    {
+      body: t.Object({
+        name: t.Optional(t.Nullable(t.String({ maxLength: 120 }))),
+        phone: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
+        email: t.Optional(t.Nullable(t.String({ maxLength: 160 }))),
+        tags: t.Optional(t.Array(t.String({ maxLength: 40 }), { maxItems: 20 })),
+        note: t.Optional(t.String({ maxLength: 2000 })),
+      }),
+    },
+  )
+  .post(
+    "/api/b/:slug/contacts/import",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "contacts.manage");
+      const rows = body.rows
+        .map((row) => ({
+          name: normalizeContactField(row.name),
+          phone: normalizeContactField(row.phone),
+          email: normalizeContactField(row.email),
+        }))
+        .filter((row) => row.name || row.phone || row.email);
+      if (rows.length === 0) {
+        throw new ApiError(
+          400,
+          "EMPTY_IMPORT",
+          "No usable rows found. Each row needs a name, phone or email.",
+        );
+      }
+      const created = await db
+        .insert(contacts)
+        .values(
+          rows.map((row) => ({
+            id: randomUUID(),
+            businessId: workspace.business.id,
+            name: row.name,
+            phone: row.phone,
+            email: row.email,
+            source: "import" as const,
+            createdBy: workspace.session.user.id,
+          })),
+        )
+        .returning();
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "contact.import",
+        targetType: "contact",
+        payload: { count: created.length },
+      });
+      return { contacts: created.map(contactView) };
+    },
+    {
+      body: t.Object({
+        rows: t.Array(
+          t.Object({
+            name: t.Optional(t.Nullable(t.String({ maxLength: 120 }))),
+            phone: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
+            email: t.Optional(t.Nullable(t.String({ maxLength: 160 }))),
+          }),
+          { minItems: 1, maxItems: 1000 },
+        ),
+      }),
+    },
+  )
+  .patch(
+    "/api/b/:slug/contacts/:contactId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "contacts.manage");
+      const [existing] = await db
+        .select()
+        .from(contacts)
+        .where(
+          and(
+            eq(contacts.id, params.contactId),
+            eq(contacts.businessId, workspace.business.id),
+            isNull(contacts.deletedAt),
+          ),
+        )
+        .limit(1);
+      if (!existing) {
+        throw new ApiError(
+          404,
+          "CONTACT_NOT_FOUND",
+          "Contact was not found for this business.",
+        );
+      }
+      const updates: Partial<typeof contacts.$inferInsert> = {
+        updatedAt: new Date(),
+      };
+      if (body.name !== undefined) updates.name = normalizeContactField(body.name);
+      if (body.phone !== undefined) updates.phone = normalizeContactField(body.phone);
+      if (body.email !== undefined) updates.email = normalizeContactField(body.email);
+      if (body.tags !== undefined) updates.tags = normalizeTags(body.tags);
+      if (body.note !== undefined) updates.note = body.note.trim();
+      const nextName = body.name !== undefined ? updates.name : existing.name;
+      const nextPhone = body.phone !== undefined ? updates.phone : existing.phone;
+      const nextEmail = body.email !== undefined ? updates.email : existing.email;
+      if (!nextName && !nextPhone && !nextEmail) {
+        throw new ApiError(
+          400,
+          "EMPTY_CONTACT",
+          "A contact needs at least a name, phone or email.",
+        );
+      }
+      const [updated] = await db
+        .update(contacts)
+        .set(updates)
+        .where(eq(contacts.id, existing.id))
+        .returning();
+      if (!updated) {
+        throw new ApiError(
+          500,
+          "CONTACT_UPDATE_FAILED",
+          "Could not update the contact.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "contact.update",
+        targetType: "contact",
+        targetId: existing.id,
+      });
+      return { contact: contactView(updated) };
+    },
+    {
+      body: t.Object({
+        name: t.Optional(t.Nullable(t.String({ maxLength: 120 }))),
+        phone: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
+        email: t.Optional(t.Nullable(t.String({ maxLength: 160 }))),
+        tags: t.Optional(t.Array(t.String({ maxLength: 40 }), { maxItems: 20 })),
+        note: t.Optional(t.String({ maxLength: 2000 })),
+      }),
+    },
+  )
+  .delete("/api/b/:slug/contacts/:contactId", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    requirePermission(workspace.role, "contacts.manage");
+    const [deleted] = await db
+      .update(contacts)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(
+        and(
+          eq(contacts.id, params.contactId),
+          eq(contacts.businessId, workspace.business.id),
+          isNull(contacts.deletedAt),
+        ),
+      )
+      .returning();
+    if (!deleted) {
+      throw new ApiError(
+        404,
+        "CONTACT_NOT_FOUND",
+        "Contact was not found for this business.",
+      );
+    }
+    await db.insert(auditLogs).values({
+      id: randomUUID(),
+      businessId: workspace.business.id,
+      actorUserId: workspace.session.user.id,
+      action: "contact.delete",
+      targetType: "contact",
+      targetId: deleted.id,
+    });
+    return { ok: true };
   })
   .post("/api/b/:slug/dograh/retry", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
@@ -885,6 +1604,527 @@ export const tenantRoutes = new Elysia()
     });
     return { ok: true };
   })
+  .get("/api/b/:slug/overview", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const [openCallbacks] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(callbackTasks)
+      .where(
+        and(
+          eq(callbackTasks.businessId, workspace.business.id),
+          eq(callbackTasks.status, "open"),
+        ),
+      );
+    const [openGaps] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(knowledgeGaps)
+      .where(
+        and(
+          eq(knowledgeGaps.businessId, workspace.business.id),
+          eq(knowledgeGaps.status, "open"),
+        ),
+      );
+    return {
+      openCallbacks: openCallbacks?.n ?? 0,
+      openGaps: openGaps?.n ?? 0,
+    };
+  })
+  .get("/api/b/:slug/bookings", async ({ params, query, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const from = new Date(String(query.from ?? ""));
+    const to = new Date(String(query.to ?? ""));
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      throw new ApiError(
+        400,
+        "INVALID_RANGE",
+        "Provide a valid from/to time range.",
+      );
+    }
+    const [resources, services, rows] = await Promise.all([
+      db
+        .select()
+        .from(bookingResources)
+        .where(eq(bookingResources.businessId, workspace.business.id))
+        .orderBy(asc(bookingResources.sortOrder), asc(bookingResources.createdAt)),
+      db
+        .select()
+        .from(bookingServices)
+        .where(eq(bookingServices.businessId, workspace.business.id))
+        .orderBy(asc(bookingServices.createdAt)),
+      db
+        .select()
+        .from(bookings)
+        .where(
+          and(
+            eq(bookings.businessId, workspace.business.id),
+            gte(bookings.startAt, from),
+            lt(bookings.startAt, to),
+          ),
+        )
+        .orderBy(asc(bookings.startAt)),
+    ]);
+    return {
+      resources,
+      services,
+      bookings: rows,
+      canManage: can(workspace.role, "bookings.manage"),
+      canConfigure: can(workspace.role, "bookings.configure"),
+    };
+  })
+  .post(
+    "/api/b/:slug/bookings",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "bookings.manage");
+      const startAt = new Date(body.startAt);
+      if (Number.isNaN(startAt.getTime())) {
+        throw new ApiError(400, "INVALID_START", "Invalid start time.");
+      }
+      const [resource] = await db
+        .select({ id: bookingResources.id })
+        .from(bookingResources)
+        .where(
+          and(
+            eq(bookingResources.id, body.resourceId),
+            eq(bookingResources.businessId, workspace.business.id),
+          ),
+        )
+        .limit(1);
+      if (!resource) {
+        throw new ApiError(
+          400,
+          "INVALID_RESOURCE",
+          "That diary column does not belong to this business.",
+        );
+      }
+      await assertNoClash(
+        workspace.business.id,
+        body.resourceId,
+        startAt,
+        body.durationMinutes,
+        null,
+      );
+      const id = randomUUID();
+      const [created] = await db
+        .insert(bookings)
+        .values({
+          id,
+          businessId: workspace.business.id,
+          resourceId: body.resourceId,
+          serviceId: body.serviceId ?? null,
+          title: body.title.trim(),
+          customerName: body.customerName?.trim() ?? "",
+          startAt,
+          durationMinutes: body.durationMinutes,
+          source: body.source ?? "desk",
+          price: body.price?.trim() ?? "",
+          note: body.note?.trim() ?? "",
+          createdBy: workspace.session.user.id,
+        })
+        .returning();
+      if (!created) {
+        throw new ApiError(
+          500,
+          "BOOKING_CREATE_FAILED",
+          "Could not create the booking.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "booking.create",
+        targetType: "booking",
+        targetId: id,
+      });
+      return { booking: created };
+    },
+    {
+      body: t.Object({
+        resourceId: t.String(),
+        serviceId: t.Optional(t.Nullable(t.String())),
+        title: t.String({ minLength: 1, maxLength: 160 }),
+        customerName: t.Optional(t.String({ maxLength: 160 })),
+        startAt: t.String(),
+        durationMinutes: t.Integer({ minimum: 5, maximum: 720 }),
+        source: t.Optional(
+          t.Union([t.Literal("agent"), t.Literal("desk"), t.Literal("web")]),
+        ),
+        price: t.Optional(t.String({ maxLength: 80 })),
+        note: t.Optional(t.String({ maxLength: 1000 })),
+      }),
+    },
+  )
+  .patch(
+    "/api/b/:slug/bookings/:bookingId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "bookings.manage");
+      const [existing] = await db
+        .select()
+        .from(bookings)
+        .where(
+          and(
+            eq(bookings.id, params.bookingId),
+            eq(bookings.businessId, workspace.business.id),
+          ),
+        )
+        .limit(1);
+      if (!existing) {
+        throw new ApiError(
+          404,
+          "BOOKING_NOT_FOUND",
+          "Booking was not found for this business.",
+        );
+      }
+      const now = new Date();
+      const updates: Partial<typeof bookings.$inferInsert> = { updatedAt: now };
+      const nextStart = body.startAt ? new Date(body.startAt) : existing.startAt;
+      if (body.startAt && Number.isNaN(nextStart.getTime())) {
+        throw new ApiError(400, "INVALID_START", "Invalid start time.");
+      }
+      const nextResource = body.resourceId ?? existing.resourceId;
+      if (body.resourceId) {
+        const [resource] = await db
+          .select({ id: bookingResources.id })
+          .from(bookingResources)
+          .where(
+            and(
+              eq(bookingResources.id, body.resourceId),
+              eq(bookingResources.businessId, workspace.business.id),
+            ),
+          )
+          .limit(1);
+        if (!resource) {
+          throw new ApiError(
+            400,
+            "INVALID_RESOURCE",
+            "That diary column does not belong to this business.",
+          );
+        }
+      }
+      if (body.startAt || body.resourceId) {
+        await assertNoClash(
+          workspace.business.id,
+          nextResource,
+          nextStart,
+          existing.durationMinutes,
+          existing.id,
+        );
+        updates.startAt = nextStart;
+        updates.resourceId = nextResource;
+      }
+      if (body.status !== undefined) {
+        updates.status = body.status;
+        updates.cancelledAt = body.status === "cancelled" ? now : null;
+      }
+      if (body.note !== undefined) {
+        updates.note = body.note.trim();
+      }
+      const [updated] = await db
+        .update(bookings)
+        .set(updates)
+        .where(eq(bookings.id, existing.id))
+        .returning();
+      if (!updated) {
+        throw new ApiError(
+          500,
+          "BOOKING_UPDATE_FAILED",
+          "Could not update the booking.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "booking.update",
+        targetType: "booking",
+        targetId: existing.id,
+        payload: body as Record<string, unknown>,
+      });
+      return { booking: updated };
+    },
+    {
+      body: t.Object({
+        startAt: t.Optional(t.String()),
+        resourceId: t.Optional(t.String()),
+        status: t.Optional(
+          t.Union([
+            t.Literal("booked"),
+            t.Literal("arrived"),
+            t.Literal("cancelled"),
+            t.Literal("no_show"),
+          ]),
+        ),
+        note: t.Optional(t.String({ maxLength: 1000 })),
+      }),
+    },
+  )
+  .post(
+    "/api/b/:slug/booking-resources",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "bookings.configure");
+      const id = randomUUID();
+      const [created] = await db
+        .insert(bookingResources)
+        .values({
+          id,
+          businessId: workspace.business.id,
+          name: body.name.trim(),
+          subtitle: body.subtitle?.trim() ?? "",
+          kind: body.kind ?? "person",
+          hours: body.hours?.trim() ?? "",
+          notes: body.notes?.trim() ?? "",
+        })
+        .returning();
+      if (!created) {
+        throw new ApiError(
+          500,
+          "RESOURCE_CREATE_FAILED",
+          "Could not create the diary column.",
+        );
+      }
+      await queueBookingSync(workspace.business.id);
+      return { resource: created };
+    },
+    {
+      body: t.Object({
+        name: t.String({ minLength: 1, maxLength: 120 }),
+        subtitle: t.Optional(t.String({ maxLength: 120 })),
+        kind: t.Optional(t.Union([t.Literal("person"), t.Literal("room")])),
+        hours: t.Optional(t.String({ maxLength: 200 })),
+        notes: t.Optional(t.String({ maxLength: 500 })),
+      }),
+    },
+  )
+  .patch(
+    "/api/b/:slug/booking-resources/:resourceId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "bookings.configure");
+      const [updated] = await db
+        .update(bookingResources)
+        .set({
+          ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+          ...(body.subtitle !== undefined
+            ? { subtitle: body.subtitle.trim() }
+            : {}),
+          ...(body.hours !== undefined ? { hours: body.hours.trim() } : {}),
+          ...(body.notes !== undefined ? { notes: body.notes.trim() } : {}),
+          ...(body.active !== undefined ? { active: body.active } : {}),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(bookingResources.id, params.resourceId),
+            eq(bookingResources.businessId, workspace.business.id),
+          ),
+        )
+        .returning();
+      if (!updated) {
+        throw new ApiError(
+          404,
+          "RESOURCE_NOT_FOUND",
+          "Diary column was not found for this business.",
+        );
+      }
+      await queueBookingSync(workspace.business.id);
+      return { resource: updated };
+    },
+    {
+      body: t.Object({
+        name: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
+        subtitle: t.Optional(t.String({ maxLength: 120 })),
+        hours: t.Optional(t.String({ maxLength: 200 })),
+        notes: t.Optional(t.String({ maxLength: 500 })),
+        active: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .post(
+    "/api/b/:slug/booking-services",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "bookings.configure");
+      const id = randomUUID();
+      const [created] = await db
+        .insert(bookingServices)
+        .values({
+          id,
+          businessId: workspace.business.id,
+          name: body.name.trim(),
+          durationMinutes: body.durationMinutes,
+          bufferMinutes: body.bufferMinutes ?? 0,
+          price: body.price?.trim() ?? "",
+          deposit: body.deposit?.trim() ?? "",
+          agentBookable: body.agentBookable ?? true,
+        })
+        .returning();
+      if (!created) {
+        throw new ApiError(
+          500,
+          "SERVICE_CREATE_FAILED",
+          "Could not create the service.",
+        );
+      }
+      await queueBookingSync(workspace.business.id);
+      return { service: created };
+    },
+    {
+      body: t.Object({
+        name: t.String({ minLength: 1, maxLength: 120 }),
+        durationMinutes: t.Integer({ minimum: 5, maximum: 720 }),
+        bufferMinutes: t.Optional(t.Integer({ minimum: 0, maximum: 240 })),
+        price: t.Optional(t.String({ maxLength: 80 })),
+        deposit: t.Optional(t.String({ maxLength: 80 })),
+        agentBookable: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .patch(
+    "/api/b/:slug/booking-services/:serviceId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "bookings.configure");
+      const [updated] = await db
+        .update(bookingServices)
+        .set({
+          ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+          ...(body.durationMinutes !== undefined
+            ? { durationMinutes: body.durationMinutes }
+            : {}),
+          ...(body.bufferMinutes !== undefined
+            ? { bufferMinutes: body.bufferMinutes }
+            : {}),
+          ...(body.price !== undefined ? { price: body.price.trim() } : {}),
+          ...(body.deposit !== undefined
+            ? { deposit: body.deposit.trim() }
+            : {}),
+          ...(body.agentBookable !== undefined
+            ? { agentBookable: body.agentBookable }
+            : {}),
+          ...(body.active !== undefined ? { active: body.active } : {}),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(bookingServices.id, params.serviceId),
+            eq(bookingServices.businessId, workspace.business.id),
+          ),
+        )
+        .returning();
+      if (!updated) {
+        throw new ApiError(
+          404,
+          "SERVICE_NOT_FOUND",
+          "Service was not found for this business.",
+        );
+      }
+      await queueBookingSync(workspace.business.id);
+      return { service: updated };
+    },
+    {
+      body: t.Object({
+        name: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
+        durationMinutes: t.Optional(t.Integer({ minimum: 5, maximum: 720 })),
+        bufferMinutes: t.Optional(t.Integer({ minimum: 0, maximum: 240 })),
+        price: t.Optional(t.String({ maxLength: 80 })),
+        deposit: t.Optional(t.String({ maxLength: 80 })),
+        agentBookable: t.Optional(t.Boolean()),
+        active: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .get("/api/b/:slug/knowledge-gaps", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const gaps = await db
+      .select({
+        id: knowledgeGaps.id,
+        question: knowledgeGaps.question,
+        agentResponse: knowledgeGaps.agentResponse,
+        askCount: knowledgeGaps.askCount,
+        status: knowledgeGaps.status,
+        lastAskedAt: knowledgeGaps.lastAskedAt,
+        createdAt: knowledgeGaps.createdAt,
+      })
+      .from(knowledgeGaps)
+      .where(eq(knowledgeGaps.businessId, workspace.business.id))
+      .orderBy(desc(knowledgeGaps.lastAskedAt));
+    return {
+      gaps,
+      canManage: can(workspace.role, "knowledge.manage"),
+    };
+  })
+  .patch(
+    "/api/b/:slug/knowledge-gaps/:gapId",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "knowledge.manage");
+      const [existing] = await db
+        .select({ id: knowledgeGaps.id })
+        .from(knowledgeGaps)
+        .where(
+          and(
+            eq(knowledgeGaps.id, params.gapId),
+            eq(knowledgeGaps.businessId, workspace.business.id),
+          ),
+        )
+        .limit(1);
+      if (!existing) {
+        throw new ApiError(
+          404,
+          "KNOWLEDGE_GAP_NOT_FOUND",
+          "Knowledge gap was not found for this business.",
+        );
+      }
+      const now = new Date();
+      const [updated] = await db
+        .update(knowledgeGaps)
+        .set({
+          status: body.status,
+          resolvedBy: body.status === "open" ? null : workspace.session.user.id,
+          resolvedAt: body.status === "open" ? null : now,
+          updatedAt: now,
+        })
+        .where(eq(knowledgeGaps.id, existing.id))
+        .returning({
+          id: knowledgeGaps.id,
+          question: knowledgeGaps.question,
+          agentResponse: knowledgeGaps.agentResponse,
+          askCount: knowledgeGaps.askCount,
+          status: knowledgeGaps.status,
+          lastAskedAt: knowledgeGaps.lastAskedAt,
+          createdAt: knowledgeGaps.createdAt,
+        });
+      if (!updated) {
+        throw new ApiError(
+          500,
+          "KNOWLEDGE_GAP_UPDATE_FAILED",
+          "Could not update the knowledge gap.",
+        );
+      }
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "knowledge_gap.update",
+        targetType: "knowledge_gap",
+        targetId: existing.id,
+        payload: body as Record<string, unknown>,
+      });
+      return { gap: updated };
+    },
+    {
+      body: t.Object({
+        status: t.Union([
+          t.Literal("open"),
+          t.Literal("answered"),
+          t.Literal("dismissed"),
+        ]),
+      }),
+    },
+  )
   .delete("/api/b/:slug", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "business.delete");

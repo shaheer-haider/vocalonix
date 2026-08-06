@@ -30,6 +30,16 @@ export interface TenantAgentSettings {
   allowedDomains: string[];
 }
 
+export interface DograhTool {
+  id: number;
+  tool_uuid: string;
+  name: string;
+  description: string | null;
+  category: string;
+  status: string;
+  definition: Record<string, unknown>;
+}
+
 export interface DograhWorkflowSummary {
   id: number;
   name: string;
@@ -64,6 +74,35 @@ export interface DograhUpload {
   upload_url: string;
   document_uuid: string;
   s3_key: string;
+}
+
+export interface DograhWorkflowRun {
+  id: number;
+  workflow_id: number;
+  name: string;
+  mode: string;
+  is_completed: boolean;
+  created_at: string;
+  transcript_url?: string | null;
+  recording_url?: string | null;
+  transcript_public_url?: string | null;
+  recording_public_url?: string | null;
+  cost_info?: { call_duration_seconds?: number | null } | null;
+  gathered_context?:
+    | ({
+        nodes_visited?: string[] | null;
+        mapped_call_disposition?: string | null;
+        call_disposition?: string | null;
+      } & Record<string, unknown>)
+    | null;
+}
+
+export interface DograhWorkflowRunsPage {
+  runs: DograhWorkflowRun[];
+  total_count: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }
 
 export interface DograhEmbedToken {

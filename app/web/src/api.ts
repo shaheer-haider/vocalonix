@@ -260,6 +260,155 @@ export interface TenantConfigVersionsResponse {
   draft: TenantConfigSnapshot;
 }
 
+export interface ConversationSummary {
+  id: number;
+  startedAt: string;
+  mode: string;
+  completed: boolean;
+  durationSeconds: number | null;
+  disposition: string | null;
+  nodesVisited: string[];
+  hasTranscript: boolean;
+  hasRecording: boolean;
+}
+
+export interface ConversationsResponse {
+  conversations: ConversationSummary[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  transcriptUrl: string | null;
+  recordingUrl: string | null;
+}
+
+export interface DashboardStats {
+  range: "today" | "7d" | "30d";
+  callsAnswered: number;
+  completedCalls: number;
+  totalSeconds: number;
+  averageSeconds: number;
+  hourly: number[];
+  recent: ConversationSummary[];
+}
+
+export interface CallbackTask {
+  id: string;
+  contactName: string;
+  contactChannel: string;
+  reason: string;
+  source: "call" | "manual";
+  runId: number | null;
+  promisedAt: string;
+  assignedTo: string | null;
+  assigneeName: string | null;
+  status: "open" | "spoke" | "voicemail" | "dropped";
+  attempts: { at: string; note: string }[];
+  createdAt: string;
+  closedAt: string | null;
+}
+
+export interface CallbacksResponse {
+  callbacks: CallbackTask[];
+  members: { userId: string; name: string; role: string }[];
+  viewerId: string;
+  canManage: boolean;
+}
+
+export interface CallbackUpdate {
+  assignedTo?: string | null;
+  promisedAt?: string;
+  status?: CallbackTask["status"];
+  attemptNote?: string;
+}
+
+export interface BookingResource {
+  id: string;
+  name: string;
+  subtitle: string;
+  kind: "person" | "room";
+  hours: string;
+  notes: string;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface BookingService {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  bufferMinutes: number;
+  price: string;
+  deposit: string;
+  agentBookable: boolean;
+  active: boolean;
+}
+
+export interface Booking {
+  id: string;
+  resourceId: string;
+  serviceId: string | null;
+  title: string;
+  customerName: string;
+  startAt: string;
+  durationMinutes: number;
+  status: "booked" | "arrived" | "cancelled" | "no_show";
+  source: "agent" | "desk" | "web";
+  price: string;
+  note: string;
+  runId: number | null;
+}
+
+export interface BookingsResponse {
+  resources: BookingResource[];
+  services: BookingService[];
+  bookings: Booking[];
+  canManage: boolean;
+  canConfigure: boolean;
+}
+
+export interface KnowledgeGap {
+  id: string;
+  question: string;
+  agentResponse: string;
+  askCount: number;
+  status: "open" | "answered" | "dismissed";
+  lastAskedAt: string;
+  createdAt: string;
+}
+
+export interface KnowledgeGapsResponse {
+  gaps: KnowledgeGap[];
+  canManage: boolean;
+}
+
+export interface Contact {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  tags: string[];
+  note: string;
+  source: "call" | "manual" | "import";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactsResponse {
+  contacts: Contact[];
+  canManage: boolean;
+}
+
+export interface ContactInput {
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  tags?: string[];
+  note?: string;
+}
+
 export interface TenantWidget {
   workflowId: number;
   scriptUrl: string;
@@ -406,6 +555,87 @@ export const api = {
       },
     widget: async (slug: string): Promise<TenantWidget> =>
       unwrap(await client.api.b[slug].widget.get()) as TenantWidget,
+    dashboard: async (
+      slug: string,
+      range: "today" | "7d" | "30d",
+    ): Promise<DashboardStats> =>
+      unwrap(
+        await client.api.b[slug].dashboard.get({
+          $query: { range },
+        }),
+      ) as unknown as DashboardStats,
+    contacts: async (slug: string): Promise<ContactsResponse> =>
+      unwrap(
+        await client.api.b[slug].contacts.get(),
+      ) as unknown as ContactsResponse,
+    createContact: async (
+      slug: string,
+      input: ContactInput,
+    ): Promise<{ contact: Contact }> =>
+      unwrap(
+        await client.api.b[slug].contacts.post(input),
+      ) as unknown as { contact: Contact },
+    importContacts: async (
+      slug: string,
+      rows: { name?: string | null; phone?: string | null; email?: string | null }[],
+    ): Promise<{ contacts: Contact[] }> =>
+      unwrap(
+        await client.api.b[slug].contacts.import.post({ rows }),
+      ) as unknown as { contacts: Contact[] },
+    updateContact: async (
+      slug: string,
+      contactId: string,
+      update: ContactInput,
+    ): Promise<{ contact: Contact }> =>
+      unwrap(
+        await client.api.b[slug].contacts[contactId].patch(update),
+      ) as unknown as { contact: Contact },
+    deleteContact: async (slug: string, contactId: string): Promise<{ ok: boolean }> =>
+      unwrap(
+        await client.api.b[slug].contacts[contactId].delete(),
+      ) as unknown as { ok: boolean },
+    callbacks: async (slug: string): Promise<CallbacksResponse> =>
+      unwrap(
+        await client.api.b[slug].callbacks.get(),
+      ) as unknown as CallbacksResponse,
+    createCallback: async (
+      slug: string,
+      input: {
+        contactName: string;
+        contactChannel: string;
+        reason: string;
+        promisedAt: string;
+        assignedTo?: string | null;
+      },
+    ): Promise<{ callback: CallbackTask }> =>
+      unwrap(
+        await client.api.b[slug].callbacks.post(input),
+      ) as unknown as { callback: CallbackTask },
+    updateCallback: async (
+      slug: string,
+      callbackId: string,
+      update: CallbackUpdate,
+    ): Promise<{ callback: CallbackTask }> =>
+      unwrap(
+        await client.api.b[slug].callbacks[callbackId].patch(update),
+      ) as unknown as { callback: CallbackTask },
+    conversations: async (
+      slug: string,
+      page = 1,
+      limit = 25,
+    ): Promise<ConversationsResponse> =>
+      unwrap(
+        await client.api.b[slug].conversations.get({
+          $query: { page: String(page), limit: String(limit) },
+        }),
+      ) as unknown as ConversationsResponse,
+    conversation: async (
+      slug: string,
+      runId: number,
+    ): Promise<{ conversation: ConversationDetail }> =>
+      unwrap(
+        await client.api.b[slug].conversations[String(runId)].get(),
+      ) as unknown as { conversation: ConversationDetail },
     knowledge: async (slug: string): Promise<TenantKnowledgeItem[]> => {
       const result = unwrap(await client.api.b[slug].knowledge.get());
       return result.knowledge as TenantKnowledgeItem[];
@@ -439,6 +669,119 @@ export const api = {
       ),
     deleteKnowledge: async (slug: string, knowledgeId: string) =>
       unwrap(await client.api.b[slug].knowledge[knowledgeId].delete()),
+    overview: async (
+      slug: string,
+    ): Promise<{ openCallbacks: number; openGaps: number }> =>
+      unwrap(
+        await client.api.b[slug].overview.get(),
+      ) as unknown as { openCallbacks: number; openGaps: number },
+    bookings: async (
+      slug: string,
+      from: string,
+      to: string,
+    ): Promise<BookingsResponse> =>
+      unwrap(
+        await client.api.b[slug].bookings.get({ $query: { from, to } }),
+      ) as unknown as BookingsResponse,
+    createBooking: async (
+      slug: string,
+      input: {
+        resourceId: string;
+        serviceId?: string | null;
+        title: string;
+        customerName?: string;
+        startAt: string;
+        durationMinutes: number;
+        source?: Booking["source"];
+        price?: string;
+        note?: string;
+      },
+    ): Promise<{ booking: Booking }> =>
+      unwrap(
+        await client.api.b[slug].bookings.post(input),
+      ) as unknown as { booking: Booking },
+    updateBooking: async (
+      slug: string,
+      bookingId: string,
+      input: {
+        startAt?: string;
+        resourceId?: string;
+        status?: Booking["status"];
+        note?: string;
+      },
+    ): Promise<{ booking: Booking }> =>
+      unwrap(
+        await client.api.b[slug].bookings[bookingId].patch(input),
+      ) as unknown as { booking: Booking },
+    createBookingResource: async (
+      slug: string,
+      input: {
+        name: string;
+        subtitle?: string;
+        kind?: BookingResource["kind"];
+        hours?: string;
+        notes?: string;
+      },
+    ): Promise<{ resource: BookingResource }> =>
+      unwrap(
+        await client.api.b[slug]["booking-resources"].post(input),
+      ) as unknown as { resource: BookingResource },
+    updateBookingResource: async (
+      slug: string,
+      resourceId: string,
+      input: {
+        name?: string;
+        subtitle?: string;
+        hours?: string;
+        notes?: string;
+        active?: boolean;
+      },
+    ): Promise<{ resource: BookingResource }> =>
+      unwrap(
+        await client.api.b[slug]["booking-resources"][resourceId].patch(input),
+      ) as unknown as { resource: BookingResource },
+    createBookingService: async (
+      slug: string,
+      input: {
+        name: string;
+        durationMinutes: number;
+        bufferMinutes?: number;
+        price?: string;
+        deposit?: string;
+        agentBookable?: boolean;
+      },
+    ): Promise<{ service: BookingService }> =>
+      unwrap(
+        await client.api.b[slug]["booking-services"].post(input),
+      ) as unknown as { service: BookingService },
+    updateBookingService: async (
+      slug: string,
+      serviceId: string,
+      input: {
+        name?: string;
+        durationMinutes?: number;
+        bufferMinutes?: number;
+        price?: string;
+        deposit?: string;
+        agentBookable?: boolean;
+        active?: boolean;
+      },
+    ): Promise<{ service: BookingService }> =>
+      unwrap(
+        await client.api.b[slug]["booking-services"][serviceId].patch(input),
+      ) as unknown as { service: BookingService },
+    knowledgeGaps: async (slug: string): Promise<KnowledgeGapsResponse> =>
+      unwrap(
+        await client.api.b[slug]["knowledge-gaps"].get(),
+      ) as unknown as KnowledgeGapsResponse,
+    updateKnowledgeGap: async (
+      slug: string,
+      gapId: string,
+      status: KnowledgeGap["status"],
+    ): Promise<{ gap: KnowledgeGap }> =>
+      unwrap(
+        await client.api.b[slug]["knowledge-gaps"][gapId].patch({ status }),
+      ) as unknown as { gap: KnowledgeGap },
     delete: async (slug: string) =>
       unwrap(await client.api.b[slug].delete()),
     team: async (

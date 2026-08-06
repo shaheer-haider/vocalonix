@@ -1,0 +1,1 @@
+ALTER TABLE "business_dograh_mappings" ADD COLUMN "agent_tool_uuids" jsonb DEFAULT '{}'::jsonb NOT NULL;

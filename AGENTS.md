@@ -198,7 +198,7 @@ Steps:
 ## Notes
 
 - The API `build` script is currently `tsc --noEmit` only; the Docker image runs source directly.
-- The `/secret/*` routes are intentionally unprotected in this MVP.
+- The `/secret/*` lab routes and their `/api/agent*` + `/api/knowledge*` endpoints require a signed-in session.
 - Dograh credentials are server-side only; the browser loads the widget via an embed token.
 - Local magic-link requests return a preview link instead of sending real email.
 - A real spoken call requires Dograh model providers (STT, LLM, TTS) configured in the Dograh UI.

@@ -13,7 +13,11 @@ import { z } from "zod";
 import {
   api,
   ApiClientError,
+  type Booking,
   type BusinessSummary,
+  type CallbackTask,
+  type DashboardStats,
+  type KnowledgeGap,
   type PendingInvitation,
   type Role,
   type TeamMember,
@@ -292,7 +296,27 @@ function WorkspaceFrame({
   const isAccount = pathname.startsWith(accountHref);
   const isNotifications = pathname.startsWith(notificationsHref);
 
-  const counts = { needsYou: 2, callbacks: 3, gaps: 1 };
+  const [counts, setCounts] = useState({ callbacks: 0, gaps: 0 });
+
+  useEffect(() => {
+    let cancelled = false;
+    api.businesses
+      .overview(business.slug)
+      .then((overview) => {
+        if (!cancelled) {
+          setCounts({
+            callbacks: overview.openCallbacks,
+            gaps: overview.openGaps,
+          });
+        }
+      })
+      .catch(() => {
+        // Badge counts are decorative; leave them at zero on failure.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [business.slug]);
 
   return (
     <div className="workspace-shell">
@@ -334,7 +358,6 @@ function WorkspaceFrame({
           >
             <ChatIcon size={18} />
             Conversations
-            <span className="nav-item__count">{counts.needsYou}</span>
           </a>
           <a
             className={navActiveClass(isContacts)}
@@ -351,7 +374,6 @@ function WorkspaceFrame({
           >
             <CalendarIcon size={18} />
             Bookings
-            <span className="nav-item__hint">Preview</span>
           </a>
           <a
             className={navActiveClass(isCallbacks)}
@@ -360,7 +382,9 @@ function WorkspaceFrame({
           >
             <PhoneIcon size={18} />
             Callbacks
-            <span className="nav-item__count">{counts.callbacks}</span>
+            {counts.callbacks > 0 ? (
+              <span className="nav-item__count">{counts.callbacks}</span>
+            ) : null}
           </a>
           <p className="nav-section">Set up</p>
           <a
@@ -379,7 +403,9 @@ function WorkspaceFrame({
             >
               <BookIcon size={18} />
               Knowledge
-              <span className="nav-item__count">{counts.gaps}</span>
+              {counts.gaps > 0 ? (
+                <span className="nav-item__count">{counts.gaps}</span>
+              ) : null}
             </a>
           ) : null}
           <p className="nav-section">Workspace</p>
@@ -458,7 +484,9 @@ function WorkspaceFrame({
         >
           <PhoneIcon size={20} />
           <span>Callbacks</span>
-          <span className="nav-item__count nav-item__count--bottom">{counts.callbacks}</span>
+          {counts.callbacks > 0 ? (
+            <span className="nav-item__count nav-item__count--bottom">{counts.callbacks}</span>
+          ) : null}
         </a>
         <a
           className={navActiveClass(isConversations)}
@@ -467,7 +495,6 @@ function WorkspaceFrame({
         >
           <ChatIcon size={20} />
           <span>Calls</span>
-          <span className="nav-item__count nav-item__count--bottom">{counts.needsYou}</span>
         </a>
       </nav>
     </div>
@@ -640,55 +667,102 @@ export function CreateBusinessPage() {
   );
 }
 
+function formatCallLength(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}m ${s < 10 ? "0" : ""}${s}s`;
+}
+
+function dispositionText(value: string | null): string {
+  if (!value) return "In progress";
+  return value
+    .split("_")
+    .map((word) => word[0]?.toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function WorkspaceDashboardPage() {
   const [range, setRange] = useState<"today" | "7d" | "30d">("today");
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const slug = useBusinessSlug();
 
-  const stats = {
-    today: { answered: 12, handled: 9, callbacks: 3, avg: "4m 20s" },
-    "7d": { answered: 84, handled: 71, callbacks: 19, avg: "4m 08s" },
-    "30d": { answered: 341, handled: 298, callbacks: 76, avg: "4m 15s" },
-  }[range];
+  useEffect(() => {
+    let cancelled = false;
+    setStatsError(null);
+    api.businesses
+      .dashboard(slug, range)
+      .then((result) => {
+        if (!cancelled) setStats(result);
+      })
+      .catch((caught: unknown) => {
+        if (cancelled) return;
+        setStatsError(
+          caught instanceof Error
+            ? caught.message
+            : "Unable to load call stats.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, range]);
 
-  const hourly = [1, 2, 4, 7, 5, 3, 2, 1, 0, 0, 0, 0];
-  const topics = [
-    { label: "Bookings", value: 35 },
-    { label: "Prices", value: 22 },
-    { label: "Opening hours", value: 18 },
-    { label: "Treatments", value: 15 },
-    { label: "Other", value: 10 },
-  ];
+  const hourly = stats?.hourly.slice(8, 20) ?? new Array<number>(12).fill(0);
+  const hourlyMax = Math.max(1, ...hourly);
 
-  const callbackQueue = [
-    { who: "Dawn Whitfield", due: "9:00", task: "Follow-up", contact: "dawn" },
-    { who: "Marcus Bell", due: "12:40", task: "Slot confirmation", contact: "marcus" },
-  ];
+  const [callbackQueue, setCallbackQueue] = useState<CallbackTask[]>([]);
+  const [gaps, setGaps] = useState<KnowledgeGap[]>([]);
+  const [diary, setDiary] = useState<Booking[]>([]);
 
-  const gaps = [
-    { q: "Do you do cosmetic whitening?", n: 4 },
-    { q: "Is there parking nearby?", n: 2 },
-  ];
-
-  const diary = [
-    { time: "9:40", title: "Nadia Kaur", sub: "Check-up", held: false },
-    { time: "10:30", title: "Marcus Bell", sub: "Slot held on the phone", held: true },
-    { time: "11:00", title: "Iris Bhatt", sub: "Check-up — booked by the agent", held: false },
-  ];
-
-  const activity = [
-    "Answered a call from Grace Odum",
-    "Booked Elena Fox for a whitening consult",
-    "Promised Dawn Whitfield a follow-up call",
-    "Sent the widget snippet to the site",
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    void api.businesses
+      .callbacks(slug)
+      .then((result) => {
+        if (cancelled) return;
+        setCallbackQueue(
+          result.callbacks.filter((task) => task.status === "open").slice(0, 3),
+        );
+      })
+      .catch(() => undefined);
+    void api.businesses
+      .knowledgeGaps(slug)
+      .then((result) => {
+        if (cancelled) return;
+        setGaps(
+          result.gaps
+            .filter((gap) => gap.status === "open")
+            .sort((a, b) => b.askCount - a.askCount)
+            .slice(0, 3),
+        );
+      })
+      .catch(() => undefined);
+    void api.businesses
+      .bookings(slug, dayStart.toISOString(), dayEnd.toISOString())
+      .then((result) => {
+        if (cancelled) return;
+        setDiary(
+          result.bookings
+            .filter((booking) => booking.status !== "cancelled")
+            .slice(0, 4),
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   return (
     <WorkspaceShell>
       {(business) => (
         <>
-          <Alert variant="warn">
-            Design preview — the dashboard uses sample data until call, booking
-            and callback feeds are wired in.
-          </Alert>
+          {statsError ? <Alert variant="error">{statsError}</Alert> : null}
 
           <div className="dash-header" style={{ marginTop: 16 }}>
             <div>
@@ -711,22 +785,22 @@ export function WorkspaceDashboardPage() {
 
           <div className="dash-stats">
             <Box className="dash-stat" style={{ padding: 16 }}>
-              <strong>{stats.answered}</strong>
+              <strong>{stats ? stats.callsAnswered : "—"}</strong>
               <span>Calls answered</span>
               <small>Agent picked up every one</small>
             </Box>
             <Box className="dash-stat" style={{ padding: 16 }}>
-              <strong>{stats.handled}</strong>
-              <span>Handled alone</span>
-              <small>No human needed</small>
+              <strong>{stats ? stats.completedCalls : "—"}</strong>
+              <span>Completed</span>
+              <small>Ran to the end of the call</small>
             </Box>
             <Box className="dash-stat" style={{ padding: 16 }}>
-              <strong>{stats.callbacks}</strong>
-              <span>Callbacks asked</span>
-              <small>Promised out loud</small>
+              <strong>{stats ? Math.round(stats.totalSeconds / 60) : "—"}</strong>
+              <span>Minutes used</span>
+              <small>Across every call</small>
             </Box>
             <Box className="dash-stat" style={{ padding: 16 }}>
-              <strong>{stats.avg}</strong>
+              <strong>{stats ? formatCallLength(stats.averageSeconds) : "—"}</strong>
               <span>Average length</span>
               <small>From connect to finish</small>
             </Box>
@@ -741,36 +815,56 @@ export function WorkspaceDashboardPage() {
                   const hour = 8 + i;
                   return (
                     <div key={i} className="dash-bar">
-                      <div
-                        className="dash-bar__fill"
-                        style={{ height: `${(h / 7) * 100}%` }}
-                      />
+                      <div className="dash-bar__track">
+                        <div
+                          className="dash-bar__fill"
+                          style={{ height: `${(h / hourlyMax) * 100}%` }}
+                        />
+                      </div>
                       <span>{hour}:00</span>
                     </div>
                   );
                 })}
               </div>
               <p className="dash-insight">
-                Peak is 11am–12pm, but you close the phone lines at 1pm.
+                {stats && stats.callsAnswered > 0
+                  ? "Calls between 8am and 8pm in your business timezone."
+                  : "No calls in this period yet."}
               </p>
             </Box>
 
             <Box className="dash-surface" style={{ padding: 20 }}>
-              <p className="eyebrow">What they asked about</p>
-              <h2>Topic mix</h2>
+              <p className="eyebrow">How calls ended</p>
+              <h2>Outcomes</h2>
               <div className="dash-topics">
-                {topics.map((t) => (
-                  <div key={t.label} className="dash-topic">
-                    <span>{t.label}</span>
-                    <div className="dash-topic__track">
-                      <div
-                        className="dash-topic__fill"
-                        style={{ width: `${t.value}%` }}
-                      />
-                    </div>
-                    <span>{t.value}%</span>
-                  </div>
-                ))}
+                {(() => {
+                  const counts = new Map<string, number>();
+                  for (const run of stats?.recent ?? []) {
+                    const key = run.completed
+                      ? dispositionText(run.disposition)
+                      : "In progress";
+                    counts.set(key, (counts.get(key) ?? 0) + 1);
+                  }
+                  const total = stats?.recent.length ?? 0;
+                  if (total === 0) {
+                    return <p>No calls in this period yet.</p>;
+                  }
+                  return [...counts.entries()].map(([label, count]) => {
+                    const pct = Math.round((count / total) * 100);
+                    return (
+                      <div key={label} className="dash-topic">
+                        <span>{label}</span>
+                        <div className="dash-topic__track">
+                          <div
+                            className="dash-topic__fill"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span>{pct}%</span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </Box>
 
@@ -807,13 +901,16 @@ export function WorkspaceDashboardPage() {
                 <div className="session-list" style={{ marginTop: 12 }}>
                   {callbackQueue.map((item) => (
                     <a
-                      key={item.who}
+                      key={item.id}
                       className="session-item"
                       href={`/app/${business.slug}/callbacks`}
                     >
                       <div>
-                        <strong>{item.who}</strong>
-                        <span>Due {item.due} · {item.task}</span>
+                        <strong>{item.contactName}</strong>
+                        <span>
+                          Due {formatDate(item.promisedAt)}
+                          {item.reason ? ` · ${item.reason}` : ""}
+                        </span>
                       </div>
                       <Pill variant="info">Open</Pill>
                     </a>
@@ -835,21 +932,20 @@ export function WorkspaceDashboardPage() {
               ) : (
                 <div className="session-list" style={{ marginTop: 12 }}>
                   {gaps.map((gap) => (
-                    <div className="session-item" key={gap.q}>
+                    <div className="session-item" key={gap.id}>
                       <div>
-                        <strong>{gap.q}</strong>
-                        <span>Heard {gap.n} times</span>
+                        <strong>{gap.question}</strong>
+                        <span>
+                          Heard {gap.askCount} time{gap.askCount === 1 ? "" : "s"}
+                        </span>
                       </div>
                       <div className="stack-row">
                         <a
                           className="ui-button"
-                          href={`/app/${business.slug}/settings/knowledge`}
+                          href={`/app/${business.slug}/settings/knowledge#gaps`}
                         >
                           Teach
                         </a>
-                        <Button variant="ghost" disabled>
-                          Not worth it
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -867,40 +963,69 @@ export function WorkspaceDashboardPage() {
                   Open diary
                 </a>
               </div>
-              {diary.map((slot) => (
-                <div
-                  className={`ops-row ${slot.held ? "ops-row--held" : ""}`.trim()}
-                  key={slot.time}
-                >
-                  <div className="ops-row__time">
-                    <span>{slot.time}</span>
+              {diary.length === 0 ? (
+                <p>Nothing in the diary today.</p>
+              ) : (
+                diary.map((slot) => (
+                  <div className="ops-row" key={slot.id}>
+                    <div className="ops-row__time">
+                      <span>
+                        {new Date(slot.startAt).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <div className="ops-row__body">
+                      <span className="ops-row__title">
+                        {slot.customerName || slot.title}
+                      </span>
+                      <span className="ops-row__meta">
+                        {slot.title}
+                        {slot.source === "agent" ? " — booked by the agent" : ""}
+                      </span>
+                    </div>
+                    {slot.status === "arrived" ? (
+                      <Pill variant="good">Arrived</Pill>
+                    ) : slot.status === "no_show" ? (
+                      <Pill variant="warn">No-show</Pill>
+                    ) : (
+                      <Pill variant="info">Booked</Pill>
+                    )}
                   </div>
-                  <div className="ops-row__body">
-                    <span className="ops-row__title">{slot.title}</span>
-                    <span className="ops-row__meta">{slot.sub}</span>
-                  </div>
-                  {slot.held ? <Pill variant="warn">Held</Pill> : <Pill variant="info">Booked</Pill>}
-                </div>
-              ))}
-              <div className="dash-waitlist" style={{ marginTop: 12 }}>
-                <strong>1 person on the waitlist</strong>
-                <a href={`/app/${business.slug}/callbacks`}>Offer a slot</a>
-              </div>
+                ))
+              )}
             </Box>
           </div>
 
           <Box style={{ padding: 20, marginTop: 16 }}>
             <div className="account-section__heading">
               <div>
-                <p className="eyebrow">What Robin did today</p>
+                <p className="eyebrow">Latest calls</p>
                 <h2>Activity feed</h2>
               </div>
+              <a
+                className="ui-button"
+                href={`/app/${business.slug}/conversations`}
+              >
+                All conversations
+              </a>
             </div>
-            <ul className="dash-activity">
-              {activity.map((entry, i) => (
-                <li key={i}>{entry}</li>
-              ))}
-            </ul>
+            {stats && stats.recent.length > 0 ? (
+              <ul className="dash-activity">
+                {stats.recent.map((run) => (
+                  <li key={run.id}>
+                    Call #{run.id} · {formatDate(run.startedAt)} ·{" "}
+                    {run.completed ? dispositionText(run.disposition) : "In progress"}
+                    {run.durationSeconds !== null
+                      ? ` · ${formatCallLength(run.durationSeconds)}`
+                      : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No calls in this period yet.</p>
+            )}
           </Box>
         </>
       )}

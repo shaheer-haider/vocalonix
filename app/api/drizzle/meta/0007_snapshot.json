@@ -1,6 +1,6 @@
 {
-  "id": "60d35477-abf0-4850-b355-5a2656af4e12",
-  "prevId": "e3b35620-16fa-4f32-8d3d-8da0ebfa12b2",
+  "id": "142a518b-7f90-4581-9d2e-9779b437b520",
+  "prevId": "b4954607-f174-48fa-a52e-186f0094fb03",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1097,8 +1097,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.demo_sessions": {
-      "name": "demo_sessions",
+    "public.callback_tasks": {
+      "name": "callback_tasks",
       "schema": "",
       "columns": {
         "id": {
@@ -1106,6 +1106,77 @@
           "type": "text",
           "primaryKey": true,
           "notNull": true
+        },
+        "business_id": {
+          "name": "business_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_name": {
+          "name": "contact_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_channel": {
+          "name": "contact_channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "callback_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "promised_at": {
+          "name": "promised_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_to": {
+          "name": "assigned_to",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "callback_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1121,174 +1192,23 @@
           "notNull": true,
           "default": "now()"
         },
-        "vertical": {
-          "name": "vertical",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'intake_started'"
-        },
-        "business_name": {
-          "name": "business_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "city": {
-          "name": "city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "services": {
-          "name": "services",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        },
-        "booking_tool": {
-          "name": "booking_tool",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "vertical_answers": {
-          "name": "vertical_answers",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
-        },
-        "full_name": {
-          "name": "full_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "phone": {
-          "name": "phone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "demo_mode": {
-          "name": "demo_mode",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "voice": {
-          "name": "voice",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "workflow_id": {
-          "name": "workflow_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "duration_seconds": {
-          "name": "duration_seconds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "transcript": {
-          "name": "transcript",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "recording_url": {
-          "name": "recording_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cost_usd": {
-          "name": "cost_usd",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "feedback_score": {
-          "name": "feedback_score",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "feedback_chips": {
-          "name": "feedback_chips",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        },
-        "feedback_text": {
-          "name": "feedback_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "outcome": {
-          "name": "outcome",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "ip_address": {
-          "name": "ip_address",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "user_agent": {
-          "name": "user_agent",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "referrer": {
-          "name": "referrer",
-          "type": "text",
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
       },
       "indexes": {
-        "demo_sessions_email_idx": {
-          "name": "demo_sessions_email_idx",
+        "callback_tasks_business_status_idx": {
+          "name": "callback_tasks_business_status_idx",
           "columns": [
             {
-              "expression": "email",
+              "expression": "business_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "demo_sessions_status_idx": {
-          "name": "demo_sessions_status_idx",
-          "columns": [
+            },
             {
               "expression": "status",
               "isExpression": false,
@@ -1301,11 +1221,17 @@
           "method": "btree",
           "with": {}
         },
-        "demo_sessions_created_at_idx": {
-          "name": "demo_sessions_created_at_idx",
+        "callback_tasks_business_promised_idx": {
+          "name": "callback_tasks_business_promised_idx",
           "columns": [
             {
-              "expression": "created_at",
+              "expression": "business_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "promised_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1317,7 +1243,223 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "callback_tasks_business_id_businesses_id_fk": {
+          "name": "callback_tasks_business_id_businesses_id_fk",
+          "tableFrom": "callback_tasks",
+          "tableTo": "businesses",
+          "columnsFrom": [
+            "business_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "callback_tasks_assigned_to_users_id_fk": {
+          "name": "callback_tasks_assigned_to_users_id_fk",
+          "tableFrom": "callback_tasks",
+          "tableTo": "users",
+          "columnsFrom": [
+            "assigned_to"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "callback_tasks_created_by_users_id_fk": {
+          "name": "callback_tasks_created_by_users_id_fk",
+          "tableFrom": "callback_tasks",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contacts": {
+      "name": "contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "business_id": {
+          "name": "business_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "source": {
+          "name": "source",
+          "type": "contact_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "contacts_business_idx": {
+          "name": "contacts_business_idx",
+          "columns": [
+            {
+              "expression": "business_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "contacts_business_phone_idx": {
+          "name": "contacts_business_phone_idx",
+          "columns": [
+            {
+              "expression": "business_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "phone",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "contacts_business_email_idx": {
+          "name": "contacts_business_email_idx",
+          "columns": [
+            {
+              "expression": "business_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contacts_business_id_businesses_id_fk": {
+          "name": "contacts_business_id_businesses_id_fk",
+          "tableFrom": "contacts",
+          "tableTo": "businesses",
+          "columnsFrom": [
+            "business_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contacts_created_by_users_id_fk": {
+          "name": "contacts_created_by_users_id_fk",
+          "tableFrom": "contacts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -2193,6 +2335,33 @@
     }
   },
   "enums": {
+    "public.callback_source": {
+      "name": "callback_source",
+      "schema": "public",
+      "values": [
+        "call",
+        "manual"
+      ]
+    },
+    "public.callback_status": {
+      "name": "callback_status",
+      "schema": "public",
+      "values": [
+        "open",
+        "spoke",
+        "voicemail",
+        "dropped"
+      ]
+    },
+    "public.contact_source": {
+      "name": "contact_source",
+      "schema": "public",
+      "values": [
+        "call",
+        "manual",
+        "import"
+      ]
+    },
     "public.dograh_sync_state": {
       "name": "dograh_sync_state",
       "schema": "public",

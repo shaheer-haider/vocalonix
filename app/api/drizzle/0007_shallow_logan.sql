@@ -1,1 +1,0 @@
-ALTER TABLE "demo_sessions" ADD COLUMN "voice" text;

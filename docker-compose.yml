@@ -61,6 +61,7 @@ services:
       PORT: "3001"
       APP_ORIGIN: "${APP_ORIGIN:-http://localhost:3000}"
       API_PUBLIC_URL: "${VOCALONIX_API_PUBLIC_URL:-http://localhost:3001}"
+      VOCALONIX_INTERNAL_URL: "http://vocalonix-api:3001"
       NODE_ENV: "${NODE_ENV:-development}"
       DATABASE_URL: "postgres://${VOCALONIX_POSTGRES_USER:-vocalonix}:${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${VOCALONIX_POSTGRES_DB:-vocalonix}"
       AUTH_SECRET: "${AUTH_SECRET:-dev-only-vocalonix-auth-secret-change-before-production}"
@@ -77,6 +78,8 @@ services:
       DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME:-Vocalonix}"
       DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME:-Vocalonix Agent}"
       DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS:-localhost,127.0.0.1}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_EXTRACTION_MODEL: "${GEMINI_EXTRACTION_MODEL:-gemini-flash-latest}"
     ports:
       - "3001:3001"
     depends_on:
@@ -103,6 +106,7 @@ services:
       PORT: "3001"
       APP_ORIGIN: "${APP_ORIGIN:-http://localhost:3000}"
       API_PUBLIC_URL: "${VOCALONIX_API_PUBLIC_URL:-http://localhost:3001}"
+      VOCALONIX_INTERNAL_URL: "http://vocalonix-api:3001"
       NODE_ENV: "${NODE_ENV:-development}"
       DATABASE_URL: "postgres://${VOCALONIX_POSTGRES_USER:-vocalonix}:${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${VOCALONIX_POSTGRES_DB:-vocalonix}"
       AUTH_SECRET: "${AUTH_SECRET:-dev-only-vocalonix-auth-secret-change-before-production}"
@@ -119,6 +123,8 @@ services:
       DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME:-Vocalonix}"
       DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME:-Vocalonix Agent}"
       DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS:-localhost,127.0.0.1}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_EXTRACTION_MODEL: "${GEMINI_EXTRACTION_MODEL:-gemini-flash-latest}"
     depends_on:
       vocalonix-api:
         condition: service_healthy

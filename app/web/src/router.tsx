@@ -303,6 +303,15 @@ const designSystemRoute = createRoute({
 const secretRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/secret",
+  beforeLoad: async ({ location }) => {
+    const session = await api.auth.session();
+    if (!session) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+  },
   component: App,
   notFoundComponent: () => (
     <section className="route-message">

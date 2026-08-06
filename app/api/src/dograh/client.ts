@@ -3,8 +3,11 @@ import type {
   DograhDocumentList,
   DograhDocument,
   DograhEmbedToken,
+  DograhTool,
   DograhUpload,
   DograhWorkflow,
+  DograhWorkflowRun,
+  DograhWorkflowRunsPage,
   DograhWorkflowSummary,
 } from "./types";
 
@@ -67,6 +70,13 @@ export interface DograhManagementClient {
   ): Promise<Record<string, unknown>>;
   getDocument(documentUuid: string): Promise<DograhDocument>;
   deleteDocument(documentUuid: string): Promise<Record<string, unknown>>;
+  listWorkflowRuns(
+    workflowId: number,
+    page?: number,
+    limit?: number,
+  ): Promise<DograhWorkflowRunsPage>;
+  getWorkflowRun(workflowId: number, runId: number): Promise<DograhWorkflowRun>;
+  fetchRunTranscript(publicUrl: string): Promise<string | null>;
   getEmbedToken(workflowId: number): Promise<DograhEmbedToken | null>;
   createEmbedToken(
     workflowId: number,
@@ -74,6 +84,11 @@ export interface DograhManagementClient {
     allowedDomains?: string[],
   ): Promise<DograhEmbedToken>;
   deactivateEmbedToken(workflowId: number): Promise<Record<string, unknown>>;
+  createTool(body: Record<string, unknown>): Promise<DograhTool>;
+  updateTool(
+    toolUuid: string,
+    body: Record<string, unknown>,
+  ): Promise<DograhTool>;
 }
 
 export class DograhClient implements DograhManagementClient {
@@ -274,6 +289,53 @@ export class DograhClient implements DograhManagementClient {
     return this.rawRequest(`/knowledge-base/documents/${documentUuid}`);
   }
 
+  listWorkflowRuns(
+    workflowId: number,
+    page = 1,
+    limit = 50,
+  ): Promise<DograhWorkflowRunsPage> {
+    return this.rawRequest(
+      `/workflow/${workflowId}/runs?page=${page}&limit=${limit}`,
+    );
+  }
+
+  getWorkflowRun(workflowId: number, runId: number): Promise<DograhWorkflowRun> {
+    return this.rawRequest(`/workflow/${workflowId}/runs/${runId}`);
+  }
+
+  async fetchRunTranscript(publicUrl: string): Promise<string | null> {
+    const destination = new URL(publicUrl);
+    const internal = new URL(env.dograhInternalUrl);
+    destination.protocol = internal.protocol;
+    destination.hostname = internal.hostname;
+    destination.port = internal.port;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(destination, {
+        signal: controller.signal,
+        redirect: "manual",
+      });
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location) return null;
+        const storage = this.storageDestination(
+          new URL(location, destination).toString(),
+        );
+        const download = await fetch(storage, { signal: controller.signal });
+        if (!download.ok) return null;
+        return await download.text();
+      }
+      if (!response.ok) return null;
+      return await response.text();
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   getEmbedToken(workflowId: number): Promise<DograhEmbedToken | null> {
     return this.rawRequest<DograhEmbedToken>(
       `/workflow/${workflowId}/embed-token`,
@@ -303,6 +365,17 @@ export class DograhClient implements DograhManagementClient {
     return this.rawRequest(`/workflow/${workflowId}/embed-token`, {
       method: "DELETE",
     });
+  }
+
+  createTool(body: Record<string, unknown>): Promise<DograhTool> {
+    return this.rawRequest("/tools/", { method: "POST", body });
+  }
+
+  updateTool(
+    toolUuid: string,
+    body: Record<string, unknown>,
+  ): Promise<DograhTool> {
+    return this.rawRequest(`/tools/${toolUuid}`, { method: "PUT", body });
   }
 
   async uploadBytes(
