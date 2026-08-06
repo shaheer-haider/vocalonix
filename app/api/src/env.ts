@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { z } from "zod";
 
 const developmentDatabaseUrl =
@@ -14,6 +16,7 @@ const schema = z
     DATABASE_URL: z.string().min(1),
     AUTH_SECRET: z.string().min(32),
     API_PUBLIC_URL: z.url(),
+    VOCALONIX_INTERNAL_URL: z.url(),
     APP_ORIGIN: z.string().min(1),
     REQUIRE_EMAIL_VERIFICATION: z.enum(["true", "false"]),
     RESEND_API_KEY: z.string().optional(),
@@ -131,6 +134,10 @@ const parsed = schema.safeParse({
     process.env.AUTH_SECRET ??
     (isProduction ? undefined : developmentAuthSecret),
   API_PUBLIC_URL: process.env.API_PUBLIC_URL ?? "http://localhost:3001",
+  VOCALONIX_INTERNAL_URL:
+    process.env.VOCALONIX_INTERNAL_URL?.trim() ||
+    process.env.API_PUBLIC_URL ||
+    "http://localhost:3001",
   APP_ORIGIN: process.env.APP_ORIGIN ?? "http://localhost:3000",
   REQUIRE_EMAIL_VERIFICATION:
     process.env.REQUIRE_EMAIL_VERIFICATION ?? (isProduction ? "true" : "false"),
@@ -195,6 +202,10 @@ export const env = {
   databaseUrl: parsed.data.DATABASE_URL,
   authSecret: parsed.data.AUTH_SECRET,
   apiPublicUrl: trimUrl(parsed.data.API_PUBLIC_URL),
+  vocalonixInternalUrl: trimUrl(parsed.data.VOCALONIX_INTERNAL_URL),
+  agentToolSecret: createHash("sha256")
+    .update(`vocalonix-agent-tools:${parsed.data.AUTH_SECRET}`)
+    .digest("hex"),
   appOrigins,
   appOrigin: appOrigins[0]!,
   requireEmailVerification:

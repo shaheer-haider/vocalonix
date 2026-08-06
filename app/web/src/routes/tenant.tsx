@@ -478,8 +478,8 @@ function HoursForm({
     <Box style={{ padding: 24 }}>
       <h2>Business hours</h2>
       <p className="auth-card-copy">
-        Hours are supplied to the agent as context only. They do not provide live
-        availability or booking.
+        Hours set when the agent can offer and book appointment slots. Days
+        without hours are treated as closed.
       </p>
       <div className="hours-grid">
         {days.map((day) => {

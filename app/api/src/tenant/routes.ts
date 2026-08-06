@@ -155,6 +155,19 @@ async function queueBusinessSync(
     .onConflictDoNothing();
 }
 
+async function queueBookingSync(businessId: string): Promise<void> {
+  await db
+    .insert(outboxEvents)
+    .values({
+      id: randomUUID(),
+      businessId,
+      eventType: "dograh.workflow.sync",
+      payload: { businessId },
+      dedupeKey: `dograh.workflow.sync:${businessId}`,
+    })
+    .onConflictDoNothing();
+}
+
 async function snapshotBusinessConfig(
   businessId: string,
 ): Promise<Record<string, unknown>> {
@@ -1872,6 +1885,7 @@ export const tenantRoutes = new Elysia()
           "Could not create the diary column.",
         );
       }
+      await queueBookingSync(workspace.business.id);
       return { resource: created };
     },
     {
@@ -1915,6 +1929,7 @@ export const tenantRoutes = new Elysia()
           "Diary column was not found for this business.",
         );
       }
+      await queueBookingSync(workspace.business.id);
       return { resource: updated };
     },
     {
@@ -1953,6 +1968,7 @@ export const tenantRoutes = new Elysia()
           "Could not create the service.",
         );
       }
+      await queueBookingSync(workspace.business.id);
       return { service: created };
     },
     {
@@ -2005,6 +2021,7 @@ export const tenantRoutes = new Elysia()
           "Service was not found for this business.",
         );
       }
+      await queueBookingSync(workspace.business.id);
       return { service: updated };
     },
     {

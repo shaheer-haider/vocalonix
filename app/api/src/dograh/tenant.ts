@@ -4,6 +4,8 @@ import { and, eq, isNull, lt, ne, or } from "drizzle-orm";
 
 import { db } from "../db/client";
 import {
+  bookingResources,
+  bookingServices,
   businessAgentSettings,
   businessDograhMappings,
   businessKnowledge,
@@ -11,10 +13,13 @@ import {
   outboxEvents,
 } from "../db/schema";
 import { env } from "../env";
+import { ensureBusinessAgentTools } from "./agent-tools";
 import type { DograhManagementClient } from "./client";
 import { dograh, DograhError } from "./client";
 import {
   tenantDesiredConfiguration,
+  withAgentToolUuids,
+  type TenantBookingProfile,
   type TenantBusinessProfile,
 } from "./config";
 import {
@@ -104,10 +109,36 @@ async function loadTenantConfiguration(businessId: string) {
     vertical: row.business.vertical,
   };
 
+  const agentServices = await db
+    .select({ name: bookingServices.name })
+    .from(bookingServices)
+    .where(
+      and(
+        eq(bookingServices.businessId, businessId),
+        eq(bookingServices.active, true),
+        eq(bookingServices.agentBookable, true),
+      ),
+    );
+  const activeResources = await db
+    .select({ id: bookingResources.id })
+    .from(bookingResources)
+    .where(
+      and(
+        eq(bookingResources.businessId, businessId),
+        eq(bookingResources.active, true),
+      ),
+    )
+    .limit(1);
+  const booking: TenantBookingProfile = {
+    enabled: agentServices.length > 0 && activeResources.length > 0,
+    services: agentServices.map((service) => service.name),
+  };
+
   return {
     business,
     settings: tenantSettings(row.settings),
     mapping: row.mapping,
+    booking,
     documentUuids: documents
       .map((document) => document.documentUuid)
       .filter((value): value is string => Boolean(value)),
@@ -191,6 +222,7 @@ export async function synchronizeBusiness(
     business: loaded.business,
     settings: loaded.settings,
     documentUuids,
+    booking: loaded.booking,
   });
   const decision = synchronizationDecision(
     loaded.mapping,
@@ -255,6 +287,19 @@ export async function synchronizeBusiness(
       : null;
     let workflowUuid = loaded.mapping.workflowUuid;
 
+    let workflowDefinition = desired.workflowDefinition;
+    if (loaded.booking.enabled) {
+      const toolUuids = await ensureBusinessAgentTools(
+        client,
+        businessId,
+        loaded.mapping.agentToolUuids,
+      );
+      workflowDefinition = withAgentToolUuids(
+        desired.workflowDefinition,
+        Object.values(toolUuids),
+      );
+    }
+
     if (workflowId) {
       try {
         const current = await client.getWorkflow(workflowId);
@@ -280,7 +325,7 @@ export async function synchronizeBusiness(
     if (!workflowId) {
       const created = await client.createWorkflow(
         desired.name,
-        desired.workflowDefinition,
+        workflowDefinition,
       );
       workflowId = created.id;
       const createdWorkflow = await client.getWorkflow(workflowId);
@@ -303,7 +348,7 @@ export async function synchronizeBusiness(
     await client.updateWorkflow(
       workflowId,
       desired.name,
-      desired.workflowDefinition,
+      workflowDefinition,
       desired.workflowConfigurations,
     );
     await client.publishWorkflow(workflowId);

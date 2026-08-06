@@ -30,6 +30,16 @@ export interface TenantAgentSettings {
   allowedDomains: string[];
 }
 
+export interface DograhTool {
+  id: number;
+  tool_uuid: string;
+  name: string;
+  description: string | null;
+  category: string;
+  status: string;
+  definition: Record<string, unknown>;
+}
+
 export interface DograhWorkflowSummary {
   id: number;
   name: string;
