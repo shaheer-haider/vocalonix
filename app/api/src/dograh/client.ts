@@ -3,6 +3,7 @@ import type {
   DograhDocumentList,
   DograhDocument,
   DograhEmbedToken,
+  DograhTool,
   DograhUpload,
   DograhWorkflow,
   DograhWorkflowRun,
@@ -83,6 +84,11 @@ export interface DograhManagementClient {
     allowedDomains?: string[],
   ): Promise<DograhEmbedToken>;
   deactivateEmbedToken(workflowId: number): Promise<Record<string, unknown>>;
+  createTool(body: Record<string, unknown>): Promise<DograhTool>;
+  updateTool(
+    toolUuid: string,
+    body: Record<string, unknown>,
+  ): Promise<DograhTool>;
 }
 
 export class DograhClient implements DograhManagementClient {
@@ -359,6 +365,17 @@ export class DograhClient implements DograhManagementClient {
     return this.rawRequest(`/workflow/${workflowId}/embed-token`, {
       method: "DELETE",
     });
+  }
+
+  createTool(body: Record<string, unknown>): Promise<DograhTool> {
+    return this.rawRequest("/tools/", { method: "POST", body });
+  }
+
+  updateTool(
+    toolUuid: string,
+    body: Record<string, unknown>,
+  ): Promise<DograhTool> {
+    return this.rawRequest(`/tools/${toolUuid}`, { method: "PUT", body });
   }
 
   async uploadBytes(

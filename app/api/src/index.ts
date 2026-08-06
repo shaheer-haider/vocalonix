@@ -19,6 +19,7 @@ import {
 import { ApiError } from "./errors";
 import { requireSession } from "./workspace/context";
 import { workspaceRoutes } from "./workspace/routes";
+import { agentToolRoutes } from "./agent/routes";
 import { tenantRoutes } from "./tenant/routes";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -106,6 +107,7 @@ export const app = new Elysia()
     return { error: "Unexpected server error" };
   })
   .use(authRoutes)
+  .use(agentToolRoutes)
   .use(tenantRoutes)
   .use(workspaceRoutes)
   .get("/api/health", () => ({

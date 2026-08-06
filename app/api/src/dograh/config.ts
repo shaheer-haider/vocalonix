@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 
 import type { TenantAgentSettings } from "./types";
 
-export const TENANT_CONFIG_VERSION = 2;
+export const TENANT_CONFIG_VERSION = 3;
+
+export interface TenantBookingProfile {
+  enabled: boolean;
+  services: string[];
+}
 
 export interface TenantBusinessProfile {
   id: string;
@@ -49,7 +54,18 @@ export function buildTenantWorkflow(
   business: TenantBusinessProfile,
   settings: TenantAgentSettings,
   documentUuids: string[],
+  booking: TenantBookingProfile = { enabled: false, services: [] },
 ): Record<string, unknown> {
+  const bookingGuidance = booking.enabled
+    ? [
+        `You can book appointments for these services: ${booking.services.join(", ")}.`,
+        "To book: use the check booking availability tool to find open slots, offer the caller a time, and only after they confirm the service, day, time, and their name, use the book appointment tool. Read the confirmation back to the caller.",
+        "Never invent availability or claim a booking succeeded without a tool confirmation.",
+        "Never claim SMS, payments, phone routing, or other tools.",
+      ]
+    : [
+        "Never claim booking, live availability, SMS, payments, phone routing, or other tools.",
+      ];
   const globalPrompt = [
     `You are ${settings.agentName}, the browser-based voice agent for ${business.name}.`,
     `Use a ${settings.tone} tone and a ${settings.voice} speaking style.`,
@@ -61,7 +77,7 @@ export function buildTenantWorkflow(
     `Business hours for context only: ${hoursContext(settings)}`,
     "You may answer only from saved business context and attached knowledge.",
     settings.escalationGuidance,
-    "Never claim booking, live availability, SMS, payments, phone routing, or other tools.",
+    ...bookingGuidance,
     "If the answer is not supported by context, say a team member can follow up.",
   ].join("\n");
 
@@ -136,6 +152,7 @@ export function buildTenantWorkflow(
             },
           ],
           document_uuids: documentUuids,
+          tool_uuids: [],
         },
       },
       {
@@ -212,10 +229,30 @@ export function tenantWorkflowConfigurations(
   };
 }
 
+export function withAgentToolUuids(
+  workflowDefinition: Record<string, unknown>,
+  toolUuids: string[],
+): Record<string, unknown> {
+  const nodes = Array.isArray(workflowDefinition.nodes)
+    ? workflowDefinition.nodes.map((node) => {
+        if (!node || typeof node !== "object" || Array.isArray(node)) return node;
+        const record = node as Record<string, unknown>;
+        if (record.type !== "agentNode") return node;
+        const data =
+          record.data && typeof record.data === "object" && !Array.isArray(record.data)
+            ? (record.data as Record<string, unknown>)
+            : {};
+        return { ...record, data: { ...data, tool_uuids: [...toolUuids].sort() } };
+      })
+    : workflowDefinition.nodes;
+  return { ...workflowDefinition, nodes };
+}
+
 export function tenantDesiredConfiguration(input: {
   business: TenantBusinessProfile;
   settings: TenantAgentSettings;
   documentUuids: string[];
+  booking?: TenantBookingProfile;
 }): {
   hash: string;
   name: string;
@@ -223,10 +260,14 @@ export function tenantDesiredConfiguration(input: {
   workflowConfigurations: Record<string, unknown>;
 } {
   const documentUuids = [...input.documentUuids].sort();
+  const booking: TenantBookingProfile = input.booking
+    ? { enabled: input.booking.enabled, services: [...input.booking.services].sort() }
+    : { enabled: false, services: [] };
   const workflowDefinition = buildTenantWorkflow(
     input.business,
     input.settings,
     documentUuids,
+    booking,
   );
   const workflowConfigurations = tenantWorkflowConfigurations(input.settings);
   const name = tenantWorkflowName(input.business, input.settings);
