@@ -4,6 +4,7 @@ import { Outlet } from "@tanstack/react-router";
 import { api } from "./api";
 import { SideNav, type SideNavItem } from "./components/shell";
 import { LoadingState, SelectField, TextArea, TextField } from "./components/ui";
+import { useDograhHealth } from "./hooks/useDograhHealth";
 import {
   BookIcon,
   CopyIcon,
@@ -19,11 +20,23 @@ import type {
   WidgetResponse,
 } from "./types";
 
-const NAV_ITEMS: SideNavItem[] = [
-  { to: "/secret/test-agent", label: "Test Agent", icon: <PhoneIcon size={19} /> },
-  { to: "/secret/knowledge-base", label: "Knowledge Base", icon: <BookIcon size={19} /> },
-  { to: "/secret/agent-settings", label: "Agent Settings", icon: <SettingsIcon size={19} /> },
-];
+function navItems(turnEnabled: boolean): SideNavItem[] {
+  return [
+    ...(turnEnabled
+      ? [{ to: "/demo", label: "Hear it now", icon: <PhoneIcon size={19} /> }]
+      : []),
+    {
+      to: "/secret/knowledge-base",
+      label: "Knowledge Base",
+      icon: <BookIcon size={19} />,
+    },
+    {
+      to: "/secret/agent-settings",
+      label: "Agent Settings",
+      icon: <SettingsIcon size={19} />,
+    },
+  ];
+}
 
 function formatBytes(bytes: number): string {
   if (!bytes) return "Processing";
@@ -503,6 +516,7 @@ export function AgentSettingsView() {
 
 export default function App() {
   const [connected, setConnected] = useState<boolean | null>(null);
+  const { turnEnabled } = useDograhHealth();
 
   useEffect(() => {
     let cancelled = false;
@@ -537,7 +551,7 @@ export default function App() {
           </div>
         </div>
 
-        <SideNav items={NAV_ITEMS} label="Agent workspace" />
+        <SideNav items={navItems(turnEnabled)} label="Agent workspace" />
 
         <div className="sidebar-footer">
           <StatusBadge connected={connected} />

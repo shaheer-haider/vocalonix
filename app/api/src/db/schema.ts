@@ -718,4 +718,49 @@ export const knowledgeGaps = pgTable(
   ],
 );
 
+export const demoSessions = pgTable(
+  "demo_sessions",
+  {
+    id: text("id").primaryKey(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    vertical: text("vertical").notNull(),
+    status: text("status").notNull().default("intake_started"),
+    businessName: text("business_name"),
+    city: text("city"),
+    services: jsonb("services").$type<string[]>().notNull().default([]),
+    bookingTool: text("booking_tool"),
+    verticalAnswers: jsonb("vertical_answers")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    fullName: text("full_name"),
+    email: text("email"),
+    phone: text("phone"),
+    demoMode: text("demo_mode"),
+    voice: text("voice"),
+    workflowId: integer("workflow_id"),
+    durationSeconds: integer("duration_seconds"),
+    transcript: jsonb("transcript").$type<Record<string, unknown>[]>(),
+    recordingUrl: text("recording_url"),
+    costUsd: text("cost_usd"),
+    feedbackScore: integer("feedback_score"),
+    feedbackChips: jsonb("feedback_chips").$type<string[]>().notNull().default([]),
+    feedbackText: text("feedback_text"),
+    outcome: text("outcome"),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    referrer: text("referrer"),
+  },
+  (table) => [
+    index("demo_sessions_email_idx").on(table.email),
+    index("demo_sessions_status_idx").on(table.status),
+    index("demo_sessions_created_at_idx").on(table.createdAt),
+  ],
+);
+
 export type Role = (typeof roleEnum.enumValues)[number];

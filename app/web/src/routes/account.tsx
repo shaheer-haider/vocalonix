@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api, type AccountSession, type BusinessSummary } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
+import { DemoLink } from "../components/DemoLink";
 import { Alert, Box, Button, LoadingState, Pill } from "../components/ui";
 
 function formatDate(value: string | Date): string {
@@ -94,9 +95,7 @@ export function AppHomePage() {
           <Link className="ui-button" to="/account">
             Account settings
           </Link>
-          <Link className="ui-button" to="/secret/test-agent">
-            Open MVP lab
-          </Link>
+          <DemoLink className="ui-button">Hear it now</DemoLink>
         </div>
       </Box>
     </AuthShell>

@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
 
 import { useAuth } from "../../auth/AuthProvider";
+import { useDograhHealth } from "../../hooks/useDograhHealth";
 
 export function TopNav() {
   const auth = useAuth();
+  const { turnEnabled } = useDograhHealth();
   const isAuthenticated = auth.status === "authenticated";
 
   return (
@@ -14,7 +16,7 @@ export function TopNav() {
       <nav aria-label="Public navigation">
         <a href="/#how-it-works">How it works</a>
         <a href="/#widget">Widget</a>
-        <Link to="/secret/test-agent">MVP lab</Link>
+        {turnEnabled ? <Link to="/demo">Hear it now</Link> : null}
       </nav>
       <div className="public-nav__actions">
         {isAuthenticated ? (

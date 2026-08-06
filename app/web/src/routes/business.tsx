@@ -24,6 +24,7 @@ import {
 } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
+import { DemoLink } from "../components/DemoLink";
 import {
   Alert,
   Box,
@@ -434,10 +435,10 @@ function WorkspaceFrame({
             <BellIcon size={18} />
             Notifications
           </a>
-          <a className="nav-item" href="/secret/test-agent">
+          <DemoLink className="nav-item">
             <SettingsIcon size={18} />
-            MVP lab
-          </a>
+            Hear it now
+          </DemoLink>
         </nav>
         <div className="sidebar-status">
           <div className="sidebar-status__head">
@@ -500,16 +501,42 @@ function WorkspaceFrame({
   );
 }
 
+function mapDemoVertical(slug: string): string {
+  switch (slug) {
+    case "spa":
+    case "mental_health":
+      return "Wellness";
+    case "medspa":
+      return "Med spa";
+    case "dental":
+    case "vet":
+    case "funeral":
+    case "home_services":
+      return "Other";
+    case "salon":
+    case "barber":
+    case "pmu":
+    case "nail_lash":
+    default:
+      return "Beauty";
+  }
+}
+
 export function CreateBusinessPage() {
+  const createParams = new URLSearchParams(window.location.search);
+  const demoBusiness = createParams.get("demoBusiness") ?? "";
+  const demoCity = createParams.get("demoCity") ?? "";
+  const demoVertical = createParams.get("demoVertical") ?? "";
+
   const form = useForm<CreateBusinessValues>({
     resolver: zodResolver(createBusinessSchema),
     defaultValues: {
-      name: "",
+      name: demoBusiness,
       contactEmail: "",
-      city: "",
+      city: demoCity,
       country: "US",
       timezone: "America/New_York",
-      vertical: "Beauty",
+      vertical: demoVertical ? mapDemoVertical(demoVertical) : "Beauty",
       locations: "1",
     },
   });
@@ -624,14 +651,16 @@ export function CreateBusinessPage() {
             />
           </div>
           {notice ? <Alert variant="error">{notice}</Alert> : null}
-          <Button
-            type="submit"
-            variant="primary"
-            className="full-width"
-            loading={form.formState.isSubmitting}
-          >
-            Create workspace →
-          </Button>
+          <div style={{ marginTop: 22 }}>
+            <Button
+              type="submit"
+              variant="primary"
+              className="full-width"
+              loading={form.formState.isSubmitting}
+            >
+              Create workspace →
+            </Button>
+          </div>
         </Box>
       </form>
     </AuthShell>
@@ -852,9 +881,7 @@ export function WorkspaceDashboardPage() {
                 <a className="ui-button" href={`/app/${business.slug}/conversations`}>
                   Test call
                 </a>
-                <a className="ui-button" href="/secret/test-agent">
-                  Snippet
-                </a>
+                <DemoLink className="ui-button">Hear it now</DemoLink>
               </div>
             </Box>
           </div>
