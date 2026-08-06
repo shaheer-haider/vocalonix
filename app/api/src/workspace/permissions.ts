@@ -8,7 +8,9 @@ export type Permission =
   | "agent.edit"
   | "knowledge.manage"
   | "callbacks.manage"
-  | "contacts.manage";
+  | "contacts.manage"
+  | "bookings.manage"
+  | "bookings.configure";
 
 export const roleRank: Record<Role, number> = {
   Owner: 5,
@@ -27,6 +29,8 @@ const matrix: Record<Permission, readonly Role[]> = {
   "knowledge.manage": ["Owner", "Admin", "Manager"],
   "callbacks.manage": ["Owner", "Admin", "Manager", "Staff"],
   "contacts.manage": ["Owner", "Admin", "Manager", "Staff"],
+  "bookings.manage": ["Owner", "Admin", "Manager", "Staff"],
+  "bookings.configure": ["Owner", "Admin", "Manager"],
 };
 
 export function can(role: Role, permission: Permission): boolean {
