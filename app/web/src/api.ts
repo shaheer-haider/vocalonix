@@ -320,6 +320,21 @@ export interface CallbackUpdate {
   attemptNote?: string;
 }
 
+export interface KnowledgeGap {
+  id: string;
+  question: string;
+  agentResponse: string;
+  askCount: number;
+  status: "open" | "answered" | "dismissed";
+  lastAskedAt: string;
+  createdAt: string;
+}
+
+export interface KnowledgeGapsResponse {
+  gaps: KnowledgeGap[];
+  canManage: boolean;
+}
+
 export interface Contact {
   id: string;
   name: string | null;
@@ -605,6 +620,18 @@ export const api = {
       ),
     deleteKnowledge: async (slug: string, knowledgeId: string) =>
       unwrap(await client.api.b[slug].knowledge[knowledgeId].delete()),
+    knowledgeGaps: async (slug: string): Promise<KnowledgeGapsResponse> =>
+      unwrap(
+        await client.api.b[slug]["knowledge-gaps"].get(),
+      ) as unknown as KnowledgeGapsResponse,
+    updateKnowledgeGap: async (
+      slug: string,
+      gapId: string,
+      status: KnowledgeGap["status"],
+    ): Promise<{ gap: KnowledgeGap }> =>
+      unwrap(
+        await client.api.b[slug]["knowledge-gaps"][gapId].patch({ status }),
+      ) as unknown as { gap: KnowledgeGap },
     delete: async (slug: string) =>
       unwrap(await client.api.b[slug].delete()),
     team: async (

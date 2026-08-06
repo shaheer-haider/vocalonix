@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { extractCaller } from "./ingest";
+import { extractCaller, gapsFromContext, normalizeQuestion } from "./ingest";
 import type { DograhWorkflowRun } from "./types";
 
 function run(context: Record<string, unknown> | null): DograhWorkflowRun {
@@ -91,5 +91,49 @@ describe("extractCaller", () => {
     );
     expect(caller.phone).toBe("0770 090 0482");
     expect(caller.email).toBe("ann.oneil@example.co.uk");
+  });
+});
+
+describe("gapsFromContext", () => {
+  test("keeps well-formed gaps and drops malformed entries", () => {
+    const gaps = gapsFromContext({
+      knowledge_gaps: [
+        {
+          question: "Do you take Bupa dental insurance?",
+          agent_response: "I am not able to say which insurers we work with.",
+        },
+        { question: "short?" },
+        { question: 'Has a {brace} inside it, so rejected?' },
+        { agent_response: "No question at all." },
+        "not an object",
+        {
+          question: "Can I pay in instalments?",
+          agent_response: "Reason with a {brace} gets dropped",
+        },
+      ],
+    });
+    expect(gaps).toEqual([
+      {
+        question: "Do you take Bupa dental insurance?",
+        agentResponse: "I am not able to say which insurers we work with.",
+      },
+      { question: "Can I pay in instalments?", agentResponse: null },
+    ]);
+  });
+
+  test("returns empty for absent or non-array gaps", () => {
+    expect(gapsFromContext({})).toEqual([]);
+    expect(gapsFromContext({ knowledge_gaps: "nope" })).toEqual([]);
+  });
+});
+
+describe("normalizeQuestion", () => {
+  test("collapses case, whitespace, and trailing punctuation", () => {
+    expect(normalizeQuestion("  Do you  take Bupa insurance?? ")).toBe(
+      "do you take bupa insurance",
+    );
+    expect(normalizeQuestion("Do you take Bupa insurance")).toBe(
+      "do you take bupa insurance",
+    );
   });
 });
