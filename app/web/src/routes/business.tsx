@@ -13,8 +13,11 @@ import { z } from "zod";
 import {
   api,
   ApiClientError,
+  type Booking,
   type BusinessSummary,
+  type CallbackTask,
   type DashboardStats,
+  type KnowledgeGap,
   type PendingInvitation,
   type Role,
   type TeamMember,
@@ -292,7 +295,27 @@ function WorkspaceFrame({
   const isAccount = pathname.startsWith(accountHref);
   const isNotifications = pathname.startsWith(notificationsHref);
 
-  const counts = { needsYou: 2, callbacks: 3, gaps: 1 };
+  const [counts, setCounts] = useState({ callbacks: 0, gaps: 0 });
+
+  useEffect(() => {
+    let cancelled = false;
+    api.businesses
+      .overview(business.slug)
+      .then((overview) => {
+        if (!cancelled) {
+          setCounts({
+            callbacks: overview.openCallbacks,
+            gaps: overview.openGaps,
+          });
+        }
+      })
+      .catch(() => {
+        // Badge counts are decorative; leave them at zero on failure.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [business.slug]);
 
   return (
     <div className="workspace-shell">
@@ -334,7 +357,6 @@ function WorkspaceFrame({
           >
             <ChatIcon size={18} />
             Conversations
-            <span className="nav-item__count">{counts.needsYou}</span>
           </a>
           <a
             className={navActiveClass(isContacts)}
@@ -351,7 +373,6 @@ function WorkspaceFrame({
           >
             <CalendarIcon size={18} />
             Bookings
-            <span className="nav-item__hint">Preview</span>
           </a>
           <a
             className={navActiveClass(isCallbacks)}
@@ -360,7 +381,9 @@ function WorkspaceFrame({
           >
             <PhoneIcon size={18} />
             Callbacks
-            <span className="nav-item__count">{counts.callbacks}</span>
+            {counts.callbacks > 0 ? (
+              <span className="nav-item__count">{counts.callbacks}</span>
+            ) : null}
           </a>
           <p className="nav-section">Set up</p>
           <a
@@ -379,7 +402,9 @@ function WorkspaceFrame({
             >
               <BookIcon size={18} />
               Knowledge
-              <span className="nav-item__count">{counts.gaps}</span>
+              {counts.gaps > 0 ? (
+                <span className="nav-item__count">{counts.gaps}</span>
+              ) : null}
             </a>
           ) : null}
           <p className="nav-section">Workspace</p>
@@ -458,7 +483,9 @@ function WorkspaceFrame({
         >
           <PhoneIcon size={20} />
           <span>Callbacks</span>
-          <span className="nav-item__count nav-item__count--bottom">{counts.callbacks}</span>
+          {counts.callbacks > 0 ? (
+            <span className="nav-item__count nav-item__count--bottom">{counts.callbacks}</span>
+          ) : null}
         </a>
         <a
           className={navActiveClass(isConversations)}
@@ -467,7 +494,6 @@ function WorkspaceFrame({
         >
           <ChatIcon size={20} />
           <span>Calls</span>
-          <span className="nav-item__count nav-item__count--bottom">{counts.needsYou}</span>
         </a>
       </nav>
     </div>
@@ -656,30 +682,57 @@ export function WorkspaceDashboardPage() {
   const hourly = stats?.hourly.slice(8, 20) ?? new Array<number>(12).fill(0);
   const hourlyMax = Math.max(1, ...hourly);
 
-  const callbackQueue = [
-    { who: "Dawn Whitfield", due: "9:00", task: "Follow-up", contact: "dawn" },
-    { who: "Marcus Bell", due: "12:40", task: "Slot confirmation", contact: "marcus" },
-  ];
+  const [callbackQueue, setCallbackQueue] = useState<CallbackTask[]>([]);
+  const [gaps, setGaps] = useState<KnowledgeGap[]>([]);
+  const [diary, setDiary] = useState<Booking[]>([]);
 
-  const gaps = [
-    { q: "Do you do cosmetic whitening?", n: 4 },
-    { q: "Is there parking nearby?", n: 2 },
-  ];
-
-  const diary = [
-    { time: "9:40", title: "Nadia Kaur", sub: "Check-up", held: false },
-    { time: "10:30", title: "Marcus Bell", sub: "Slot held on the phone", held: true },
-    { time: "11:00", title: "Iris Bhatt", sub: "Check-up — booked by the agent", held: false },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    void api.businesses
+      .callbacks(slug)
+      .then((result) => {
+        if (cancelled) return;
+        setCallbackQueue(
+          result.callbacks.filter((task) => task.status === "open").slice(0, 3),
+        );
+      })
+      .catch(() => undefined);
+    void api.businesses
+      .knowledgeGaps(slug)
+      .then((result) => {
+        if (cancelled) return;
+        setGaps(
+          result.gaps
+            .filter((gap) => gap.status === "open")
+            .sort((a, b) => b.askCount - a.askCount)
+            .slice(0, 3),
+        );
+      })
+      .catch(() => undefined);
+    void api.businesses
+      .bookings(slug, dayStart.toISOString(), dayEnd.toISOString())
+      .then((result) => {
+        if (cancelled) return;
+        setDiary(
+          result.bookings
+            .filter((booking) => booking.status !== "cancelled")
+            .slice(0, 4),
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   return (
     <WorkspaceShell>
       {(business) => (
         <>
-          <Alert variant="warn">
-            Call stats and activity are live. The callbacks, knowledge-gap and
-            diary surfaces still show sample data until those backends land.
-          </Alert>
           {statsError ? <Alert variant="error">{statsError}</Alert> : null}
 
           <div className="dash-header" style={{ marginTop: 16 }}>
@@ -821,13 +874,16 @@ export function WorkspaceDashboardPage() {
                 <div className="session-list" style={{ marginTop: 12 }}>
                   {callbackQueue.map((item) => (
                     <a
-                      key={item.who}
+                      key={item.id}
                       className="session-item"
                       href={`/app/${business.slug}/callbacks`}
                     >
                       <div>
-                        <strong>{item.who}</strong>
-                        <span>Due {item.due} · {item.task}</span>
+                        <strong>{item.contactName}</strong>
+                        <span>
+                          Due {formatDate(item.promisedAt)}
+                          {item.reason ? ` · ${item.reason}` : ""}
+                        </span>
                       </div>
                       <Pill variant="info">Open</Pill>
                     </a>
@@ -849,21 +905,20 @@ export function WorkspaceDashboardPage() {
               ) : (
                 <div className="session-list" style={{ marginTop: 12 }}>
                   {gaps.map((gap) => (
-                    <div className="session-item" key={gap.q}>
+                    <div className="session-item" key={gap.id}>
                       <div>
-                        <strong>{gap.q}</strong>
-                        <span>Heard {gap.n} times</span>
+                        <strong>{gap.question}</strong>
+                        <span>
+                          Heard {gap.askCount} time{gap.askCount === 1 ? "" : "s"}
+                        </span>
                       </div>
                       <div className="stack-row">
                         <a
                           className="ui-button"
-                          href={`/app/${business.slug}/settings/knowledge`}
+                          href={`/app/${business.slug}/settings/knowledge#gaps`}
                         >
                           Teach
                         </a>
-                        <Button variant="ghost" disabled>
-                          Not worth it
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -881,25 +936,38 @@ export function WorkspaceDashboardPage() {
                   Open diary
                 </a>
               </div>
-              {diary.map((slot) => (
-                <div
-                  className={`ops-row ${slot.held ? "ops-row--held" : ""}`.trim()}
-                  key={slot.time}
-                >
-                  <div className="ops-row__time">
-                    <span>{slot.time}</span>
+              {diary.length === 0 ? (
+                <p>Nothing in the diary today.</p>
+              ) : (
+                diary.map((slot) => (
+                  <div className="ops-row" key={slot.id}>
+                    <div className="ops-row__time">
+                      <span>
+                        {new Date(slot.startAt).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <div className="ops-row__body">
+                      <span className="ops-row__title">
+                        {slot.customerName || slot.title}
+                      </span>
+                      <span className="ops-row__meta">
+                        {slot.title}
+                        {slot.source === "agent" ? " — booked by the agent" : ""}
+                      </span>
+                    </div>
+                    {slot.status === "arrived" ? (
+                      <Pill variant="good">Arrived</Pill>
+                    ) : slot.status === "no_show" ? (
+                      <Pill variant="warn">No-show</Pill>
+                    ) : (
+                      <Pill variant="info">Booked</Pill>
+                    )}
                   </div>
-                  <div className="ops-row__body">
-                    <span className="ops-row__title">{slot.title}</span>
-                    <span className="ops-row__meta">{slot.sub}</span>
-                  </div>
-                  {slot.held ? <Pill variant="warn">Held</Pill> : <Pill variant="info">Booked</Pill>}
-                </div>
-              ))}
-              <div className="dash-waitlist" style={{ marginTop: 12 }}>
-                <strong>1 person on the waitlist</strong>
-                <a href={`/app/${business.slug}/callbacks`}>Offer a slot</a>
-              </div>
+                ))
+              )}
             </Box>
           </div>
 

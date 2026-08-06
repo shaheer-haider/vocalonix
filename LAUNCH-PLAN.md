@@ -32,10 +32,10 @@ Each of these pages currently shows a "Design preview" banner:
 
 | Area | Route | Missing backend |
 | --- | --- | --- |
-| Dashboard (callbacks / gaps / diary surfaces) | `/app/:slug/dashboard` | Booking and callback feeds; call stats are live since PR #26. |
-| Bookings | `/app/:slug/bookings` | Booking/resource/availability tables, CRUD API, agent booking tools, slot holds, waitlist. |
+| ~~Dashboard (callbacks / gaps / diary surfaces)~~ | `/app/:slug/dashboard` | Done: callback queue, knowledge gaps and today's diary are fed from their real backends; call stats live since PR #26. |
+| ~~Bookings~~ | `/app/:slug/bookings` | Done in PR #35: booking/resource/service tables, CRUD API, clash guard, diary + Setup UI. Remaining: agent booking tools, slot holds, waitlist. |
 | Notifications | `/app/:slug/notifications` | Per-person event × Email/SMS/Push matrix, quiet hours, delivery. |
-| Knowledge — Gaps | `/app/:slug/settings/knowledge#gaps` | Feed of unanswered caller questions from real conversations. |
+| ~~Knowledge — Gaps~~ | `/app/:slug/settings/knowledge#gaps` | Done in PR #34: gaps mined from call transcripts, answer/dismiss workflow. |
 | Billing | `/app/:slug/account` | Plans, payment method, metered minutes, invoices. |
 
 ### Structural gaps
@@ -140,9 +140,10 @@ assume 1–2 engineers.
 
 ### Phase B — Bookings (the headline feature for service businesses)
 
-1. Drizzle tables: `resources` (staff/rooms), `availability`, `bookings`,
-   `booking_holds`, `waitlist`.
-2. CRUD API + diary UI wiring (hour grid, drag-to-reschedule, 10-min snap).
+1. ~~Drizzle tables~~ — done in PR #35: `booking_resources`, `booking_services`,
+   `bookings` (holds/waitlist still to come).
+2. ~~CRUD API + diary UI wiring~~ — done in PR #35: hour grid from real data,
+   nudge/reassign moves, arrived/no-show/cancel, Setup CRUD, clash guard.
 3. **Agent booking tools in Dograh**: function-calling tools so Robin can
    check availability, hold a slot during the call, confirm, and read back.
 4. Held-slot expiry + double-booking guards.
