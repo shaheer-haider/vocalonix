@@ -1,0 +1,41 @@
+{
+  "projectId": "d0a59015-5a31-4fea-9c9a-0e86c1a7d26a",
+  "shape": "package",
+  "pkg": "@vocalonix/web",
+  "globalName": "Vocalonix",
+  "buildCmd": "cd app/web && ./node_modules/.bin/tsc -p tsconfig.json --declaration --emitDeclarationOnly --noEmit false --outDir types",
+  "srcDir": "src",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": "src/styles.css",
+  "docsDir": "../../.design-sync/docs",
+  "readmeHeader": ".design-sync/conventions.md",
+  "guidelinesGlob": ["../../docs/design/*.md"],
+  "provider": { "component": "PreviewProvider" },
+  "overrides": {
+    "OnboardingShell": { "cardMode": "column" },
+    "Modal": { "cardMode": "single", "primaryStory": "Confirmation", "viewport": "900x620" },
+    "PageShell": { "cardMode": "column", "viewport": "1100x780" },
+    "PublicNav": { "cardMode": "column", "viewport": "1100x180" },
+    "SideNav": { "cardMode": "column" }
+  },
+  "componentSrcMap": {
+    "Alert": "src/components/ui/Alert.tsx",
+    "Box": "src/components/ui/Box.tsx",
+    "Button": "src/components/ui/Button.tsx",
+    "ColorField": "src/components/ui/ColorField.tsx",
+    "Dropdown": "src/components/ui/Dropdown.tsx",
+    "EmptyState": "src/components/ui/EmptyState.tsx",
+    "Field": "src/components/ui/Field.tsx",
+    "LoadingState": "src/components/ui/LoadingState.tsx",
+    "Modal": "src/components/ui/Modal.tsx",
+    "Pill": "src/components/ui/Pill.tsx",
+    "SelectField": "src/components/ui/SelectField.tsx",
+    "TextArea": "src/components/ui/TextArea.tsx",
+    "TextField": "src/components/ui/TextField.tsx",
+    "AuthShell": "src/components/shell/AuthShell.tsx",
+    "OnboardingShell": "src/components/shell/OnboardingShell.tsx",
+    "PageShell": "src/components/shell/PageShell.tsx",
+    "PublicNav": "src/components/shell/PublicNav.tsx",
+    "SideNav": "src/components/shell/SideNav.tsx"
+  }
+}
