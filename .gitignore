@@ -19,3 +19,11 @@ terraform/.terraform.lock.hcl
 
 # Hetzner deployment secrets
 deploy/hetzner/*/.env
+
+# design-sync (staged scripts + regenerated output + machine state)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+app/web/types/
