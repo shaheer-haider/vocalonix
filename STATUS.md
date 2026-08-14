@@ -2,6 +2,30 @@
 
 _Last updated: 2026-08-14_
 
+## MVP launch readiness (verdict)
+
+**Ready for a limited, invite-style MVP** once the deployment checklist below is
+done. The product funnel (signup → onboarding → publish → widget → calls →
+bookings/callbacks/transcripts) is implemented and E2E-tested locally, and the
+API refuses to boot in production with unsafe config (dev AUTH_SECRET, missing
+Resend key, non-HTTPS URLs). **Not ready for a broad public launch** — no
+telephony, no billing/usage limits, and rate limiting is single-instance only.
+
+### Deployment checklist (needs the operator)
+
+- [ ] Resend API key + verified sending domain (`RESEND_API_KEY`, `EMAIL_FROM`) —
+      without it production signups/magic links cannot deliver email.
+- [ ] Set `REQUIRE_EMAIL_VERIFICATION=true` in production (defaults to false
+      everywhere; the verification flow itself is implemented).
+- [ ] Unique production `AUTH_SECRET` (enforced at boot).
+- [ ] HTTPS `API_PUBLIC_URL` / `APP_ORIGIN` on the live domain (enforced at boot).
+- [ ] Gemini key (real voice) and OpenAI key if embeddings are used.
+- [ ] Dograh model providers (STT/LLM/TTS) configured in the Dograh UI.
+- [ ] Database backups + a tested restore path.
+- [ ] Uptime monitoring on `/api/health` and the worker heartbeat.
+- [ ] Run a single API instance (in-memory rate limiting) or add a shared
+      store before scaling out.
+
 ## What the product is
 
 Multi-tenant AI voice-agent platform. Businesses sign up, configure a voice
@@ -21,7 +45,7 @@ conversations, and notifications.
 - Bookings with clash detection, callbacks generated from call extractions,
   conversations with transcripts, and in-app notifications.
 - Docker Compose runtime (`./scripts/setup.sh && docker compose up -d --build --wait`),
-  API health + Dograh status endpoints, 50 passing unit tests, clean typecheck.
+  API health + Dograh status endpoints, 57 passing unit tests, clean typecheck.
 
 ## What we need (external inputs)
 
@@ -64,11 +88,12 @@ Still open (rough priority order):
 
 - [ ] **Integration tests** covering API routes end-to-end (auth, workspace,
       knowledge, outbox) — current tests are unit-level only.
-- [ ] **Pagination UI** — the frontend does not yet expose load-more/paging
-      controls for the newly paginated endpoints.
+- [x] **Pagination UI** — contacts, callbacks, and tenant knowledge lists now
+      show a Load more control when more rows exist.
 - [x] Basic rate limiting added on public endpoints (signup, login, magic
       links, demo session creation) — per-IP fixed windows.
-- [ ] Email verification flow is disabled and untested.
+- [ ] Email verification is implemented but disabled by default
+      (`REQUIRE_EMAIL_VERIFICATION=false`); enable it in production.
 - [ ] Rate limiting is in-memory only; move to a shared store (e.g. Redis)
       when the API scales past one instance.
 

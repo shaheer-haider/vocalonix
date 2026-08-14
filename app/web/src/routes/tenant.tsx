@@ -593,11 +593,15 @@ function KnowledgeManager({
     title: string;
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      setItems(await api.businesses.knowledge(slug));
+      const result = await api.businesses.knowledge(slug);
+      setItems(result.knowledge);
+      setHasMore(result.hasMore);
       setError(null);
     } catch (caught) {
       setError(
@@ -611,6 +615,21 @@ function KnowledgeManager({
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const result = await api.businesses.knowledge(slug, items.length);
+      setItems((prev) => [...prev, ...result.knowledge]);
+      setHasMore(result.hasMore);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to load more.",
+      );
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [slug, items.length]);
 
   const processing = useMemo(
     () =>
@@ -841,6 +860,15 @@ function KnowledgeManager({
                 </div>
               );
             })}
+            {hasMore ? (
+              <Button
+                variant="ghost"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+              >
+                {loadingMore ? "Loading…" : "Load more"}
+              </Button>
+            ) : null}
           </div>
         )}
       </Box>
@@ -972,7 +1000,7 @@ function AnswersTab({ slug }: { slug: string }) {
     setLoading(true);
     try {
       setItems(
-        (await api.businesses.knowledge(slug)).filter(
+        (await api.businesses.knowledge(slug)).knowledge.filter(
           (item) => item.kind === "text",
         ),
       );

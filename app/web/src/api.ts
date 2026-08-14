@@ -312,6 +312,7 @@ export interface CallbackTask {
 
 export interface CallbacksResponse {
   callbacks: CallbackTask[];
+  hasMore: boolean;
   members: { userId: string; name: string; role: string }[];
   viewerId: string;
   canManage: boolean;
@@ -398,6 +399,7 @@ export interface Contact {
 
 export interface ContactsResponse {
   contacts: Contact[];
+  hasMore: boolean;
   canManage: boolean;
 }
 
@@ -564,9 +566,11 @@ export const api = {
           $query: { range },
         }),
       ) as unknown as DashboardStats,
-    contacts: async (slug: string): Promise<ContactsResponse> =>
+    contacts: async (slug: string, offset = 0): Promise<ContactsResponse> =>
       unwrap(
-        await client.api.b[slug].contacts.get(),
+        await client.api.b[slug].contacts.get({
+          $query: { offset: String(offset) },
+        }),
       ) as unknown as ContactsResponse,
     createContact: async (
       slug: string,
@@ -594,9 +598,11 @@ export const api = {
       unwrap(
         await client.api.b[slug].contacts[contactId].delete(),
       ) as unknown as { ok: boolean },
-    callbacks: async (slug: string): Promise<CallbacksResponse> =>
+    callbacks: async (slug: string, offset = 0): Promise<CallbacksResponse> =>
       unwrap(
-        await client.api.b[slug].callbacks.get(),
+        await client.api.b[slug].callbacks.get({
+          $query: { offset: String(offset) },
+        }),
       ) as unknown as CallbacksResponse,
     createCallback: async (
       slug: string,
@@ -636,9 +642,19 @@ export const api = {
       unwrap(
         await client.api.b[slug].conversations[String(runId)].get(),
       ) as unknown as { conversation: ConversationDetail },
-    knowledge: async (slug: string): Promise<TenantKnowledgeItem[]> => {
-      const result = unwrap(await client.api.b[slug].knowledge.get());
-      return result.knowledge as TenantKnowledgeItem[];
+    knowledge: async (
+      slug: string,
+      offset = 0,
+    ): Promise<{ knowledge: TenantKnowledgeItem[]; hasMore: boolean }> => {
+      const result = unwrap(
+        await client.api.b[slug].knowledge.get({
+          $query: { offset: String(offset) },
+        }),
+      );
+      return {
+        knowledge: result.knowledge as TenantKnowledgeItem[],
+        hasMore: Boolean((result as { hasMore?: boolean }).hasMore),
+      };
     },
     createKnowledge: async (
       slug: string,

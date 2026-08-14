@@ -906,6 +906,7 @@ function CallbacksPage({ slug }: { slug: string }) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [form, setForm] = useState({ contactName: "", contactChannel: "", reason: "", due: "30", assignedTo: "" });
 
   useEffect(() => {
@@ -928,6 +929,26 @@ function CallbacksPage({ slug }: { slug: string }) {
   const say = (m: string) => {
     setToast(m);
     window.setTimeout(() => setToast(null), 2400);
+  };
+
+  const loadMore = async () => {
+    if (loadingMore || !data) return;
+    setLoadingMore(true);
+    try {
+      const result = await api.businesses.callbacks(slug, data.callbacks.length);
+      setData((prev) =>
+        prev
+          ? {
+              ...result,
+              callbacks: [...prev.callbacks, ...result.callbacks],
+            }
+          : result,
+      );
+    } catch (caught) {
+      say(caught instanceof Error ? caught.message : "Unable to load more.");
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const now = Date.now();
@@ -1235,6 +1256,14 @@ function CallbacksPage({ slug }: { slug: string }) {
                 </div>
               ))
             ) : (
+              null
+            )}
+            {!loadError && data && groups.length > 0 && data.hasMore ? (
+              <Button variant="ghost" onClick={() => void loadMore()} disabled={loadingMore}>
+                {loadingMore ? "Loading…" : "Load more"}
+              </Button>
+            ) : null}
+            {data && groups.length === 0 && !loadError ? (
               <div className="callbacks-empty">
                 <span className="callbacks-empty__title">{emptyTitle}</span>
                 <span className="callbacks-empty__line">{emptyLine}</span>
@@ -1244,7 +1273,7 @@ function CallbacksPage({ slug }: { slug: string }) {
                   </Button>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 

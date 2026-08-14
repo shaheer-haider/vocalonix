@@ -102,6 +102,8 @@ function ContactsPage({ slug }: { slug: string }) {
   const [addingTag, setAddingTag] = useState(false);
   const [tagDraft, setTagDraft] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
   const toastRef = useRef<number | null>(null);
@@ -126,6 +128,7 @@ function ContactsPage({ slug }: { slug: string }) {
       .then((result) => {
         if (cancelled) return;
         setContactList(result.contacts);
+        setHasMore(result.hasMore);
         setCanManage(result.canManage);
       })
       .catch((caught: unknown) => {
@@ -171,6 +174,20 @@ function ContactsPage({ slug }: { slug: string }) {
     { key: "unnamed", label: `No name ${unnamedCount}` },
     { key: "tagged", label: "Tagged" },
   ];
+
+  async function loadMore() {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await api.businesses.contacts(slug, pool.length);
+      setContactList((prev) => [...(prev ?? []), ...result.contacts]);
+      setHasMore(result.hasMore);
+    } catch (caught) {
+      say(caught instanceof Error ? caught.message : "Unable to load more.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   function replaceContact(updated: Contact) {
     setContactList((prev) =>
@@ -465,6 +482,11 @@ function ContactsPage({ slug }: { slug: string }) {
                   </button>
                 );
               })}
+              {hasMore ? (
+                <Button variant="ghost" onClick={() => void loadMore()} disabled={loadingMore}>
+                  {loadingMore ? "Loading…" : "Load more"}
+                </Button>
+              ) : null}
               {renderImportFooter()}
             </>
           )}
