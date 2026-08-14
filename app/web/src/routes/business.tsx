@@ -22,6 +22,7 @@ import {
   type Role,
   type BusinessListResponse,
   type TeamMember,
+  type TenantSettingsResponse,
 } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
@@ -839,6 +840,7 @@ export function WorkspaceDashboardPage() {
   const [callbackQueue, setCallbackQueue] = useState<CallbackTask[]>([]);
   const [gaps, setGaps] = useState<KnowledgeGap[]>([]);
   const [diary, setDiary] = useState<Booking[]>([]);
+  const [tenant, setTenant] = useState<TenantSettingsResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -865,6 +867,12 @@ export function WorkspaceDashboardPage() {
             .sort((a, b) => b.askCount - a.askCount)
             .slice(0, 3),
         );
+      })
+      .catch(() => undefined);
+    void api.businesses
+      .settings(slug)
+      .then((result) => {
+        if (!cancelled) setTenant(result);
       })
       .catch(() => undefined);
     void api.businesses
@@ -997,10 +1005,18 @@ export function WorkspaceDashboardPage() {
               <p className="eyebrow">Live</p>
               <h2>Answering</h2>
               <p className="dash-live-line">
-                <PhoneIcon size={16} /> 0113 496 2288
+                <PhoneIcon size={16} />{" "}
+                {tenant
+                  ? `${tenant.settings.agentName} answers in a ${tenant.settings.tone} tone`
+                  : "\u2026"}
               </p>
               <p className="dash-live-line">
-                <ChatIcon size={16} /> Website button is on
+                <ChatIcon size={16} />{" "}
+                {tenant
+                  ? tenant.onboarding.publishedAt
+                    ? `Website button “${tenant.settings.widgetButtonText}” is live`
+                    : "Website widget is not published yet"
+                  : "\u2026"}
               </p>
               <div className="stack-row" style={{ marginTop: 10 }}>
                 <Link className="ui-button" to="/app/$businessSlug/conversations" params={{ businessSlug: business.slug }}>
