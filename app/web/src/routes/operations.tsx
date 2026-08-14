@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 
 import {
   api,
@@ -96,6 +97,8 @@ function BookingsPage({ slug }: { slug: string }) {
   const [filter, setFilter] = useState<"all" | "agent" | "attn">("all");
   const [sel, setSel] = useState<string | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
+  /** Cancelling reaches a real customer, so it takes two deliberate actions. */
+  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
   const [data, setData] = useState<BookingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -274,11 +277,11 @@ function BookingsPage({ slug }: { slug: string }) {
 
                 {tab === "Diary" ? (
                   loading ? (
-                    <Box style={{ padding: 24 }}>
+                    <Box padding="lg">
                       <p className="auth-card-copy">Loading the diary…</p>
                     </Box>
                   ) : resources.length === 0 ? (
-                    <Box style={{ padding: 24 }}>
+                    <Box padding="lg">
                       <h2>No diary columns yet</h2>
                       <p className="auth-card-copy">
                         Add the people and rooms that take bookings under Setup,
@@ -466,15 +469,37 @@ function BookingsPage({ slug }: { slug: string }) {
                               No-show
                             </Button>
                           )}
-                          <Button
-                            variant="destructive"
-                            onClick={() => {
-                              setSel(null);
-                              void update(selected.id, { status: "cancelled" }, "Cancelled");
-                            }}
-                          >
-                            Cancel
-                          </Button>
+                          {confirmCancel === selected.id ? (
+                            <>
+                              <span className="bookings-confirm">
+                                Cancel this booking for {selected.customerName || "this customer"}?
+                              </span>
+                              <Button
+                                variant="destructive"
+                                onClick={() => {
+                                  setConfirmCancel(null);
+                                  setSel(null);
+                                  void update(
+                                    selected.id,
+                                    { status: "cancelled" },
+                                    "Booking cancelled",
+                                  );
+                                }}
+                              >
+                                Yes, cancel it
+                              </Button>
+                              <Button onClick={() => setConfirmCancel(null)}>
+                                Keep it
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              variant="destructive"
+                              onClick={() => setConfirmCancel(selected.id)}
+                            >
+                              Cancel booking
+                            </Button>
+                          )}
                         </div>
 
                         {moveOpen && (
@@ -502,9 +527,9 @@ function BookingsPage({ slug }: { slug: string }) {
                     )}
 
                     <div className="bookings-detail__links">
-                      <a href={`/app/${slug}/contacts`}>Open contact</a>
+                      <Link to="/app/$businessSlug/contacts" params={{ businessSlug: slug }}>Open contact</Link>
                       {selected.runId ? (
-                        <a href={`/app/${slug}/conversations`}>Hear the call</a>
+                        <Link to="/app/$businessSlug/conversations" params={{ businessSlug: slug }}>Hear the call</Link>
                       ) : null}
                     </div>
                   </div>
@@ -512,7 +537,10 @@ function BookingsPage({ slug }: { slug: string }) {
               </div>
             </div>
 
-      {toast && <div className="ops-toast">{toast}</div>}
+      {/* role=status + aria-live so confirmations and errors are actually announced. */}
+      <div className="ops-toast__region" role="status" aria-live="polite">
+        {toast && <div className="ops-toast">{toast}</div>}
+      </div>
     </>
   );
 }
@@ -572,7 +600,7 @@ function NewBookingForm({
   }
 
   return (
-    <Box style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+    <Box padding="sm" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <span className="bookings-section-label">New booking</span>
       {services.length === 0 ? (
         <p className="auth-card-copy">
@@ -1340,7 +1368,7 @@ function CallbacksPage({ slug }: { slug: string }) {
                 ))}
                 {selected.runId !== null && (
                   <div className="callbacks-links">
-                    <a href={`/app/${slug}/conversations`}>The call ↗</a>
+                    <Link to="/app/$businessSlug/conversations" params={{ businessSlug: slug }}>The call ↗</Link>
                   </div>
                 )}
               </div>
@@ -1543,7 +1571,10 @@ function CallbacksPage({ slug }: { slug: string }) {
         </div>
       </div>
 
-      {toast && <div className="ops-toast">{toast}</div>}
+      {/* role=status + aria-live so confirmations and errors are actually announced. */}
+      <div className="ops-toast__region" role="status" aria-live="polite">
+        {toast && <div className="ops-toast">{toast}</div>}
+      </div>
     </>
   );
 }

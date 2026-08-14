@@ -29,8 +29,10 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: var(--space-5) var(--space-6);
   background: var(--paper);
   border-color: var(--line);
+  border-radius: var(--radius-lg);
 }
 
 .notifications-card__head {
@@ -44,7 +46,7 @@
 .notifications-card__title {
   margin: 0;
   font-family: var(--hand);
-  font-size: 22px;
+  font-size: 1.375rem;
   color: var(--ink);
   line-height: 1.1;
 }
@@ -52,7 +54,7 @@
 .notifications-card__note {
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .notifications-two-col {
@@ -69,7 +71,7 @@
   padding: 0 12px 2px;
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -119,7 +121,7 @@
   align-items: center;
   gap: 9px;
   font-family: var(--kalam);
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1.2;
   color: var(--ink);
   font-weight: 700;
@@ -127,7 +129,7 @@
 
 .notifications-matrix__sub {
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.25;
   color: var(--ink-4);
 }
@@ -145,7 +147,7 @@
   border: 1px solid var(--line);
   color: transparent;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 400;
   cursor: pointer;
   padding: 0;
@@ -175,7 +177,7 @@
   border-top: 1px dashed var(--line-2);
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
 }
 
@@ -207,7 +209,7 @@
   justify-content: center;
   color: var(--ink);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 
 .notifications-toggle__box--on {
@@ -218,7 +220,7 @@
 
 .notifications-toggle__label {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-2);
   line-height: 1.3;
 }
@@ -243,26 +245,26 @@
   width: 78px !important;
   text-align: center;
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .notifications-quiet__arrow {
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 
 .notifications-quiet__span {
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .notifications-quiet__note {
   margin: 0;
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
 }
 
@@ -280,7 +282,7 @@
 
 .notifications-pace__title {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-2);
 }
 
@@ -303,7 +305,7 @@
   border: 1px solid transparent;
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .notifications-pace__seg--active {
@@ -316,7 +318,7 @@
   margin: 0;
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
 }
 
@@ -348,7 +350,7 @@
 
 .notifications-dest__body .ui-label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -357,7 +359,7 @@
 .notifications-dest__btn {
   min-height: 32px;
   padding: 5px 11px;
-  font-size: 14px;
+  font-size: 0.875rem;
   margin-top: 20px;
 }
 
@@ -375,7 +377,7 @@
 .notifications-rule__title {
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -384,7 +386,7 @@
   margin: 0;
   color: var(--ink-2);
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.35;
 }
 
@@ -397,6 +399,7 @@
   display: flex;
   flex-direction: column;
   border-color: var(--line);
+  border-radius: var(--radius-lg);
 }
 
 .notifications-rail__section {
@@ -426,7 +429,7 @@
 .notifications-rail__hint {
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .notifications-chain {
@@ -450,7 +453,7 @@
   flex: none;
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 
 .notifications-chain__body {
@@ -463,14 +466,14 @@
 
 .notifications-chain__name {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.2;
   color: var(--ink);
 }
 
 .notifications-chain__how {
   font-family: var(--kalam);
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.2;
   color: var(--ink-4);
 }
@@ -494,7 +497,7 @@
   border: 1px solid var(--line-2);
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   cursor: pointer;
 }
 
@@ -528,14 +531,14 @@
 .notifications-ooh__name {
   flex: 1;
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink);
 }
 
 .notifications-ooh__how {
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   flex: none;
 }
 
@@ -546,7 +549,7 @@
   padding: 0;
   color: var(--accent-ink);
   font-family: var(--kalam);
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
   text-decoration: underline;
 }
@@ -580,7 +583,7 @@
   flex: none;
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
 }
 
 .notifications-sample__body {
@@ -593,14 +596,14 @@
 
 .notifications-sample__what {
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.25;
   color: var(--ink);
 }
 
 .notifications-sample__via {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -638,14 +641,14 @@
 .notifications-others__name {
   flex: 1;
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink);
 }
 
 .notifications-others__via {
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   letter-spacing: 0.06em;
 }
 
@@ -653,7 +656,7 @@
   margin: 0;
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
 }
 

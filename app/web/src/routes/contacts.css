@@ -3,7 +3,9 @@
   grid-template-columns: 360px minmax(0, 1fr);
   min-height: 500px;
   height: calc(100vh - 160px);
+  height: calc(100dvh - 160px);
   max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - 160px);
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--paper);
@@ -35,13 +37,13 @@
 .contacts-list__heading {
   margin: 0;
   font-family: var(--hand);
-  font-size: 28px;
+  font-size: 1.75rem;
   color: var(--ink);
 }
 
 .contacts-list__count {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   color: var(--ink-4);
   text-transform: uppercase;
@@ -51,11 +53,19 @@
   display: flex;
   align-items: center;
   gap: 9px;
+  min-height: var(--control-height);
   padding: 7px 11px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 10px;
   margin-bottom: 11px;
+}
+
+/* Borderless input; the wrapper carries focus so the whole field reads as one control. */
+.contacts-list__search:focus-within {
+  border-color: var(--accent);
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .contacts-list__search svg {
@@ -70,7 +80,7 @@
   border: none;
   outline: none;
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--ink);
 }
 
@@ -91,7 +101,7 @@
   color: var(--ink-2);
   padding: 5px 12px;
   font-family: var(--kalam);
-  font-size: 15px;
+  font-size: 0.9375rem;
   cursor: pointer;
 }
 
@@ -125,7 +135,7 @@
 .contacts-prompt__text,
 .contacts-merge__text {
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-2);
 }
@@ -180,13 +190,13 @@
 .contacts-avatar--small {
   width: 32px;
   height: 32px;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .contacts-avatar--large {
   width: 44px;
   height: 44px;
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 
 .contacts-row__body {
@@ -206,7 +216,7 @@
 
 .contacts-row__name {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -218,14 +228,14 @@
 
 .contacts-row__when {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   color: var(--ink-4);
   flex: none;
 }
 
 .contacts-row__sub {
   color: var(--ink-4);
-  font-size: 14px;
+  font-size: 0.875rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -234,7 +244,7 @@
 .contacts-row__badge {
   align-self: flex-start;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   border-radius: 20px;
@@ -311,14 +321,14 @@
 .contacts-detail__name {
   margin: 0;
   font-family: var(--hand);
-  font-size: 31px;
+  font-size: 1.9375rem;
   line-height: 1.1;
   color: var(--ink);
 }
 
 .contacts-detail__summary {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-4);
 }
 
@@ -330,7 +340,7 @@
 
 .contacts-source {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   border-radius: 20px;
@@ -383,13 +393,13 @@
 
 .contacts-stat__value {
   font-family: var(--hand);
-  font-size: 23px;
+  font-size: 1.4375rem;
   color: var(--ink);
 }
 
 .contacts-stat__label {
   font-family: var(--kalam);
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--ink-4);
 }
 
@@ -448,7 +458,7 @@
 
 .contacts-next__label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--good);
@@ -456,13 +466,13 @@
 
 .contacts-next__when {
   font-family: var(--hand);
-  font-size: 22px;
+  font-size: 1.375rem;
   color: var(--ink);
 }
 
 .contacts-next__what {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-4);
 }
 
@@ -475,7 +485,7 @@
 
 .contacts-section__label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -483,7 +493,7 @@
 
 .contacts-section__count {
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--ink-4);
 }
 
@@ -533,7 +543,7 @@
 
 .contacts-timeline__when {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--ink-4);
   width: 52px;
   flex: none;
@@ -549,7 +559,7 @@
 
 .contacts-timeline__title {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.25;
   color: var(--ink);
   overflow: hidden;
@@ -559,7 +569,7 @@
 
 .contacts-timeline__sub {
   font-family: var(--kalam);
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.25;
   color: var(--ink-4);
   overflow: hidden;
@@ -569,14 +579,14 @@
 
 .contacts-timeline__len {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   color: var(--ink-4);
   flex: none;
 }
 
 .contacts-timeline__arrow {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--accent-ink);
   flex: none;
 }
@@ -588,7 +598,7 @@
 .contacts-timeline__empty {
   padding: 16px;
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-4);
 }
 
@@ -604,7 +614,7 @@
 
 .contacts-channel__kind {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -612,7 +622,7 @@
 
 .contacts-channel__value {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink);
   word-break: break-all;
 }
@@ -625,7 +635,7 @@
 
 .contacts-rail__label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -639,7 +649,7 @@
 
 .contacts-tag {
   font-family: var(--kalam);
-  font-size: 15px;
+  font-size: 0.9375rem;
   border-radius: 20px;
   padding: 4px 11px;
   border: 1px solid;
@@ -682,25 +692,26 @@
   padding: 0 0 0 4px;
   color: inherit;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1;
 }
 
 .contacts-tag-input {
   width: 140px;
-  min-height: 32px;
+  min-height: var(--control-height);
   padding: 4px 10px;
   font-family: var(--kalam);
-  font-size: 15px;
+  font-size: 1rem;
   border: 1px solid var(--line);
   border-radius: 20px;
-  outline: none;
   background: var(--paper);
   color: var(--ink);
 }
 
-.contacts-tag-input:focus {
+.contacts-tag-input:focus-visible {
   border-color: var(--accent);
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .contacts-footer {
@@ -714,7 +725,7 @@
 
 .contacts-provenance {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -731,7 +742,7 @@
   padding: 0;
   cursor: pointer;
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--ink-4);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -763,7 +774,7 @@
 
 .contacts-import__title {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent-ink);
@@ -771,7 +782,7 @@
 
 .contacts-import__blurb {
   font-family: var(--kalam);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.4;
   color: var(--ink-2);
 }
@@ -795,7 +806,7 @@
   padding: 11px 18px;
   box-shadow: var(--shadow-raised);
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 
 @media (max-width: 980px) {
