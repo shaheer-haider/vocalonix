@@ -18,7 +18,7 @@ export function DesignSystemPage() {
       </section>
 
       <div className="design-grid">
-        <Box style={{ padding: 22 }}>
+        <Box padding="lg">
           <h2>Buttons and pills</h2>
           <div className="stack-row">
             <Button>Default</Button>
@@ -34,7 +34,7 @@ export function DesignSystemPage() {
           </div>
         </Box>
 
-        <Box style={{ padding: 22 }}>
+        <Box padding="lg">
           <h2>Form fields</h2>
           <TextField label="Agent name" value="Nova" onChange={() => undefined} />
           <SelectField
@@ -49,7 +49,7 @@ export function DesignSystemPage() {
           <TextArea label="Greeting" value="Hi, thanks for calling." onChange={() => undefined} />
         </Box>
 
-        <Box style={{ padding: 22 }}>
+        <Box padding="lg">
           <h2>Overlay behavior</h2>
           <div className="stack-row">
             <Dropdown
@@ -70,7 +70,7 @@ export function DesignSystemPage() {
         <EmptyState title="Empty state" action={<Button>Primary action</Button>}>
           Use this when a list has no real backend data yet.
         </EmptyState>
-        <Box style={{ padding: 22 }}>
+        <Box padding="lg">
           <h2>Loading state</h2>
           <LoadingState label="Preparing secure call…" />
         </Box>

@@ -9,6 +9,12 @@ const widgetSource = resolve(rootDirectory, "../../dograh/ui/public/embed/dograh
 const widgetRoute = "/embed/dograh-widget.js";
 
 export default defineConfig({
+  // The repo's single `.env` at the root is what docker-compose and the API read,
+  // and it is where `VITE_API_BASE_URL` is defined. Without this, Vite looked only
+  // in app/web, found nothing, and the dev build fell back to same-origin — so a
+  // locally-run API on :3001 was unreachable from the dev server on :3000.
+  // Only VITE_-prefixed keys are ever exposed to the client.
+  envDir: resolve(rootDirectory, "../.."),
   plugins: [
     react(),
     {

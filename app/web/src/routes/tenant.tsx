@@ -11,6 +11,7 @@ import {
   type TenantConfigVersion,
   type KnowledgeGap,
   type TenantKnowledgeItem,
+  type TenantSettings,
   type TenantSettingsResponse,
   type TenantWidget,
 } from "../api";
@@ -28,8 +29,11 @@ import {
   TextArea,
   TextField,
 } from "../components/ui";
+import { CopyIcon } from "../icons";
 import { can } from "../permissions";
+import { useNavigate } from "@tanstack/react-router";
 import { COUNTRY_OPTIONS, useBusinessSlug, WorkspaceShell } from "./business";
+import { timezoneOptions } from "../timezones";
 
 const onboardingSteps = [
   { label: "Business profile", slug: "business-profile" },
@@ -94,6 +98,50 @@ type ProfileValues = z.infer<typeof profileSchema>;
 type AgentValues = z.infer<typeof agentSchema>;
 type WidgetValues = z.infer<typeof widgetSchema>;
 
+/**
+ * Success vs error used to be inferred with `notice.endsWith("saved.")`, so any
+ * message that didn't happen to end that way rendered as an error — including the
+ * "version restored" confirmation — and a server error ending in "saved." rendered
+ * green. The tone is now carried explicitly.
+ */
+type Notice = { tone: "info" | "success" | "error"; message: string };
+
+const ok = (message: string): Notice => ({ tone: "success", message });
+/** For changes staged in the form but not yet written — "saved" would be a lie. */
+const staged = (message: string): Notice => ({ tone: "info", message });
+const fail = (caught: unknown, fallback: string): Notice => ({
+  tone: "error",
+  message: caught instanceof Error ? caught.message : fallback,
+});
+
+/**
+ * `updateWidget` is a whole-object write. The Appearance and Widget tabs each own
+ * half of it, and each used to fill the other half from its own render snapshot —
+ * so editing both without a refresh silently discarded one set of changes.
+ *
+ * Re-reading immediately before the write means a caller only ever supplies the
+ * fields it actually owns, and untouched fields come from the server, not memory.
+ */
+async function saveWidgetFields(
+  slug: string,
+  patch: Partial<
+    Pick<
+      TenantSettings,
+      "widgetButtonText" | "widgetColor" | "allowedDomains"
+    >
+  >,
+) {
+  const current = await api.businesses.settings(slug);
+  return api.businesses.updateWidget(slug, {
+    widgetButtonText: current.settings.widgetButtonText,
+    widgetColor: current.settings.widgetColor,
+    allowedDomains: current.settings.allowedDomains,
+    ...patch,
+  });
+}
+
+const TIMEZONE_OPTIONS = timezoneOptions();
+
 function useTenantConfiguration() {
   const slug = useBusinessSlug();
   const [data, setData] = useState<TenantSettingsResponse | null>(null);
@@ -151,6 +199,7 @@ function ProfileForm({
   onSaved?: () => Promise<void>;
   slug: string;
 }) {
+  const navigate = useNavigate();
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -162,7 +211,7 @@ function ProfileForm({
       vertical: data.business.vertical ?? "",
     },
   });
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
   return (
     <form
@@ -177,18 +226,16 @@ function ProfileForm({
           });
           await onSaved?.();
           if (nextHref) {
-            window.location.assign(nextHref);
+            void navigate({ to: nextHref });
           } else {
-            setNotice("Business profile saved.");
+            setNotice(ok("Business profile saved."));
           }
         } catch (caught) {
-          setNotice(
-            caught instanceof Error ? caught.message : "Unable to save the profile.",
-          );
+          setNotice(fail(caught, "Unable to save the profile."));
         }
       })}
     >
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>Business profile</h2>
         <p className="auth-card-copy">
           This identity and location become saved context for the browser voice agent.
@@ -218,10 +265,11 @@ function ProfileForm({
             options={COUNTRY_OPTIONS}
             {...form.register("country")}
           />
-          <TextField
+          <SelectField
             label="Timezone"
             required
-            helper="Use an IANA timezone such as America/New_York."
+            helper="Used for your opening hours and booking times."
+            options={TIMEZONE_OPTIONS}
             error={form.formState.errors.timezone?.message}
             {...form.register("timezone")}
           />
@@ -231,7 +279,7 @@ function ProfileForm({
             {...form.register("vertical")}
           />
         </div>
-        {notice ? <Alert variant={notice.endsWith("saved.") ? "success" : "error"}>{notice}</Alert> : null}
+        {notice ? <Alert variant={notice.tone}>{notice.message}</Alert> : null}
         <Button type="submit" variant="primary" loading={form.formState.isSubmitting}>
           {nextHref ? "Save and continue →" : "Save profile"}
         </Button>
@@ -251,6 +299,7 @@ function AgentForm({
   onSaved?: () => Promise<void>;
   slug: string;
 }) {
+  const navigate = useNavigate();
   const form = useForm<AgentValues>({
     resolver: zodResolver(agentSchema),
     defaultValues: {
@@ -264,7 +313,7 @@ function AgentForm({
       escalationGuidance: data.settings.escalationGuidance,
     },
   });
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
   return (
     <form
@@ -273,16 +322,14 @@ function AgentForm({
         try {
           await api.businesses.updateAgentSettings(slug, values);
           await onSaved?.();
-          if (nextHref) window.location.assign(nextHref);
-          else setNotice("Agent settings saved.");
+          if (nextHref) void navigate({ to: nextHref });
+          else setNotice(ok("Agent settings saved."));
         } catch (caught) {
-          setNotice(
-            caught instanceof Error ? caught.message : "Unable to save agent settings.",
-          );
+          setNotice(fail(caught, "Unable to save agent settings."));
         }
       })}
     >
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>Agent</h2>
         <p className="auth-card-copy">
           Configure a browser-based voice conversation grounded in saved context and
@@ -339,7 +386,7 @@ function AgentForm({
             <small>Applied as workflow-level interruption behavior.</small>
           </span>
         </label>
-        {notice ? <Alert variant={notice.endsWith("saved.") ? "success" : "error"}>{notice}</Alert> : null}
+        {notice ? <Alert variant={notice.tone}>{notice.message}</Alert> : null}
         <Button type="submit" variant="primary" loading={form.formState.isSubmitting}>
           {nextHref ? "Save and continue →" : "Save agent"}
         </Button>
@@ -359,6 +406,7 @@ function WidgetForm({
   onSaved?: () => Promise<void>;
   slug: string;
 }) {
+  const navigate = useNavigate();
   const form = useForm<WidgetValues>({
     resolver: zodResolver(widgetSchema),
     defaultValues: {
@@ -367,7 +415,7 @@ function WidgetForm({
       allowedDomains: data.settings.allowedDomains.join("\n"),
     },
   });
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const color = form.watch("widgetColor");
   const label = form.watch("widgetButtonText");
 
@@ -385,16 +433,14 @@ function WidgetForm({
               .filter(Boolean),
           });
           await onSaved?.();
-          if (nextHref) window.location.assign(nextHref);
-          else setNotice("Widget settings saved.");
+          if (nextHref) void navigate({ to: nextHref });
+          else setNotice(ok("Widget settings saved."));
         } catch (caught) {
-          setNotice(
-            caught instanceof Error ? caught.message : "Unable to save widget settings.",
-          );
+          setNotice(fail(caught, "Unable to save widget settings."));
         }
       })}
     >
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>Widget</h2>
         <p className="auth-card-copy">
           Publish a domain-restricted browser voice widget. The embed token is
@@ -427,7 +473,7 @@ function WidgetForm({
             {label || "Talk to us"}
           </button>
         </div>
-        {notice ? <Alert variant={notice.endsWith("saved.") ? "success" : "error"}>{notice}</Alert> : null}
+        {notice ? <Alert variant={notice.tone}>{notice.message}</Alert> : null}
         <Button type="submit" variant="primary" loading={form.formState.isSubmitting}>
           {nextHref ? "Save and continue →" : "Save widget"}
         </Button>
@@ -445,6 +491,8 @@ const days = [
   "Saturday",
   "Sunday",
 ] as const;
+
+type Day = (typeof days)[number];
 
 function defaultHours(
   value: Record<string, BusinessHoursDay>,
@@ -472,10 +520,45 @@ function HoursForm({
 }) {
   const [hours, setHours] = useState(defaultHours(data.settings.businessHours));
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+
+  const patchDay = (day: Day, patch: Partial<BusinessHoursDay>) =>
+    setHours((current) => ({ ...current, [day]: { ...current[day]!, ...patch } }));
+
+  /**
+   * Most businesses keep one schedule across the week, but the grid asked for
+   * every day to be typed out separately — seven times over, and again for each
+   * location. Copying a row onto the other open days is the whole point of the
+   * screen for the common case.
+   */
+  const copyToOpenDays = (source: Day) => {
+    const { open, close } = hours[source]!;
+    const targets = days.filter((day) => day !== source && hours[day]!.enabled);
+    if (targets.length === 0) {
+      setNotice(staged(`No other days are open, so ${source}'s hours had nowhere to go.`));
+      return;
+    }
+    setHours((current) =>
+      Object.fromEntries(
+        days.map((day) => [
+          day,
+          day === source || !current[day]!.enabled
+            ? current[day]!
+            : { ...current[day]!, open, close },
+        ]),
+      ),
+    );
+    setNotice(
+      staged(
+        `${source}'s hours copied to ${targets.length} other open ${
+          targets.length === 1 ? "day" : "days"
+        }. Save to keep them.`,
+      ),
+    );
+  };
 
   return (
-    <Box style={{ padding: 24 }}>
+    <Box padding="lg">
       <h2>Business hours</h2>
       <p className="auth-card-copy">
         Hours set when the agent can offer and book appointment slots. Days
@@ -491,43 +574,45 @@ function HoursForm({
                   type="checkbox"
                   checked={entry.enabled}
                   onChange={(event) =>
-                    setHours({
-                      ...hours,
-                      [day]: { ...entry, enabled: event.target.checked },
-                    })
+                    patchDay(day, { enabled: event.target.checked })
                   }
                 />
                 {day}
               </label>
-              <input
-                className="ui-input"
-                type="time"
-                disabled={!entry.enabled}
-                value={entry.open}
-                onChange={(event) =>
-                  setHours({
-                    ...hours,
-                    [day]: { ...entry, open: event.target.value },
-                  })
-                }
-              />
-              <input
-                className="ui-input"
-                type="time"
-                disabled={!entry.enabled}
-                value={entry.close}
-                onChange={(event) =>
-                  setHours({
-                    ...hours,
-                    [day]: { ...entry, close: event.target.value },
-                  })
-                }
-              />
+              {entry.enabled ? (
+                <>
+                  <input
+                    aria-label={`${day} opening time`}
+                    className="ui-input"
+                    type="time"
+                    value={entry.open}
+                    onChange={(event) => patchDay(day, { open: event.target.value })}
+                  />
+                  <input
+                    aria-label={`${day} closing time`}
+                    className="ui-input"
+                    type="time"
+                    value={entry.close}
+                    onChange={(event) => patchDay(day, { close: event.target.value })}
+                  />
+                  <button
+                    aria-label={`Copy ${day}'s hours to every other open day`}
+                    className="hours-row__copy"
+                    onClick={() => copyToOpenDays(day)}
+                    title={`Copy ${day}'s hours to every other open day`}
+                    type="button"
+                  >
+                    <CopyIcon size={16} />
+                  </button>
+                </>
+              ) : (
+                <span className="hours-row__closed">Closed</span>
+              )}
             </div>
           );
         })}
       </div>
-      {notice ? <Alert variant={notice.endsWith("saved.") ? "success" : "error"}>{notice}</Alert> : null}
+      {notice ? <Alert variant={notice.tone}>{notice.message}</Alert> : null}
       <Button
         variant="primary"
         loading={saving}
@@ -537,13 +622,9 @@ function HoursForm({
           void api.businesses
             .updateHours(slug, hours)
             .then(onSaved)
-            .then(() => setNotice("Business hours saved."))
+            .then(() => setNotice(ok("Business hours saved.")))
             .catch((caught: unknown) =>
-              setNotice(
-                caught instanceof Error
-                  ? caught.message
-                  : "Unable to save business hours.",
-              ),
+              setNotice(fail(caught, "Unable to save business hours.")),
             )
             .finally(() => setSaving(false));
         }}
@@ -575,6 +656,7 @@ function KnowledgeManager({
   onboardingNextHref?: string;
   slug: string;
 }) {
+  const navigate = useNavigate();
   const [items, setItems] = useState<TenantKnowledgeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -679,7 +761,7 @@ function KnowledgeManager({
 
   return (
     <div className="settings-stack">
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>{replacementId ? "Upload replacement" : "Add knowledge"}</h2>
         <p className="auth-card-copy">
           Website URLs are saved as reference text only; this product does not crawl
@@ -755,7 +837,7 @@ function KnowledgeManager({
           </Button>
         </div>
       </Box>
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <div className="account-section__heading">
           <div>
             <h2>Saved knowledge</h2>
@@ -873,7 +955,7 @@ function KnowledgeManager({
         )}
       </Box>
       {onboardingNextHref ? (
-        <Box style={{ padding: 24 }}>
+        <Box padding="lg">
           <h2>Knowledge step</h2>
           <p className="auth-card-copy">
             Continue after the knowledge you want is saved. Processing can finish in
@@ -885,7 +967,7 @@ function KnowledgeManager({
               setError(null);
               void api.businesses
                 .completeKnowledgeOnboarding(slug)
-                .then(() => window.location.assign(onboardingNextHref))
+                .then(() => navigate({ to: onboardingNextHref }))
                 .catch((caught: unknown) =>
                   setError(
                     caught instanceof Error
@@ -1053,7 +1135,7 @@ function AnswersTab({ slug }: { slug: string }) {
 
   return (
     <div className="settings-stack">
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <div className="account-section__heading">
           <div>
             <h2>What the agent says</h2>
@@ -1273,7 +1355,7 @@ function GapsTab({ slug }: { slug: string }) {
 
   return (
     <div className="settings-stack">
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>Asked, and the agent had nothing</h2>
         <p className="auth-card-copy">
           Pulled straight out of conversations. Answer one and it leaves this
@@ -1379,7 +1461,7 @@ function BrowserTestCall({ widget }: { widget: TenantWidget }) {
   }, []);
 
   return (
-    <Box style={{ padding: 20 }}>
+    <Box padding="md">
       <h2>Browser test call</h2>
       <p className="auth-card-copy">{status}</p>
       {error ? <Alert variant="error">{error}</Alert> : null}
@@ -1467,17 +1549,17 @@ function ReviewPublish({
 
   return (
     <div className="settings-stack">
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>Review and publish</h2>
         <p className="auth-card-copy">
-          Publish saves and synchronizes only {data.business.name}, validates its
-          workflow, and creates a business-scoped embed token.
+          Publishing puts this agent on {data.business.name}&apos;s website. From
+          then on it answers visitors using the answers and prices below.
         </p>
         <div className="review-grid">
           <span>Agent</span>
           <strong>{data.settings.agentName}</strong>
           <span>Knowledge</span>
-          <strong>Tenant-scoped saved rows</strong>
+          <strong>Your saved answers and prices</strong>
           <span>Widget</span>
           <strong>
             {data.settings.widgetButtonText} · {data.settings.widgetColor}
@@ -1556,7 +1638,7 @@ function ReviewPublish({
       </Box>
       {widget ? (
         <>
-          <Box style={{ padding: 20 }}>
+          <Box padding="md">
             <h2>Tenant embed snippet</h2>
             <CodeSnippet value={widget.snippet} />
           </Box>
@@ -1585,7 +1667,7 @@ export function TenantOnboardingPage() {
         if (!can(data.business.role, "agent.edit")) {
           return (
             <div className="auth-shell">
-              <Box style={{ padding: 32, textAlign: "center" }}>
+              <Box padding="xl" style={{ textAlign: "center" }}>
                 <Pill variant="warn">{data.business.role}</Pill>
                 <h1 className="account-title" style={{ marginTop: 12 }}>
                   You do not have access here
@@ -1895,11 +1977,11 @@ function AppearanceForm({
   const [label, setLabel] = useState(data.settings.widgetButtonText);
   const [color, setColor] = useState(data.settings.widgetColor);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
   return (
     <div className="config-columns">
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>Appearance</h2>
         <p className="auth-card-copy">
           The live widget changes when you republish, not while you type here.
@@ -1917,7 +1999,7 @@ function AppearanceForm({
           onChange={setColor}
         />
         {notice ? (
-          <Alert variant={notice.endsWith("saved.") ? "success" : "error"}>{notice}</Alert>
+          <Alert variant={notice.tone}>{notice.message}</Alert>
         ) : null}
         <Button
           variant="primary"
@@ -1925,18 +2007,14 @@ function AppearanceForm({
           onClick={() => {
             setSaving(true);
             setNotice(null);
-            void api.businesses
-              .updateWidget(slug, {
-                widgetButtonText: label,
-                widgetColor: color,
-                allowedDomains: data.settings.allowedDomains,
-              })
+            void saveWidgetFields(slug, {
+              widgetButtonText: label,
+              widgetColor: color,
+            })
               .then(onSaved)
-              .then(() => setNotice("Appearance saved."))
+              .then(() => setNotice(ok("Appearance saved.")))
               .catch((caught: unknown) =>
-                setNotice(
-                  caught instanceof Error ? caught.message : "Unable to save appearance.",
-                ),
+                setNotice(fail(caught, "Unable to save appearance.")),
               )
               .finally(() => setSaving(false));
           }}
@@ -1944,7 +2022,7 @@ function AppearanceForm({
           Save appearance
         </Button>
       </Box>
-      <Box tone="tinted" style={{ padding: 24 }}>
+      <Box tone="tinted" padding="lg">
         <p className="eyebrow">Preview · your site</p>
         <div className="widget-stage">
           <span className="widget-stage__label">YOUR PAGE</span>
@@ -1974,7 +2052,7 @@ function WidgetTab({
 }) {
   const [domains, setDomains] = useState(data.settings.allowedDomains.join("\n"));
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [widget, setWidget] = useState<TenantWidget | null>(null);
 
   useEffect(() => {
@@ -1987,7 +2065,7 @@ function WidgetTab({
 
   return (
     <div className="settings-stack">
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>Where it may load</h2>
         <TextArea
           label="Allowed domains"
@@ -1997,7 +2075,7 @@ function WidgetTab({
           onChange={(event) => setDomains(event.target.value)}
         />
         {notice ? (
-          <Alert variant={notice.endsWith("saved.") ? "success" : "error"}>{notice}</Alert>
+          <Alert variant={notice.tone}>{notice.message}</Alert>
         ) : null}
         {canEdit ? (
           <Button
@@ -2006,23 +2084,16 @@ function WidgetTab({
             onClick={() => {
               setSaving(true);
               setNotice(null);
-              void api.businesses
-                .updateWidget(slug, {
-                  widgetButtonText: data.settings.widgetButtonText,
-                  widgetColor: data.settings.widgetColor,
-                  allowedDomains: domains
-                    .split(/\r?\n|,/)
-                    .map((domain) => domain.trim())
-                    .filter(Boolean),
-                })
+              void saveWidgetFields(slug, {
+                allowedDomains: domains
+                  .split(/\r?\n|,/)
+                  .map((domain) => domain.trim())
+                  .filter(Boolean),
+              })
                 .then(refresh)
-                .then(() => setNotice("Widget settings saved."))
+                .then(() => setNotice(ok("Widget settings saved.")))
                 .catch((caught: unknown) =>
-                  setNotice(
-                    caught instanceof Error
-                      ? caught.message
-                      : "Unable to save widget settings.",
-                  ),
+                  setNotice(fail(caught, "Unable to save widget settings.")),
                 )
                 .finally(() => setSaving(false));
             }}
@@ -2033,7 +2104,7 @@ function WidgetTab({
       </Box>
       {widget ? (
         <>
-          <Box style={{ padding: 24 }}>
+          <Box padding="lg">
             <div style={{ marginBottom: 12 }}>
               <h2>Put it on your site</h2>
               <p>Paste once, at the end of the page. It never needs changing again.</p>
@@ -2113,7 +2184,7 @@ function HistoryTab({
   const [compare, setCompare] = useState<TenantConfigVersion | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
   async function restore(version: TenantConfigVersion) {
     setRestoring(true);
@@ -2145,10 +2216,10 @@ function HistoryTab({
         allowedDomains: config.allowedDomains,
       });
       await refresh();
-      setNotice(`Version ${version.version} restored into your draft. Republish to make it live.`);
+      setNotice(ok(`Version ${version.version} restored into your draft. Republish to make it live.`));
       setConfirming(null);
     } catch (caught) {
-      setNotice(caught instanceof Error ? caught.message : "Unable to restore this version.");
+      setNotice(fail(caught, "Unable to restore this version."));
     } finally {
       setRestoring(false);
     }
@@ -2158,13 +2229,13 @@ function HistoryTab({
 
   return (
     <div className="settings-stack">
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <h2>Every version that answered a call</h2>
         <p className="auth-card-copy">
           Restoring writes into your draft. Callers hear it only once you republish.
         </p>
         {notice ? (
-          <Alert variant={notice.includes("restored") ? "success" : "error"}>{notice}</Alert>
+          <Alert variant={notice.tone}>{notice.message}</Alert>
         ) : null}
         {versions.length === 0 ? (
           <EmptyState title="No published versions yet">

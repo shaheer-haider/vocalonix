@@ -12,12 +12,16 @@ import {
   Alert,
   Box,
   Button,
+  EmptyState,
   Pill,
   SelectField,
   TextArea,
   TextField,
+  VoiceOrb,
+  type VoiceOrbState,
 } from "../components/ui";
 import { AuthShell } from "../components/shell";
+import { PauseIcon, PlayIcon } from "../icons";
 import { useDograhHealth } from "../hooks/useDograhHealth";
 import type {
   DemoSession,
@@ -32,8 +36,7 @@ type Step =
   | "intake"
   | "voice"
   | "live"
-  | "feedback"
-  | "thanks";
+  | "wrap";
 
 interface StoredDemo {
   savedAt: string;
@@ -46,40 +49,59 @@ interface StoredDemo {
 const STORAGE_KEY = "vocalonix-demo";
 const DEMO_TTL_MS = 24 * 60 * 60 * 1000;
 const CALL_DURATION_SECONDS = 60;
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
-const VOICES = [
-  { value: "zephyr", name: "Zephyr", desc: "Bright · higher pitch" },
-  { value: "puck", name: "Puck", desc: "Upbeat · middle pitch" },
-  { value: "charon", name: "Charon", desc: "Informative · lower pitch" },
-  { value: "kore", name: "Kore", desc: "Firm · middle pitch" },
-  { value: "fenrir", name: "Fenrir", desc: "Excitable · lower-middle pitch" },
-  { value: "leda", name: "Leda", desc: "Youthful · higher pitch" },
-  { value: "orus", name: "Orus", desc: "Firm · lower-middle pitch" },
-  { value: "aoede", name: "Aoede", desc: "Breezy · middle pitch" },
-  { value: "callirrhoe", name: "Callirrhoe", desc: "Easy-going · middle pitch" },
-  { value: "autonoe", name: "Autonoe", desc: "Bright · middle pitch" },
-  { value: "enceladus", name: "Enceladus", desc: "Breathy · lower pitch" },
-  { value: "iapetus", name: "Iapetus", desc: "Clear · lower-middle pitch" },
-  { value: "umbriel", name: "Umbriel", desc: "Easy-going · lower-middle pitch" },
-  { value: "algieba", name: "Algieba", desc: "Smooth · lower pitch" },
-  { value: "despina", name: "Despina", desc: "Smooth · middle pitch" },
-  { value: "erinome", name: "Erinome", desc: "Clear · middle pitch" },
-  { value: "algenib", name: "Algenib", desc: "Gravelly · lower pitch" },
-  { value: "rasalgethi", name: "Rasalgethi", desc: "Informative · middle pitch" },
-  { value: "laomedeia", name: "Laomedeia", desc: "Upbeat · higher pitch" },
-  { value: "achernar", name: "Achernar", desc: "Soft · higher pitch" },
-  { value: "alnilam", name: "Alnilam", desc: "Firm · lower-middle pitch" },
-  { value: "schedar", name: "Schedar", desc: "Even · lower-middle pitch" },
-  { value: "gacrux", name: "Gacrux", desc: "Mature · middle pitch" },
-  { value: "pulcherrima", name: "Pulcherrima", desc: "Forward · middle pitch" },
-  { value: "achird", name: "Achird", desc: "Friendly · lower-middle pitch" },
-  { value: "zubenelgenubi", name: "Zubenelgenubi", desc: "Casual · lower-middle pitch" },
-  { value: "vindemiatrix", name: "Vindemiatrix", desc: "Gentle · middle pitch" },
-  { value: "sadachbia", name: "Sadachbia", desc: "Lively · lower pitch" },
-  { value: "sadaltager", name: "Sadaltager", desc: "Knowledgeable · middle pitch" },
-  { value: "sulafat", name: "Sulafat", desc: "Warm · middle pitch" },
+/**
+ * `desc` is what a business owner is actually choosing between; `name` is the
+ * upstream voice id, kept visible only so support can match a report to a voice.
+ * The six `recommended` voices lead — nobody picks well from thirty at once.
+ */
+interface Voice {
+  value: string;
+  name: string;
+  desc: string;
+  recommended?: boolean;
+}
+
+const VOICES: Voice[] = [
+  { value: "sulafat", name: "Sulafat", desc: "Warm and welcoming", recommended: true },
+  { value: "achird", name: "Achird", desc: "Friendly and down-to-earth", recommended: true },
+  { value: "iapetus", name: "Iapetus", desc: "Clear and professional", recommended: true },
+  { value: "callirrhoe", name: "Callirrhoe", desc: "Easy-going and unhurried", recommended: true },
+  { value: "autonoe", name: "Autonoe", desc: "Bright and quick", recommended: true },
+  { value: "vindemiatrix", name: "Vindemiatrix", desc: "Gentle and calm", recommended: true },
+  { value: "zephyr", name: "Zephyr", desc: "Bright, higher pitch" },
+  { value: "puck", name: "Puck", desc: "Upbeat, middle pitch" },
+  { value: "charon", name: "Charon", desc: "Informative, lower pitch" },
+  { value: "kore", name: "Kore", desc: "Firm, middle pitch" },
+  { value: "fenrir", name: "Fenrir", desc: "Excitable, lower-middle pitch" },
+  { value: "leda", name: "Leda", desc: "Youthful, higher pitch" },
+  { value: "orus", name: "Orus", desc: "Firm, lower-middle pitch" },
+  { value: "aoede", name: "Aoede", desc: "Breezy, middle pitch" },
+  { value: "enceladus", name: "Enceladus", desc: "Breathy, lower pitch" },
+  { value: "umbriel", name: "Umbriel", desc: "Easy-going, lower-middle pitch" },
+  { value: "algieba", name: "Algieba", desc: "Smooth, lower pitch" },
+  { value: "despina", name: "Despina", desc: "Smooth, middle pitch" },
+  { value: "erinome", name: "Erinome", desc: "Clear, middle pitch" },
+  { value: "algenib", name: "Algenib", desc: "Gravelly, lower pitch" },
+  { value: "rasalgethi", name: "Rasalgethi", desc: "Informative, middle pitch" },
+  { value: "laomedeia", name: "Laomedeia", desc: "Upbeat, higher pitch" },
+  { value: "achernar", name: "Achernar", desc: "Soft, higher pitch" },
+  { value: "alnilam", name: "Alnilam", desc: "Firm, lower-middle pitch" },
+  { value: "schedar", name: "Schedar", desc: "Even, lower-middle pitch" },
+  { value: "gacrux", name: "Gacrux", desc: "Mature, middle pitch" },
+  { value: "pulcherrima", name: "Pulcherrima", desc: "Forward, middle pitch" },
+  { value: "zubenelgenubi", name: "Zubenelgenubi", desc: "Casual, lower-middle pitch" },
+  { value: "sadachbia", name: "Sadachbia", desc: "Lively, lower pitch" },
+  { value: "sadaltager", name: "Sadaltager", desc: "Knowledgeable, middle pitch" },
 ];
+
+/** The widget reports a free-form status string; anything unrecognised is "idle". */
+function toOrbState(status: string): VoiceOrbState {
+  return status === "connecting" || status === "connected" || status === "failed"
+    ? status
+    : "idle";
+}
 
 const FEEDBACK_CHIPS = [
   "Sounded natural",
@@ -134,10 +156,8 @@ function formatTitle(step: Step) {
       return "Pick a voice";
     case "live":
       return "Live demo call";
-    case "feedback":
-      return "How did it go?";
-    case "thanks":
-      return "Thanks for trying Vocalonix";
+    case "wrap":
+      return "Put this on your site";
   }
 }
 
@@ -148,8 +168,7 @@ function formatStepNumber(step: Step) {
     intake: 3,
     voice: 4,
     live: 5,
-    feedback: 6,
-    thanks: 7,
+    wrap: 6,
   };
   return map[step];
 }
@@ -262,13 +281,9 @@ function DemoHeader({
         }}
       >
         {back}
-        {step !== "thanks" ? (
-          <span className="eyebrow">
-            Step {formatStepNumber(step)} of {TOTAL_STEPS}
-          </span>
-        ) : (
-          <span className="eyebrow">Done</span>
-        )}
+        <span className="demo-progress">
+          Step {formatStepNumber(step)} of {TOTAL_STEPS}
+        </span>
         {step === "live" ? (
           <Pill variant="accent">Live call</Pill>
         ) : (
@@ -287,11 +302,13 @@ function LiveCall({
   call: DemoStartResponse;
   onEnd: (durationSeconds: number) => void;
 }) {
-  const [status, setStatus] = useState<string>("idle");
+  const [status, setStatus] = useState<VoiceOrbState>("idle");
   const [widgetReady, setWidgetReady] = useState(false);
   const [seconds, setSeconds] = useState(CALL_DURATION_SECONDS);
   const [callError, setCallError] = useState<string | null>(null);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
+  // A ref, not state: the countdown's endCall would otherwise close over the
+  // value from before setStartedAt flushed, and every timed-out call logged 0s.
+  const startedAtRef = useRef<number | null>(null);
   const loadedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -302,7 +319,7 @@ function LiveCall({
 
   const bindCallbacks = useCallback((widget: DograhWidget) => {
     widget.onStatusChange((s) => {
-      setStatus(s);
+      setStatus(toOrbState(s));
       if (s === "connected" || s === "connecting") setCallError(null);
     });
     widget.onError((err) => {
@@ -310,7 +327,7 @@ function LiveCall({
         err instanceof Error ? err.message : String(err ?? "Call failed"),
       );
     });
-    setStatus(widget.getState().connectionStatus);
+    setStatus(toOrbState(widget.getState().connectionStatus));
     setWidgetReady(true);
   }, []);
 
@@ -342,7 +359,7 @@ function LiveCall({
 
   useEffect(() => {
     if (status !== "connected") return;
-    setStartedAt(Date.now());
+    startedAtRef.current = Date.now();
     const interval = window.setInterval(() => {
       setSeconds((s) => {
         if (s <= 1) {
@@ -360,8 +377,8 @@ function LiveCall({
     const widget = (window as unknown as { DograhWidget?: DograhWidget })
       .DograhWidget;
     if (widget) widget.end();
-    const duration = startedAt
-      ? Math.max(0, Math.round((Date.now() - startedAt) / 1000))
+    const duration = startedAtRef.current
+      ? Math.max(0, Math.round((Date.now() - startedAtRef.current) / 1000))
       : 0;
     onEnd(duration);
   };
@@ -384,39 +401,12 @@ function LiveCall({
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          marginBottom: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Pill
-            variant={
-              status === "connected"
-                ? "good"
-                : status === "failed"
-                  ? "warn"
-                  : "default"
-            }
-          >
-            {statusCopy[status] ?? status}
-          </Pill>
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: 14,
-              minWidth: 44,
-              textAlign: "center",
-            }}
-          >
-            {formatTime(seconds)}
-          </span>
-        </div>
+      <div className="demo-call">
+        <VoiceOrb state={status} label={statusCopy[status] ?? status} />
+        <p className="demo-call__status" role="status">
+          {statusCopy[status] ?? status}
+        </p>
+        <p className="demo-call__timer">{formatTime(seconds)}</p>
         <Button
           variant={inCall ? "destructive" : "primary"}
           onClick={inCall ? endCall : start}
@@ -426,7 +416,7 @@ function LiveCall({
         </Button>
       </div>
 
-      <Box style={{ padding: 16, marginBottom: 16 }}>
+      <Box padding="sm" style={{ marginBottom: 16 }}>
         <p className="eyebrow" style={{ marginBottom: 8 }}>
           Try saying one of these
         </p>
@@ -440,7 +430,7 @@ function LiveCall({
       </Box>
 
       {status === "idle" ? (
-        <Box tone="tinted" style={{ padding: 16, marginBottom: 16 }}>
+        <Box tone="tinted" padding="sm" style={{ marginBottom: 16 }}>
           <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)" }}>
             Allow microphone access, then click <strong>Start call</strong>.
             The call runs for up to {CALL_DURATION_SECONDS} seconds.
@@ -466,6 +456,25 @@ function VerticalStep({
   loading: boolean;
   onSelect: (vertical: Vertical) => void;
 }) {
+  // An empty list means the industry list didn't load. Saying so beats an
+  // empty page, which is what a visitor got before the guard was added.
+  if (!loading && verticals.length === 0) {
+    return (
+      <EmptyState title="We couldn't load the industry list">
+        The demo needs it to build your agent. Refresh to try again, or start
+        setting up directly — you can hear your agent from inside the app.
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            Try again
+          </Button>
+          <Link to="/signup" className="ui-button">
+            Start setup
+          </Link>
+        </div>
+      </EmptyState>
+    );
+  }
+
   return (
     <div>
       <p style={{ color: "var(--ink-3)", marginBottom: 18 }}>
@@ -569,17 +578,20 @@ function BusinessStep({
   );
 }
 
+/**
+ * Only the questions that actually shape the demo call. Personal contact details
+ * moved to the post-call step: asking for a phone number before the visitor has
+ * heard anything was the funnel's biggest drop-off risk.
+ */
 function IntakeStep({
   draft,
   vertical,
-  onUpdate,
   setAnswer,
   onSubmit,
   loading,
 }: {
   draft: Partial<DemoSession>;
   vertical: Vertical | null;
-  onUpdate: (patch: Partial<DemoSession>) => void;
   setAnswer: (name: string, value: unknown) => void;
   onSubmit: () => void;
   loading: boolean;
@@ -650,46 +662,6 @@ function IntakeStep({
         </div>
       ))}
 
-      <div style={{ marginTop: 20 }}>
-        <TextField
-          label="Your name"
-          placeholder="Jane Doe"
-          value={draft.fullName ?? ""}
-          onChange={(e) => onUpdate({ fullName: e.currentTarget.value })}
-        />
-      </div>
-      <div style={{ marginTop: 14 }}>
-        <TextField
-          label="Email"
-          type="email"
-          placeholder="jane@studio.com"
-          value={draft.email ?? ""}
-          onChange={(e) => onUpdate({ email: e.currentTarget.value })}
-        />
-      </div>
-      <div style={{ marginTop: 14 }}>
-        <TextField
-          label="Phone"
-          type="tel"
-          placeholder="(555) 123-4567"
-          value={draft.phone ?? ""}
-          onChange={(e) => onUpdate({ phone: e.currentTarget.value })}
-        />
-      </div>
-
-      <div style={{ marginTop: 14 }}>
-        <SelectField
-          label="How would you like the demo?"
-          options={[
-            { label: "Talk in my browser", value: "browser" },
-            { label: "Call me now (coming soon)", value: "phone" },
-          ]}
-          value={draft.demoMode ?? "browser"}
-          onChange={(e) =>
-            onUpdate({ demoMode: e.currentTarget.value as "browser" | "phone" })
-          }
-        />
-      </div>
 
       <div style={{ marginTop: 22 }}>
         <Button type="submit" variant="primary" loading={loading}>
@@ -715,6 +687,8 @@ function VoiceStep({
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [search, setSearch] = useState("");
 
   const preview = (value: string) => {
     const el = audioRef.current;
@@ -724,89 +698,91 @@ function VoiceStep({
       setPlaying(null);
       return;
     }
-    el.src = `/voices/${value}.wav`;
+    // AAC in m4a, not WAV: the previews were 145 kB of uncompressed PCM each,
+    // 4.4 MB across the set, and every tap paid it. 32 kbps holds up for a
+    // 24 kHz mono voice sample — which matters, since this audio is the whole
+    // basis on which someone picks a voice.
+    el.src = `/voices/${value}.m4a`;
     el.currentTime = 0;
     void el.play().catch(() => setPlaying(null));
     setPlaying(value);
   };
 
+  const recommended = VOICES.filter((voice) => voice.recommended);
+  const rest = VOICES.filter((voice) => !voice.recommended);
+  const query = search.trim().toLowerCase();
+  const matches = query
+    ? rest.filter(
+        (voice) =>
+          voice.desc.toLowerCase().includes(query) ||
+          voice.name.toLowerCase().includes(query),
+      )
+    : rest;
+
+  const renderVoice = (voice: Voice) => {
+    const selected = selectedVoice === voice.value;
+    const isPlaying = playing === voice.value;
+    return (
+      <li key={voice.value} className="voice-row">
+        <button
+          type="button"
+          onClick={() => onSelect(voice.value)}
+          className={`voice-row__pick ${selected ? "voice-row__pick--selected" : ""}`}
+          aria-pressed={selected}
+        >
+          <span className="voice-row__desc">{voice.desc}</span>
+          <span className="voice-row__name">{voice.name}</span>
+        </button>
+        <button
+          type="button"
+          className="voice-row__preview"
+          onClick={() => preview(voice.value)}
+          aria-pressed={isPlaying}
+          aria-label={`${isPlaying ? "Stop" : "Play"} sample of ${voice.desc}`}
+        >
+          {isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
+        </button>
+      </li>
+    );
+  };
+
   return (
     <div>
       <p style={{ color: "var(--ink-3)", marginBottom: 14 }}>
-        Pick how you want the agent to sound. Tap the play button to hear a
-        sample.
+        Pick how you want your agent to sound. Press play to hear a sample.
       </p>
       <audio ref={audioRef} onEnded={() => setPlaying(null)} hidden />
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-          gap: 8,
-          maxHeight: 320,
-          overflowY: "auto",
-          paddingRight: 4,
-        }}
+
+      <ul className="voice-list">{recommended.map(renderVoice)}</ul>
+
+      <details
+        className="voice-more"
+        open={showAll}
+        onToggle={(event) => setShowAll(event.currentTarget.open)}
       >
-        {VOICES.map((voice) => {
-          const selected = selectedVoice === voice.value;
-          const isPlaying = playing === voice.value;
-          return (
-            <button
-              key={voice.value}
-              type="button"
-              onClick={() => onSelect(voice.value)}
-              className={`ui-button ${selected ? "ui-button--primary" : ""}`}
-              style={{
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderColor: selected ? "var(--accent)" : undefined,
-              }}
-            >
-              <span
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  textAlign: "left",
-                }}
-              >
-                <span style={{ fontWeight: 600 }}>{voice.name}</span>
-                <span style={{ fontSize: 11, opacity: 0.7 }}>
-                  {voice.desc}
-                </span>
-              </span>
-              <span
-                onClick={(e) => {
-                  e.stopPropagation();
-                  preview(voice.value);
-                }}
-                style={{
-                  fontSize: 13,
-                  padding: "2px 6px",
-                  borderRadius: 4,
-                  background: isPlaying ? "var(--accent)" : "transparent",
-                }}
-                role="button"
-                aria-label={isPlaying ? "Pause preview" : "Play preview"}
-              >
-                {isPlaying ? "⏸" : "▶"}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+        <summary>More voices ({rest.length})</summary>
+        <TextField
+          label="Search voices"
+          placeholder="Try “warm”, “clear”, “lower”"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        {matches.length > 0 ? (
+          <ul className="voice-list">{matches.map(renderVoice)}</ul>
+        ) : (
+          <p className="voice-more__empty">
+            No voice matches “{search}”. Try a word like warm, clear, or bright.
+          </p>
+        )}
+      </details>
 
       {!turnEnabled ? (
-        <p
-          style={{
-            marginTop: 12,
-            fontSize: 13,
-            color: "var(--warn)",
-          }}
-        >
-          Voice calls are not available right now. You can still pick a voice,
-          but the live call step is disabled.
-        </p>
+        <div style={{ marginTop: 14 }}>
+          <Alert variant="warn">
+            Live calls are unavailable right now. You can still choose a voice —
+            we&apos;ll email you when the call is ready.
+          </Alert>
+        </div>
       ) : null}
       <div style={{ marginTop: 22 }}>
         <Button
@@ -815,18 +791,31 @@ function VoiceStep({
           loading={loading}
           disabled={!selectedVoice || !turnEnabled}
         >
-          Start demo call
+          Hear your agent
         </Button>
       </div>
     </div>
   );
 }
 
-function FeedbackStep({
-  onSubmit,
+/**
+ * The post-call screen. Previously this was a rating form that silently decided
+ * whether the visitor was offered an account: 4-5 redirected to signup, 1-3 got a
+ * dead end. The offer is now unconditional and leads; feedback is optional and
+ * secondary. Contact details are captured here, at peak interest, rather than
+ * before the visitor has heard anything.
+ */
+function WrapStep({
+  draft,
+  onUpdate,
+  onCreateAccount,
+  onSubmitFeedback,
   loading,
 }: {
-  onSubmit: (payload: {
+  draft: Partial<DemoSession>;
+  onUpdate: (patch: Partial<DemoSession>) => void;
+  onCreateAccount: () => void;
+  onSubmitFeedback: (payload: {
     score: number;
     chips: string[];
     text: string;
@@ -837,94 +826,95 @@ function FeedbackStep({
   const [score, setScore] = useState<number | null>(null);
   const [chips, setChips] = useState<string[]>([]);
   const [text, setText] = useState("");
+  const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleCreate = (e: FormEvent) => {
     e.preventDefault();
+    onCreateAccount();
+  };
+
+  const handleFeedback = () => {
     if (score === null) return;
     const outcome: "positive" | "neutral" | "negative" | "abandoned" =
       score >= 4 ? "positive" : score === 3 ? "neutral" : "negative";
-    onSubmit({ score, chips, text, outcome });
+    onSubmitFeedback({ score, chips, text, outcome });
+    setSent(true);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <p style={{ color: "var(--ink-3)", marginBottom: 12 }}>
-        Rate the call so we can keep tuning the agent.
-      </p>
-
-      <div style={{ marginBottom: 16 }}>
-        <label className="ui-label">How did the call sound? *</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <ChoiceButton
-              key={n}
-              selected={score === n}
-              onClick={() => setScore(n)}
-            >
-              {n}
-            </ChoiceButton>
-          ))}
-        </div>
-        {score === null ? (
-          <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
-            1 = poor, 5 = excellent
-          </p>
-        ) : (
-          <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
-            {score === 1
-              ? "Poor"
-              : score === 2
-                ? "Not great"
-                : score === 3
-                  ? "Okay"
-                  : score === 4
-                    ? "Good"
-                    : "Excellent"}
-          </p>
-        )}
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label className="ui-label">What stood out?</label>
-        <ToggleGroup options={FEEDBACK_CHIPS} values={chips} onChange={setChips} />
-      </div>
-
-      <TextArea
-        label="Anything else we should know?"
-        value={text}
-        onChange={(e) => setText(e.currentTarget.value)}
-        rows={3}
-      />
-
-      <div style={{ marginTop: 22 }}>
-        <Button
-          type="submit"
-          variant="primary"
-          loading={loading}
-          disabled={score === null}
-        >
-          Finish
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function ThanksStep({ onNew }: { onNew: () => void }) {
-  return (
     <div>
       <p style={{ color: "var(--ink-3)", marginBottom: 18 }}>
-        Thanks for trying the Vocalonix demo. We&apos;ll keep improving the
-        experience for your industry.
+        That was your agent, using your prices and your services. Set it up on
+        your own site and it can answer like that every time you miss a call.
       </p>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Button variant="primary" onClick={onNew}>
-          Start a new demo
-        </Button>
-        <Link to="/" className="ui-button">
-          Back to home
-        </Link>
-      </div>
+
+      <form onSubmit={handleCreate}>
+        <TextField
+          label="Your name"
+          placeholder="Jane Doe"
+          value={draft.fullName ?? ""}
+          onChange={(e) => onUpdate({ fullName: e.currentTarget.value })}
+        />
+        <TextField
+          label="Email"
+          type="email"
+          required
+          placeholder="jane@studio.com"
+          helper="We use this to set up your account. No card needed."
+          value={draft.email ?? ""}
+          onChange={(e) => onUpdate({ email: e.currentTarget.value })}
+        />
+        <div style={{ marginTop: 20 }}>
+          <Button type="submit" variant="primary" loading={loading}>
+            Create my agent
+          </Button>
+        </div>
+      </form>
+
+      <hr className="wrap-divider" />
+
+      <details className="wrap-feedback">
+        <summary>Tell us how the call went (optional)</summary>
+        {sent ? (
+          <Alert variant="success">Thanks — that helps us tune the agent.</Alert>
+        ) : (
+          <>
+            <div style={{ marginBottom: 16 }}>
+              <label className="ui-label">How did the call sound?</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <ChoiceButton
+                    key={n}
+                    selected={score === n}
+                    onClick={() => setScore(n)}
+                  >
+                    {n}
+                  </ChoiceButton>
+                ))}
+              </div>
+              <p className="wrap-feedback__hint">1 = poor, 5 = excellent</p>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label className="ui-label">What stood out?</label>
+              <ToggleGroup options={FEEDBACK_CHIPS} values={chips} onChange={setChips} />
+            </div>
+
+            <TextArea
+              label="Anything else we should know?"
+              value={text}
+              onChange={(e) => setText(e.currentTarget.value)}
+              rows={3}
+            />
+
+            <div style={{ marginTop: 16 }}>
+              <Button onClick={handleFeedback} disabled={score === null}>
+                Send feedback
+              </Button>
+            </div>
+          </>
+        )}
+      </details>
     </div>
   );
 }
@@ -1061,7 +1051,7 @@ export function DemoPage() {
   const endCall = async (durationSeconds: number) => {
     if (!sessionId) return;
     await api.demo.end(sessionId, { durationSeconds });
-    setStep("feedback");
+    setStep("wrap");
   };
 
   const submitFeedback = async ({
@@ -1076,7 +1066,6 @@ export function DemoPage() {
     outcome: "positive" | "neutral" | "negative" | "abandoned";
   }) => {
     if (!sessionId) return;
-    setLoading(true);
     try {
       await api.demo.feedback(sessionId, {
         feedbackScore: score,
@@ -1084,53 +1073,56 @@ export function DemoPage() {
         feedbackText: text,
         outcome,
       });
-      if (outcome === "positive") {
-        const signupParams = new URLSearchParams();
-        if (draft.email) signupParams.set("demoEmail", draft.email);
-        if (draft.fullName) signupParams.set("demoName", draft.fullName);
-
-        const redirectParams = new URLSearchParams();
-        if (draft.businessName) redirectParams.set("demoBusiness", draft.businessName);
-        if (draft.city) redirectParams.set("demoCity", draft.city);
-        if (draft.vertical) redirectParams.set("demoVertical", draft.vertical);
-        const redirectSearch = redirectParams.toString();
-        const redirect = `/app/onboarding/create${redirectSearch ? `?${redirectSearch}` : ""}`;
-        signupParams.set("redirect", redirect);
-
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch {}
-        window.location.href = `/signup?${signupParams.toString()}`;
-        return;
-      }
-      setStep("thanks");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to submit feedback.");
-    } finally {
-      setLoading(false);
+    } catch {
+      // Feedback is optional and secondary; never block the visitor on it.
     }
   };
 
-  const goBack = () => {
-    if (step === "thanks") {
-      setStep("vertical");
-      setSessionId(null);
-      setDraft(emptyDraft());
-      setCall(null);
-      setVertical(null);
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch {}
-      return;
+  /**
+   * Offered to everyone who reaches the end of the call. The rating used to gate
+   * this silently, so a visitor who rated the call 3 was never shown a way to sign up.
+   */
+  const createAccount = async () => {
+    setLoading(true);
+    try {
+      if (sessionId) {
+        await api.demo.updateSession(sessionId, {
+          fullName: draft.fullName,
+          email: draft.email,
+        });
+      }
+    } catch {
+      // Prefill is a convenience; a failure here must not block signup.
     }
+
+    const signupParams = new URLSearchParams();
+    if (draft.email) signupParams.set("demoEmail", draft.email);
+    if (draft.fullName) signupParams.set("demoName", draft.fullName);
+
+    const redirectParams = new URLSearchParams();
+    if (draft.businessName) redirectParams.set("demoBusiness", draft.businessName);
+    if (draft.city) redirectParams.set("demoCity", draft.city);
+    if (draft.vertical) redirectParams.set("demoVertical", draft.vertical);
+    const redirectSearch = redirectParams.toString();
+    signupParams.set(
+      "redirect",
+      `/app/onboarding/create${redirectSearch ? `?${redirectSearch}` : ""}`,
+    );
+
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    window.location.href = `/signup?${signupParams.toString()}`;
+  };
+
+  const goBack = () => {
     const prev: Record<Step, Step | null> = {
       vertical: null,
       business: "vertical",
       intake: "business",
       voice: "intake",
       live: "voice",
-      feedback: "live",
-      thanks: "feedback",
+      wrap: "live",
     };
     const next = prev[step];
     if (next) setStep(next);
@@ -1139,7 +1131,7 @@ export function DemoPage() {
   if (loading && verticals.length === 0) {
     return (
       <AuthShell>
-        <Box style={{ padding: 32, textAlign: "center" }}>
+        <Box padding="xl" style={{ textAlign: "center" }}>
           <p>Loading demo…</p>
         </Box>
       </AuthShell>
@@ -1148,12 +1140,11 @@ export function DemoPage() {
 
   return (
     <AuthShell width={step === "live" ? 720 : 560}>
-      <Box style={{ padding: 28 }}>
+      <Box padding="xl">
         <DemoHeader
           step={step}
           title={formatTitle(step)}
           onBack={step === "vertical" ? undefined : goBack}
-          backLabel={step === "thanks" ? "Start over" : undefined}
         />
         {!health.isLoading && !health.turnEnabled ? (
           <div style={{ marginBottom: 16 }}>
@@ -1189,7 +1180,6 @@ export function DemoPage() {
           <IntakeStep
             draft={draft}
             vertical={vertical}
-            onUpdate={updateDraft}
             setAnswer={setAnswer}
             onSubmit={submitIntake}
             loading={loading}
@@ -1207,10 +1197,15 @@ export function DemoPage() {
         {step === "live" && call && (
           <LiveCall call={call} onEnd={endCall} />
         )}
-        {step === "feedback" && (
-          <FeedbackStep onSubmit={submitFeedback} loading={loading} />
+        {step === "wrap" && (
+          <WrapStep
+            draft={draft}
+            onUpdate={updateDraft}
+            onCreateAccount={createAccount}
+            onSubmitFeedback={submitFeedback}
+            loading={loading}
+          />
         )}
-        {step === "thanks" && <ThanksStep onNew={goBack} />}
       </Box>
     </AuthShell>
   );

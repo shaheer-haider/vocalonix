@@ -48,7 +48,7 @@ export function OnboardingShell({
           aria-valuemin={0}
           aria-valuenow={completedCount}
         >
-          <span style={{ width: `${percent}%` }} />
+          <span style={{ transform: `scaleX(${percent / 100})` }} />
         </div>
         <ol>
           {steps.map((step, index) => {

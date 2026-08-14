@@ -54,7 +54,7 @@ export function AppHomePage() {
           vocalonix
         </Link>
       </div>
-      <Box style={{ padding: 24 }}>
+      <Box padding="lg">
         <Pill variant="good">Authenticated session</Pill>
         <h1 className="account-title">
           Welcome{auth.session?.user.name ? `, ${auth.session.user.name}` : ""}
@@ -69,9 +69,9 @@ export function AppHomePage() {
         ) : businesses.length > 0 ? (
           <div className="session-list">
             {businesses.map((business) => (
-              <a
+              <Link
                 className="session-item"
-                href={`/app/${business.slug}/dashboard`}
+                to="/app/$businessSlug/dashboard" params={{ businessSlug: business.slug }}
                 key={business.id}
               >
                 <div>
@@ -79,7 +79,7 @@ export function AppHomePage() {
                   <span>{business.role}</span>
                 </div>
                 <Pill>{business.initial}</Pill>
-              </a>
+              </Link>
             ))}
           </div>
         ) : (
@@ -150,7 +150,7 @@ export function AccountContent() {
   }
 
   return (
-    <Box style={{ padding: 24 }}>
+    <Box padding="lg">
       <div className="account-heading">
         <div>
           <p className="eyebrow">Account</p>

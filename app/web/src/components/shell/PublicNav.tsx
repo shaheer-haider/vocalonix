@@ -16,16 +16,24 @@ export function TopNav() {
       <nav aria-label="Public navigation">
         <a href="/#how-it-works">How it works</a>
         <a href="/#widget">Widget</a>
-        {turnEnabled ? <Link to="/demo">Hear it now</Link> : null}
       </nav>
+      {/* The demo is the conversion path, so it stays visible at every width —
+          the section links collapse below 980px, this does not. */}
       <div className="public-nav__actions">
+        {turnEnabled ? (
+          <Link to="/demo" className="public-nav__demo">
+            Hear it now
+          </Link>
+        ) : null}
         {isAuthenticated ? (
           <Link to="/app" className="ui-button ui-button--primary">
             Open app
           </Link>
         ) : (
           <>
-            <Link to="/login">Log in</Link>
+            <Link to="/login" className="public-nav__login">
+              Log in
+            </Link>
             <Link to="/signup" className="ui-button ui-button--primary">
               Create account
             </Link>

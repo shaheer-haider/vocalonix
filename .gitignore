@@ -27,3 +27,11 @@ ds-bundle/
 .design-sync/learnings/
 .design-sync/node_modules
 app/web/types/
+
+# Agent tooling. The impeccable skill is tracked under .agents/skills/ and
+# .claude/skills/, since each tool resolves its own copy. Further per-tool
+# mirrors of the same install, and machine-local state, stay out.
+.codex/
+.opencode/
+.impeccable/
+.claude/settings.local.json

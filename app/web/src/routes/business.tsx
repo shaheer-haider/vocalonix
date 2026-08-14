@@ -42,11 +42,13 @@ import {
   BookIcon,
   CalendarIcon,
   ChatIcon,
+  MoreIcon,
   PhoneIcon,
   SettingsIcon,
   UsersIcon,
 } from "../icons";
 import { can, permissionRows, roles } from "../permissions";
+import { detectTimezone, timezoneOptions } from "../timezones";
 import { AccountContent } from "./account";
 
 const createBusinessSchema = z.object({
@@ -134,6 +136,8 @@ export const COUNTRY_OPTIONS = [
   { label: "United States", value: "US" },
   { label: "Vietnam", value: "VN" },
 ];
+
+const TIMEZONE_OPTIONS = timezoneOptions();
 
 function slugify(value: string): string {
   return value
@@ -236,7 +240,7 @@ export function WorkspaceShell({
   if (!business) {
     return (
       <AuthShell width={620}>
-        <Box style={{ padding: 24 }}>
+        <Box padding="lg">
           <h1 className="account-title">Workspace not found</h1>
           <p className="auth-card-copy">
             This workspace is unavailable or your membership was removed.
@@ -257,7 +261,7 @@ export function WorkspaceShell({
         canCreateWorkspace={canCreateWorkspace}
         workspaceLimit={workspaceLimit}
       >
-        <Box style={{ padding: 24 }}>
+        <Box padding="lg">
           <Pill variant="warn">{business.role}</Pill>
           <h1 className="account-title">You do not have access here</h1>
           <p className="auth-card-copy">
@@ -326,6 +330,15 @@ function WorkspaceFrame({
   const isNotifications = pathname.startsWith(notificationsHref);
 
   const [counts, setCounts] = useState({ callbacks: 0, gaps: 0 });
+  const [moreOpen, setMoreOpen] = useState(false);
+  /**
+   * The status card used to claim "Live & answering" unconditionally, which
+   * contradicted the publish banner two feet away and told brand-new workspaces
+   * their agent was taking calls. `null` means "not known yet" — say nothing.
+   */
+  const [publishState, setPublishState] = useState<
+    "unknown" | "draft" | "live"
+  >("unknown");
 
   useEffect(() => {
     let cancelled = false;
@@ -342,6 +355,20 @@ function WorkspaceFrame({
       .catch(() => {
         // Badge counts are decorative; leave them at zero on failure.
       });
+
+    api.businesses
+      .settings(business.slug)
+      .then((settings) => {
+        if (!cancelled) {
+          setPublishState(
+            settings.onboarding.publishedAt ? "live" : "draft",
+          );
+        }
+      })
+      .catch(() => {
+        // Unknown beats a confident wrong answer.
+      });
+
     return () => {
       cancelled = true;
     };
@@ -478,13 +505,19 @@ function WorkspaceFrame({
             Notifications
           </Link>
         </nav>
-        <div className="sidebar-status">
-          <div className="sidebar-status__head">
-            <span className="sidebar-status__dot" />
-            Live &amp; answering
+        {publishState === "unknown" ? null : (
+          <div
+            className={`sidebar-status ${publishState === "draft" ? "sidebar-status--draft" : ""}`}
+          >
+            <div className="sidebar-status__head">
+              <span className="sidebar-status__dot" />
+              {publishState === "live" ? "Live on your site" : "Not live yet"}
+            </div>
+            {publishState === "live"
+              ? `Your agent is answering website chats for ${business.name}.`
+              : "Nothing reaches a visitor until you publish for the first time."}
           </div>
-          Your agent picks up calls and website chats for {business.name}.
-        </div>
+        )}
       </aside>
       <main className="workspace-main">{children}</main>
       {showLimitModal ? (
@@ -503,6 +536,8 @@ function WorkspaceFrame({
           </Button>
         </Modal>
       ) : null}
+      {/* Four most-used destinations inline; "More" opens the seven that
+          previously had no mobile route at all. */}
       <nav className="mobile-bottom-nav" aria-label="Mobile">
         <Link
           className={navActiveClass(isDashboard)}
@@ -539,7 +574,57 @@ function WorkspaceFrame({
           <ChatIcon size={20} />
           <span>Calls</span>
         </Link>
+        <button
+          type="button"
+          className={`nav-item ${moreOpen ? "nav-item--active" : ""}`}
+          aria-expanded={moreOpen}
+          aria-controls="mobile-more"
+          onClick={() => setMoreOpen((open) => !open)}
+        >
+          <MoreIcon size={20} />
+          <span>More</span>
+        </button>
       </nav>
+
+      {moreOpen ? (
+        <div className="mobile-more__backdrop" onClick={() => setMoreOpen(false)}>
+          <div
+            id="mobile-more"
+            className="mobile-more"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="nav-section">Set up</p>
+            <Link className={navActiveClass(isSettings)} to={settingsHref}>
+              <SettingsIcon size={18} />
+              Configuration
+            </Link>
+            <Link className={navActiveClass(isKnowledge)} to={knowledgeHref}>
+              <BookIcon size={18} />
+              Knowledge
+              {counts.gaps > 0 ? (
+                <span className="nav-item__count">{counts.gaps}</span>
+              ) : null}
+            </Link>
+            <p className="nav-section">Workspace</p>
+            <Link className={navActiveClass(isContacts)} to={contactsHref}>
+              <UsersIcon size={18} />
+              Contacts
+            </Link>
+            <Link className={navActiveClass(isNotifications)} to={notificationsHref}>
+              <BellIcon size={18} />
+              Notifications
+            </Link>
+            <Link className={navActiveClass(isTeam)} to={teamHref}>
+              <UsersIcon size={18} />
+              Team
+            </Link>
+            <Link className={navActiveClass(isAccount)} to={accountHref}>
+              <SettingsIcon size={18} />
+              Account &amp; billing
+            </Link>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -578,7 +663,8 @@ export function CreateBusinessPage() {
       contactEmail: "",
       city: demoCity,
       country: "US",
-      timezone: "America/New_York",
+      // Start on the visitor's own zone rather than making them hunt for it.
+      timezone: detectTimezone(),
       vertical: demoVertical ? mapDemoVertical(demoVertical) : "Beauty",
       locations: "1",
     },
@@ -627,7 +713,7 @@ export function CreateBusinessPage() {
           }
         })}
       >
-        <Box style={{ padding: 24 }}>
+        <Box padding="lg">
           <p className="eyebrow">Step 1 of 1</p>
           <h1 className="account-title">Create a business workspace</h1>
           <p className="auth-card-copy">
@@ -661,13 +747,9 @@ export function CreateBusinessPage() {
             />
             <SelectField
               label="Timezone"
+              helper="Used for your opening hours and booking times."
+              options={TIMEZONE_OPTIONS}
               error={form.formState.errors.timezone?.message}
-              options={[
-                { label: "Eastern", value: "America/New_York" },
-                { label: "Central", value: "America/Chicago" },
-                { label: "Mountain", value: "America/Denver" },
-                { label: "Pacific", value: "America/Los_Angeles" },
-              ]}
               {...form.register("timezone")}
             />
             <SelectField
@@ -827,22 +909,22 @@ export function WorkspaceDashboardPage() {
           </div>
 
           <div className="dash-stats">
-            <Box className="dash-stat" style={{ padding: 16 }}>
+            <Box className="dash-stat">
               <strong>{stats ? stats.callsAnswered : "—"}</strong>
               <span>Calls answered</span>
               <small>Agent picked up every one</small>
             </Box>
-            <Box className="dash-stat" style={{ padding: 16 }}>
+            <Box className="dash-stat">
               <strong>{stats ? stats.completedCalls : "—"}</strong>
               <span>Completed</span>
               <small>Ran to the end of the call</small>
             </Box>
-            <Box className="dash-stat" style={{ padding: 16 }}>
+            <Box className="dash-stat">
               <strong>{stats ? Math.round(stats.totalSeconds / 60) : "—"}</strong>
               <span>Minutes used</span>
               <small>Across every call</small>
             </Box>
-            <Box className="dash-stat" style={{ padding: 16 }}>
+            <Box className="dash-stat">
               <strong>{stats ? formatCallLength(stats.averageSeconds) : "—"}</strong>
               <span>Average length</span>
               <small>From connect to finish</small>
@@ -850,7 +932,7 @@ export function WorkspaceDashboardPage() {
           </div>
 
           <div className="dash-surfaces" style={{ marginTop: 16 }}>
-            <Box className="dash-surface" style={{ padding: 20 }}>
+            <Box className="dash-surface">
               <p className="eyebrow">When people call</p>
               <h2>Hourly pattern</h2>
               <div className="dash-bars" aria-label="Hourly call volume">
@@ -876,7 +958,7 @@ export function WorkspaceDashboardPage() {
               </p>
             </Box>
 
-            <Box className="dash-surface" style={{ padding: 20 }}>
+            <Box className="dash-surface">
               <p className="eyebrow">How calls ended</p>
               <h2>Outcomes</h2>
               <div className="dash-topics">
@@ -911,7 +993,7 @@ export function WorkspaceDashboardPage() {
               </div>
             </Box>
 
-            <Box className="dash-surface" style={{ padding: 20 }}>
+            <Box className="dash-surface">
               <p className="eyebrow">Live</p>
               <h2>Answering</h2>
               <p className="dash-live-line">
@@ -921,15 +1003,15 @@ export function WorkspaceDashboardPage() {
                 <ChatIcon size={16} /> Website button is on
               </p>
               <div className="stack-row" style={{ marginTop: 10 }}>
-                <a className="ui-button" href={`/app/${business.slug}/conversations`}>
+                <Link className="ui-button" to="/app/$businessSlug/conversations" params={{ businessSlug: business.slug }}>
                   Test call
-                </a>
+                </Link>
               </div>
             </Box>
           </div>
 
           <div className="dash-surfaces dash-surfaces--secondary">
-            <Box className="dash-surface" style={{ padding: 20 }}>
+            <Box className="dash-surface">
               <div className="account-section__heading">
                 <div>
                   <p className="eyebrow">Promises to keep</p>
@@ -942,10 +1024,10 @@ export function WorkspaceDashboardPage() {
               ) : (
                 <div className="session-list" style={{ marginTop: 12 }}>
                   {callbackQueue.map((item) => (
-                    <a
+                    <Link
                       key={item.id}
                       className="session-item"
-                      href={`/app/${business.slug}/callbacks`}
+                      to="/app/$businessSlug/callbacks" params={{ businessSlug: business.slug }}
                     >
                       <div>
                         <strong>{item.contactName}</strong>
@@ -955,13 +1037,13 @@ export function WorkspaceDashboardPage() {
                         </span>
                       </div>
                       <Pill variant="info">Open</Pill>
-                    </a>
+                    </Link>
                   ))}
                 </div>
               )}
             </Box>
 
-            <Box className="dash-surface" style={{ padding: 20 }}>
+            <Box className="dash-surface">
               <div className="account-section__heading">
                 <div>
                   <p className="eyebrow">Teach the agent</p>
@@ -982,12 +1064,12 @@ export function WorkspaceDashboardPage() {
                         </span>
                       </div>
                       <div className="stack-row">
-                        <a
+                        <Link
                           className="ui-button"
-                          href={`/app/${business.slug}/settings/knowledge#gaps`}
+                          to="/app/$businessSlug/settings/knowledge" params={{ businessSlug: business.slug }} hash="gaps"
                         >
                           Teach
-                        </a>
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -995,15 +1077,15 @@ export function WorkspaceDashboardPage() {
               )}
             </Box>
 
-            <Box className="dash-surface" style={{ padding: 20 }}>
+            <Box className="dash-surface">
               <div className="account-section__heading">
                 <div>
                   <p className="eyebrow">Today in the diary</p>
                   <h2>Bookings</h2>
                 </div>
-                <a className="ui-button" href={`/app/${business.slug}/bookings`}>
+                <Link className="ui-button" to="/app/$businessSlug/bookings" params={{ businessSlug: business.slug }}>
                   Open diary
-                </a>
+                </Link>
               </div>
               {diary.length === 0 ? (
                 <p>Nothing in the diary today.</p>
@@ -1040,18 +1122,18 @@ export function WorkspaceDashboardPage() {
             </Box>
           </div>
 
-          <Box style={{ padding: 20, marginTop: 16 }}>
+          <Box padding="md" style={{ marginTop: 16 }}>
             <div className="account-section__heading">
               <div>
                 <p className="eyebrow">Latest calls</p>
                 <h2>Activity feed</h2>
               </div>
-              <a
+              <Link
                 className="ui-button"
-                href={`/app/${business.slug}/conversations`}
+                to="/app/$businessSlug/conversations" params={{ businessSlug: business.slug }}
               >
                 All conversations
-              </a>
+              </Link>
             </div>
             {stats && stats.recent.length > 0 ? (
               <ul className="dash-activity">
@@ -1304,7 +1386,7 @@ export function TeamPage() {
                   be escalated after hours.
                 </Alert>
               ) : null}
-              <Box style={{ padding: 0, overflow: "hidden" }}>
+              <Box style={{ overflow: "hidden" }}>
                 <div className="data-table data-table--team">
                   <div className="data-table__row data-table__row--head data-table__row--team">
                     <span>Person</span>
@@ -1394,7 +1476,7 @@ export function TeamPage() {
                 </div>
               </Box>
               {business.role === "Owner" ? (
-                <Box style={{ padding: 20, marginTop: 16 }}>
+                <Box padding="md" style={{ marginTop: 16 }}>
                   <div className="account-section__heading">
                     <div>
                       <h2>Ownership</h2>
@@ -1461,7 +1543,7 @@ export function TeamPage() {
                 </p>
               </div>
             </div>
-            <Box style={{ padding: 0, overflow: "hidden" }}>
+            <Box style={{ overflow: "hidden" }}>
               <div className="data-table">
                 <div className="data-table__row data-table__row--roles data-table__row--head">
                   <span>Permission</span>
@@ -1697,7 +1779,7 @@ export function InvitationPage() {
           vocalonix
         </Link>
       </div>
-      <Box style={{ padding: 24, textAlign: "center" }}>
+      <Box padding="lg" style={{ textAlign: "center" }}>
         <Pill variant={lookup.state === "valid" ? "accent" : "warn"}>
           {lookup.state}
         </Pill>

@@ -2,36 +2,15 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   Outlet,
   redirect,
 } from "@tanstack/react-router";
 
-import App, {
-  AgentSettingsView,
-  KnowledgeBase,
-  TestAgent,
-} from "./App";
-import { api } from "./api";
-import { DesignSystemPage } from "./routes/DesignSystem";
-import {
-  AccountPage,
-  AppHomePage,
-  SecurityPage,
-} from "./routes/account";
-import {
-  CreateBusinessPage,
-  InvitationPage,
-  TeamPage,
-  WorkspaceAccountPage,
-  WorkspaceDashboardPage,
-} from "./routes/business";
-import { WorkspaceContactsPage } from "./routes/contacts";
-import { WorkspaceConversationsPage } from "./routes/conversations";
-import {
-  WorkspaceBookingsPage,
-  WorkspaceCallbacksPage,
-} from "./routes/operations";
-import { WorkspaceNotificationsPage } from "./routes/notifications";
+import { loadSession } from "./auth/session";
+import { LoadingState } from "./components/ui";
+import { RouteError, RouteNotFound } from "./components/shell/RouteError";
+// Public entry points stay in the initial chunk: they are the first paint.
 import {
   LandingPage,
   LoginPage,
@@ -39,23 +18,53 @@ import {
   SignupPage,
   VerifyEmailPage,
 } from "./routes/public";
-import {
-  TenantOnboardingPage,
-  TenantSettingsPage,
-} from "./routes/tenant";
-import { DemoPage } from "./routes/demo";
+
+/**
+ * Everything behind auth is split out. Previously a visitor landing on the
+ * marketing page downloaded the whole workspace app — tenant settings, the
+ * bookings diary, contacts — in one 596 kB chunk before the hero painted.
+ */
+const lazyPage = <
+  TModule extends Record<string, unknown>,
+  TKey extends keyof TModule & string,
+>(
+  loader: () => Promise<TModule>,
+  exportName: TKey,
+) => lazyRouteComponent(loader, exportName);
+
+const DesignSystemPage = lazyPage(() => import("./routes/DesignSystem"), "DesignSystemPage");
+const AccountPage = lazyPage(() => import("./routes/account"), "AccountPage");
+const AppHomePage = lazyPage(() => import("./routes/account"), "AppHomePage");
+const SecurityPage = lazyPage(() => import("./routes/account"), "SecurityPage");
+const CreateBusinessPage = lazyPage(() => import("./routes/business"), "CreateBusinessPage");
+const InvitationPage = lazyPage(() => import("./routes/business"), "InvitationPage");
+const TeamPage = lazyPage(() => import("./routes/business"), "TeamPage");
+const WorkspaceAccountPage = lazyPage(() => import("./routes/business"), "WorkspaceAccountPage");
+const WorkspaceDashboardPage = lazyPage(() => import("./routes/business"), "WorkspaceDashboardPage");
+const WorkspaceContactsPage = lazyPage(() => import("./routes/contacts"), "WorkspaceContactsPage");
+const WorkspaceConversationsPage = lazyPage(() => import("./routes/conversations"), "WorkspaceConversationsPage");
+const WorkspaceBookingsPage = lazyPage(() => import("./routes/operations"), "WorkspaceBookingsPage");
+const WorkspaceCallbacksPage = lazyPage(() => import("./routes/operations"), "WorkspaceCallbacksPage");
+const WorkspaceNotificationsPage = lazyPage(() => import("./routes/notifications"), "WorkspaceNotificationsPage");
+const TenantOnboardingPage = lazyPage(() => import("./routes/tenant"), "TenantOnboardingPage");
+const TenantSettingsPage = lazyPage(() => import("./routes/tenant"), "TenantSettingsPage");
+const DemoPage = lazyPage(() => import("./routes/demo"), "DemoPage");
+
+/**
+ * Shared by every guarded route. `loadSession` is cached, so this costs a
+ * network round trip once rather than once per navigation — and no longer
+ * races `AuthProvider` to make the same request twice on first paint.
+ */
+const requireSession = async ({ location }: { location: { href: string } }) => {
+  if (!(await loadSession())) {
+    throw redirect({ to: "/login", search: { redirect: location.href } });
+  }
+};
 
 const rootRoute = createRootRoute({
   component: Outlet,
-  notFoundComponent: () => (
-    <main className="route-message">
-      <p className="eyebrow">Not found</p>
-      <h1>This page does not exist</h1>
-      <a className="button button--primary" href="/demo">
-        Hear it now
-      </a>
-    </main>
-  ),
+  notFoundComponent: RouteNotFound,
+  errorComponent: RouteError,
 });
 
 const indexRoute = createRoute({
@@ -103,45 +112,21 @@ const inviteRoute = createRoute({
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/app",
-  beforeLoad: async ({ location }) => {
-    const session = await api.auth.session();
-    if (!session) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
-    }
-  },
+  beforeLoad: requireSession,
   component: AppHomePage,
 });
 
 const createBusinessRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/app/onboarding/create",
-  beforeLoad: async ({ location }) => {
-    const session = await api.auth.session();
-    if (!session) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
-    }
-  },
+  beforeLoad: requireSession,
   component: CreateBusinessPage,
 });
 
 const workspaceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/app/$businessSlug",
-  beforeLoad: async ({ location }) => {
-    const session = await api.auth.session();
-    if (!session) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
-    }
-  },
+  beforeLoad: requireSession,
   component: Outlet,
 });
 
@@ -267,30 +252,14 @@ const workspaceWidgetSettingsRoute = createRoute({
 const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account",
-  beforeLoad: async ({ location }) => {
-    const session = await api.auth.session();
-    if (!session) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
-    }
-  },
+  beforeLoad: requireSession,
   component: AccountPage,
 });
 
 const securityRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account/security",
-  beforeLoad: async ({ location }) => {
-    const session = await api.auth.session();
-    if (!session) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
-    }
-  },
+  beforeLoad: requireSession,
   component: SecurityPage,
 });
 
@@ -298,56 +267,6 @@ const designSystemRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/design-system",
   component: DesignSystemPage,
-});
-
-const secretRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/secret",
-  beforeLoad: async ({ location }) => {
-    const session = await api.auth.session();
-    if (!session) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
-    }
-  },
-  component: App,
-  notFoundComponent: () => (
-    <section className="route-message">
-      <p className="eyebrow">Not found</p>
-      <h1>This page does not exist</h1>
-      <a className="button button--primary" href="/demo">
-        Hear it now
-      </a>
-    </section>
-  ),
-});
-
-const secretIndexRoute = createRoute({
-  getParentRoute: () => secretRoute,
-  path: "/",
-  beforeLoad: () => {
-    throw redirect({ to: "/demo" });
-  },
-});
-
-const testAgentRoute = createRoute({
-  getParentRoute: () => secretRoute,
-  path: "/test-agent",
-  component: TestAgent,
-});
-
-const knowledgeBaseRoute = createRoute({
-  getParentRoute: () => secretRoute,
-  path: "/knowledge-base",
-  component: KnowledgeBase,
-});
-
-const agentSettingsRoute = createRoute({
-  getParentRoute: () => secretRoute,
-  path: "/agent-settings",
-  component: AgentSettingsView,
 });
 
 const routeTree = rootRoute.addChildren([
@@ -384,16 +303,54 @@ const routeTree = rootRoute.addChildren([
   accountRoute,
   securityRoute,
   designSystemRoute,
-  secretRoute.addChildren([
-    secretIndexRoute,
-    testAgentRoute,
-    knowledgeBaseRoute,
-    agentSettingsRoute,
-  ]),
 ]);
 
 export const router = createRouter({
   routeTree,
   defaultPreload: "intent",
   scrollRestoration: true,
+  defaultErrorComponent: RouteError,
+  defaultNotFoundComponent: RouteNotFound,
+  defaultPendingComponent: () => <LoadingState label="Loading…" />,
+});
+
+/**
+ * Every route rendered the same "Vocalonix" title, which makes browser history and
+ * multi-tab use ambiguous. Titles are derived from the matched path.
+ */
+const ROUTE_TITLES: Array<[RegExp, string]> = [
+  [/^\/$/, "Vocalonix — never lose another booking to a missed call"],
+  [/^\/demo/, "Hear it now"],
+  [/^\/login/, "Log in"],
+  [/^\/signup/, "Create your account"],
+  [/^\/magic/, "Check your email"],
+  [/^\/verify-email/, "Verify your email"],
+  [/^\/invite\//, "You've been invited"],
+  [/^\/design-system/, "Design system"],
+  [/^\/account\/security/, "Security"],
+  [/^\/account/, "Account"],
+  [/\/settings\/knowledge/, "Knowledge"],
+  [/\/settings\/hours/, "Opening hours"],
+  [/\/settings\/widget/, "Widget"],
+  [/\/settings\/agent/, "Agent"],
+  [/\/settings\/history/, "History"],
+  [/\/settings/, "Settings"],
+  [/\/onboarding/, "Set up your agent"],
+  [/\/conversations/, "Conversations"],
+  [/\/contacts/, "Contacts"],
+  [/\/bookings/, "Bookings"],
+  [/\/callbacks/, "Callbacks"],
+  [/\/notifications/, "Notifications"],
+  [/\/team/, "Team"],
+  [/^\/app/, "Your workspaces"],
+];
+
+function titleFor(pathname: string) {
+  const match = ROUTE_TITLES.find(([pattern]) => pattern.test(pathname));
+  if (!match) return "Vocalonix";
+  return match[1].startsWith("Vocalonix") ? match[1] : `${match[1]} · Vocalonix`;
+}
+
+router.subscribe("onResolved", () => {
+  document.title = titleFor(router.state.location.pathname);
 });

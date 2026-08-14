@@ -5,6 +5,7 @@
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 0;
   min-height: calc(100vh - 124px);
+  min-height: calc(100dvh - 124px);
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--paper);
@@ -40,6 +41,14 @@
   }
 }
 
+.bookings-confirm {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-2);
+  font-family: var(--label);
+  font-size: 1rem;
+}
+
 .ops-toast {
   position: fixed;
   left: 50%;
@@ -51,7 +60,7 @@
   background: var(--ink);
   border-radius: 12px;
   box-shadow: var(--shadow-raised);
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 
 /* Header */
@@ -82,13 +91,13 @@
 .ops-title {
   margin: 0;
   font-family: var(--hand);
-  font-size: 28px;
+  font-size: 1.75rem;
   color: var(--ink);
 }
 
 .ops-blurb {
   margin: 0;
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-4);
 }
 
@@ -106,7 +115,7 @@
   border: 1px solid transparent;
   color: var(--ink-4);
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   cursor: pointer;
 }
 
@@ -131,7 +140,7 @@
   border-radius: 8px;
   padding: 5px 10px;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 0.9375rem;
   background: var(--paper);
   border: 1px solid var(--line);
   color: var(--ink-2);
@@ -153,7 +162,7 @@
 .ops-day__label {
   min-width: 158px;
   text-align: center;
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--ink);
 }
 
@@ -168,7 +177,7 @@
   border-radius: 9px;
   color: var(--ink-2);
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -196,7 +205,7 @@
 
 .ops-stat__v {
   font-family: var(--hand);
-  font-size: 21px;
+  font-size: 1.3125rem;
   color: var(--ink);
 }
 
@@ -213,7 +222,7 @@
 }
 
 .ops-stat__k {
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--ink-4);
 }
 
@@ -257,14 +266,14 @@
 }
 
 .bookings-grid__name {
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.1;
   color: var(--ink);
 }
 
 .bookings-grid__sub {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -280,7 +289,7 @@
   right: 9px;
   transform: translateY(-50%);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   color: var(--ink-4);
 }
 
@@ -312,7 +321,7 @@
   top: -9px;
   padding: 1px 4px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   color: var(--accent);
   background: var(--paper);
 }
@@ -343,19 +352,19 @@
 }
 
 .bookings-block--compact .bookings-block__title {
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .bookings-block__time {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.06em;
   color: var(--ink-4);
 }
 
 .bookings-block__title {
   font-family: var(--kalam);
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.15;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -363,7 +372,7 @@
 }
 
 .bookings-block__sub {
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.15;
   color: var(--ink-4);
   overflow: hidden;
@@ -471,7 +480,7 @@
 .bookings-detail__tag {
   align-self: flex-start;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.07em;
   border-radius: 20px;
   padding: 3px 8px;
@@ -481,13 +490,13 @@
 .bookings-detail__title {
   margin: 4px 0 0;
   font-family: var(--hand);
-  font-size: 25px;
+  font-size: 1.5625rem;
   line-height: 1.15;
   color: var(--ink);
 }
 
 .bookings-detail__when {
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-2);
 }
 
@@ -507,7 +516,7 @@
   width: 74px;
   flex: none;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -515,7 +524,7 @@
 
 .bookings-fact__v {
   flex: 1;
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.25;
   color: var(--ink);
 }
@@ -529,7 +538,7 @@
 }
 
 .bookings-detail__links a {
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--accent-ink);
 }
 
@@ -553,7 +562,7 @@
   min-width: 62px;
   text-align: center;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--ink-2);
 }
 
@@ -583,7 +592,7 @@
 
 .bookings-hold__label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--warn);
@@ -591,18 +600,18 @@
 
 .bookings-hold__clock {
   font-family: var(--mono);
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--warn);
 }
 
 .bookings-hold__name {
   font-family: var(--hand);
-  font-size: 21px;
+  font-size: 1.3125rem;
   color: var(--ink);
 }
 
 .bookings-hold__line {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-2);
 }
@@ -626,14 +635,14 @@
 
 .bookings-section-label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-4);
 }
 
 .bookings-count {
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--ink-4);
 }
 
@@ -642,7 +651,7 @@
   border: 1px solid var(--good);
   border-radius: 11px;
   padding: 10px 12px;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-2);
 }
@@ -659,12 +668,12 @@
 }
 
 .bookings-wait__name {
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink);
 }
 
 .bookings-wait__want {
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--ink-4);
 }
 
@@ -678,19 +687,19 @@
   width: 40px;
   flex: none;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   color: var(--ink-4);
 }
 
 .bookings-log__line {
   flex: 1;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-2);
 }
 
 .bookings-rail__link {
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--accent-ink);
   padding-top: 2px;
 }
@@ -715,13 +724,13 @@
 .bookings-table-wrap h2 {
   margin: 0;
   font-family: var(--hand);
-  font-size: 23px;
+  font-size: 1.4375rem;
   color: var(--ink);
 }
 
 .bookings-table-wrap p {
   margin: 0;
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--ink-4);
 }
 
@@ -764,24 +773,24 @@
 
 .bookings-th {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--ink-4);
 }
 
 .bookings-td {
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-2);
 }
 
 .bookings-service__name {
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink);
 }
 
 .bookings-service__who {
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--ink-4);
 }
 
@@ -789,7 +798,7 @@
   justify-self: start;
   border-radius: 20px;
   padding: 4px 11px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   cursor: pointer;
   border: 1px solid;
   font-family: var(--kalam);
@@ -837,7 +846,7 @@
 
 .bookings-card__kind {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -845,18 +854,18 @@
 
 .bookings-card__name {
   font-family: var(--hand);
-  font-size: 21px;
+  font-size: 1.3125rem;
   color: var(--ink);
 }
 
 .bookings-card__line {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-2);
 }
 
 .bookings-card__muted {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-4);
 }
@@ -882,13 +891,13 @@
 .bookings-kv__k {
   width: 150px;
   flex: none;
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--ink-4);
 }
 
 .bookings-kv__v {
   flex: 1;
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.25;
   color: var(--ink);
 }
@@ -905,14 +914,14 @@
 
 .bookings-note__label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--good);
 }
 
 .bookings-note__line {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-2);
 }
@@ -947,14 +956,14 @@
 
 .callbacks-group__label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .callbacks-group__count {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   color: var(--ink-4);
 }
@@ -1000,13 +1009,13 @@
 
 .callbacks-due__time {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ink);
 }
 
 .callbacks-due__rel {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.06em;
   color: var(--ink-4);
 }
@@ -1037,7 +1046,7 @@
 
 .callbacks-name {
   flex: none;
-  font-size: 19px;
+  font-size: 1.1875rem;
   line-height: 1.15;
   color: var(--ink);
 }
@@ -1049,7 +1058,7 @@
 .callbacks-tag {
   flex: none;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.07em;
   border-radius: 20px;
   padding: 2px 7px;
@@ -1079,13 +1088,13 @@
 .callbacks-promised {
   flex: none;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   color: var(--warn);
 }
 
 .callbacks-why {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.25;
   color: var(--ink-4);
   overflow: hidden;
@@ -1102,7 +1111,7 @@
 
 .callbacks-attempts-tag {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   color: var(--warn);
 }
@@ -1111,7 +1120,7 @@
   flex: none;
   border-radius: 20px;
   padding: 4px 10px;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .callbacks-owner--set {
@@ -1137,12 +1146,12 @@
 
 .callbacks-empty__title {
   font-family: var(--hand);
-  font-size: 23px;
+  font-size: 1.4375rem;
   color: var(--ink);
 }
 
 .callbacks-empty__line {
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.3;
   color: var(--ink-4);
   max-width: 340px;
@@ -1177,7 +1186,7 @@
 .callbacks-detail__tag {
   align-self: flex-start;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.07em;
   border-radius: 20px;
   padding: 3px 9px;
@@ -1190,26 +1199,26 @@
   padding: 0;
   cursor: pointer;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--ink-4);
 }
 
 .callbacks-detail__who {
   font-family: var(--hand);
-  font-size: 26px;
+  font-size: 1.625rem;
   line-height: 1.1;
   color: var(--ink);
 }
 
 .callbacks-detail__channel {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.04em;
   color: var(--ink-4);
 }
 
 .callbacks-detail__why {
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.35;
   color: var(--ink-2);
 }
@@ -1234,7 +1243,7 @@
   width: 74px;
   flex: none;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -1242,7 +1251,7 @@
 
 .callbacks-fact__v {
   flex: 1;
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.25;
   color: var(--ink);
 }
@@ -1260,7 +1269,7 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   padding: 5px 11px;
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--ink);
   text-decoration: none;
 }
@@ -1277,7 +1286,7 @@
 
 .callbacks-section__label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -1290,7 +1299,7 @@
 }
 
 .callbacks-note {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-4);
 }
@@ -1315,13 +1324,13 @@
   width: 42px;
   flex: none;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 0.6875rem;
   color: var(--ink-4);
 }
 
 .callbacks-attempt__v {
   flex: 1;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-2);
 }
@@ -1349,7 +1358,7 @@
 }
 
 .callbacks-closed__line {
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.3;
   color: var(--good);
 }
@@ -1361,7 +1370,7 @@
   border-radius: 10px;
   padding: 7px 12px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--good);
   font-family: var(--kalam);
 }
@@ -1391,14 +1400,14 @@
 }
 
 .callbacks-load__name {
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1.15;
   color: var(--ink);
 }
 
 .callbacks-load__count {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--ink-4);
 }
 
@@ -1418,7 +1427,7 @@
 }
 
 .callbacks-load__note {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.25;
   color: var(--ink-4);
 }
@@ -1435,7 +1444,7 @@
 
 .callbacks-sources__head {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent-ink);
@@ -1451,13 +1460,13 @@
   width: 26px;
   flex: none;
   font-family: var(--hand);
-  font-size: 20px;
+  font-size: 1.25rem;
   color: var(--ink);
 }
 
 .callbacks-source__v {
   flex: 1;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.25;
   color: var(--ink-2);
 }
@@ -1474,12 +1483,12 @@
 
 .callbacks-placeholder__title {
   font-family: var(--hand);
-  font-size: 20px;
+  font-size: 1.25rem;
   color: var(--ink);
 }
 
 .callbacks-placeholder__line {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
   color: var(--ink-4);
 }

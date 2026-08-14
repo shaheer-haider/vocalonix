@@ -96,7 +96,6 @@ export function LandingPage() {
           vocalonix
         </Link>
         <nav className="landing-nav__links">
-          <Link to="/design-system">Design system</Link>
           {turnEnabled ? (
             <Link to="/demo">Hear it now</Link>
           ) : null}
@@ -135,7 +134,7 @@ export function LandingPage() {
           ) : null}
         </div>
         <p className="landing-hero__note">
-          Self-hosted · your Dograh engine · cancel in two clicks
+          Live in an afternoon · no phone line to set up · cancel in two clicks
         </p>
       </section>
 
@@ -144,7 +143,7 @@ export function LandingPage() {
         <h2>Write your answers once. Every channel uses the same brief.</h2>
         <div className="feature-grid feature-grid--four">
           {landingChannels.map((channel) => (
-            <Box key={channel.title} style={{ padding: 16 }}>
+            <Box key={channel.title} padding="sm">
               <div className="account-section__heading">
                 <h3>{channel.title}</h3>
                 <Pill variant={channel.live ? "good" : "default"}>{channel.pill}</Pill>
@@ -159,7 +158,7 @@ export function LandingPage() {
         <p className="eyebrow">7:40pm on a Tuesday</p>
         <h2>The call you&apos;re not there for</h2>
         <div className="landing-compare">
-          <Box tone="tinted" style={{ padding: 18 }}>
+          <Box tone="tinted" padding="md">
             <p className="eyebrow">Today</p>
             <ol>
               <li>Rings out. Voicemail nobody checks until Thursday.</li>
@@ -167,7 +166,7 @@ export function LandingPage() {
               <li>You never learn the enquiry existed.</li>
             </ol>
           </Box>
-          <Box style={{ padding: 18 }}>
+          <Box padding="md">
             <p className="eyebrow">With Vocalonix</p>
             <ol>
               <li>Answered in two rings, by name, with your prices.</li>
@@ -198,7 +197,6 @@ export function LandingPage() {
 
       <footer className="landing-footer">
         <span>© 2026 Vocalonix</span>
-        <Link to="/design-system">Design system</Link>
         {turnEnabled ? <Link to="/demo">Hear it now</Link> : null}
       </footer>
     </div>
@@ -233,7 +231,7 @@ export function LoginPage() {
           }
         })}
       >
-        <Box style={{ padding: 22 }}>
+        <Box padding="lg">
           <h1 className="auth-card-title">Welcome back</h1>
           <p className="auth-card-copy">Log in to your desk.</p>
           <TextField
@@ -304,7 +302,7 @@ export function SignupPage() {
 
   return (
     <AuthShell width={460}>
-      <AuthHeader tagline="Your self-hosted AI receptionist." />
+      <AuthHeader tagline="The AI receptionist for your website." />
       <form
         onSubmit={form.handleSubmit(async (values) => {
           setNotice(null);
@@ -333,10 +331,10 @@ export function SignupPage() {
           }
         })}
       >
-        <Box style={{ padding: 22 }}>
+        <Box padding="lg">
           <h1 className="auth-card-title">Stop missing calls</h1>
           <p className="auth-card-copy">
-            Set up your agent in an afternoon. No card needed locally.
+            Set up your agent in an afternoon. No card needed to start.
           </p>
           <TextField
             label="Full name"
@@ -435,7 +433,7 @@ function MagicLinkRequest() {
           }
         })}
       >
-        <Box style={{ padding: 22 }}>
+        <Box padding="lg">
           <h1 className="auth-card-title">Sign in by email</h1>
           <p className="auth-card-copy">
             We will send a one-time sign-in link. New users should create an
@@ -531,7 +529,7 @@ function MagicLinkCallback({ token }: { token: string }) {
   return (
     <AuthShell width={440}>
       <AuthHeader />
-      <Box style={{ padding: 22 }}>
+      <Box padding="lg">
         <h1 className="auth-card-title">{state.title}</h1>
         <Alert variant={state.variant}>{state.message}</Alert>
         {state.success ? (
@@ -586,7 +584,7 @@ export function VerifyEmailPage() {
   return (
     <AuthShell width={440}>
       <AuthHeader />
-      <Box style={{ padding: 22 }}>
+      <Box padding="lg">
         <h1 className="auth-card-title">
           {state.success ? "Email verified" : "Verify your email"}
         </h1>

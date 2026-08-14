@@ -364,7 +364,7 @@ function ContactsPage({ slug }: { slug: string }) {
 
     if (pool.length === 0) {
       return (
-        <Box tone="default" style={{ padding: 0 }}>
+        <Box tone="default">
           <div className="contacts-first-run">
             <EmptyState
               title="No names in here yet"

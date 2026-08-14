@@ -52,7 +52,10 @@ function errorPayload(value: unknown): { error?: string; code?: string } | null 
 }
 
 function unwrap<T>(result: ClientResult<T>): T {
-  if (result.error || result.data === null) {
+  // `== null` catches undefined as well as null. A transport or shape failure can
+  // yield `data: undefined` with no `error`, which previously flowed straight into
+  // callers and threw deep inside a render instead of here.
+  if (result.error || result.data == null) {
     const payload = errorPayload(result.error?.value);
     throw new ApiClientError(
       result.status,
@@ -873,7 +876,7 @@ export const api = {
     unwrap(await client.api.dograh.health.get()),
   verticals: async (): Promise<Vertical[]> => {
     const result = unwrap(await client.api.verticals.get());
-    return result.verticals;
+    return result.verticals ?? [];
   },
   demo: {
     createSession: async (vertical: string): Promise<{ id: string }> => {

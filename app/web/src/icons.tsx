@@ -136,3 +136,51 @@ export function MoreIcon(props: IconProps) {
     </IconFrame>
   );
 }
+
+export function PlayIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path d="M7 4.5v15l12-7.5z" />
+    </IconFrame>
+  );
+}
+
+export function PauseIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path d="M9 5v14M15 5v14" />
+    </IconFrame>
+  );
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </IconFrame>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path d="M4.5 12.5l5 5 10-11" />
+    </IconFrame>
+  );
+}
+
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path d="M5 9l7 7 7-7" />
+    </IconFrame>
+  );
+}
+
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path d="M4 12h15m-6-7l7 7-7 7" />
+    </IconFrame>
+  );
+}
