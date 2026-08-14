@@ -66,7 +66,6 @@ Still open (rough priority order):
       knowledge, outbox) — current tests are unit-level only.
 - [ ] **Pagination UI** — the frontend does not yet expose load-more/paging
       controls for the newly paginated endpoints.
-- [ ] Workspace switcher still uses `window.location.assign` (full reload).
 - [ ] Email verification flow is disabled and untested.
 - [ ] Rate limiting / abuse protection on public endpoints (signup, widget,
       demo agent).

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useLocation, useParams } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import {
   useCallback,
   useEffect,
@@ -271,6 +271,7 @@ function WorkspaceFrame({
   children: ReactNode;
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const pathname = location.pathname;
 
   const dashboardHref = `/app/${business.slug}/dashboard`;
@@ -329,9 +330,9 @@ function WorkspaceFrame({
           <select
             value={business.slug}
             onChange={(event) => {
-              window.location.assign(
-                workspaceTarget(window.location.pathname, event.target.value),
-              );
+              void navigate({
+                to: workspaceTarget(pathname, event.target.value),
+              });
             }}
           >
             {businesses.map((item) => (
