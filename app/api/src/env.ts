@@ -33,6 +33,7 @@ const schema = z
     DOGRAH_WORKFLOW_NAME: z.string().min(1),
     DOGRAH_WIDGET_ALLOWED_DOMAINS: z.string().min(1),
     STRIPE_SECRET_KEY: z.string().optional(),
+    MAX_OWNED_WORKSPACES: z.coerce.number().int().min(1).default(3),
     GEMINI_API_KEY: z.string().optional(),
     GEMINI_EXTRACTION_MODEL: z.string().min(1),
   })
@@ -165,6 +166,7 @@ const parsed = schema.safeParse({
   DOGRAH_WIDGET_ALLOWED_DOMAINS:
     process.env.DOGRAH_WIDGET_ALLOWED_DOMAINS ?? "localhost,127.0.0.1",
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY?.trim() || undefined,
+  MAX_OWNED_WORKSPACES: process.env.MAX_OWNED_WORKSPACES ?? "3",
   GEMINI_API_KEY: process.env.GEMINI_API_KEY?.trim() || undefined,
   GEMINI_EXTRACTION_MODEL:
     process.env.GEMINI_EXTRACTION_MODEL?.trim() || "gemini-flash-latest",
@@ -231,6 +233,7 @@ export const env = {
       .map((domain) => domain.trim())
       .filter(Boolean),
   stripeSecretKey: parsed.data.STRIPE_SECRET_KEY ?? null,
+  maxOwnedWorkspaces: parsed.data.MAX_OWNED_WORKSPACES,
   geminiApiKey: parsed.data.GEMINI_API_KEY ?? null,
   geminiExtractionModel: parsed.data.GEMINI_EXTRACTION_MODEL,
 };

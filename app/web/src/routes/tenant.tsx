@@ -397,8 +397,8 @@ function WidgetForm({
       <Box style={{ padding: 24 }}>
         <h2>Widget</h2>
         <p className="auth-card-copy">
-          Publish a domain-restricted browser voice widget. The embed token is public;
-          Dograh management credentials remain server-only.
+          Publish a domain-restricted browser voice widget. The embed token is
+          public; management credentials remain server-only.
         </p>
         <div className="form-grid">
           <TextField
@@ -1366,36 +1366,6 @@ function GapsTab({ slug }: { slug: string }) {
   );
 }
 
-function SyncStatus({ data }: { data: TenantSettingsResponse }) {
-  const variant =
-    data.dograh.syncState === "synced"
-      ? "good"
-      : data.dograh.syncState === "rejected" ||
-          data.dograh.syncState === "failed"
-        ? "warn"
-        : "default";
-  return (
-    <Box style={{ padding: 20 }}>
-      <div className="account-section__heading">
-        <div>
-          <p className="eyebrow">Dograh synchronization</p>
-          <h2>{data.dograh.syncState.replaceAll("_", " ")}</h2>
-        </div>
-        <Pill variant={variant}>{data.dograh.syncState}</Pill>
-      </div>
-      {data.dograh.lastError ? (
-        <Alert variant="error">{data.dograh.lastError}</Alert>
-      ) : (
-        <p className="auth-card-copy">
-          {data.dograh.syncState === "synced"
-            ? "This business has its own published Dograh workflow."
-            : "Saved Vocalonix changes are waiting for this business only."}
-        </p>
-      )}
-    </Box>
-  );
-}
-
 function BrowserTestCall({ widget }: { widget: TenantWidget }) {
   const [status, setStatus] = useState("Ready to load the published web-call widget.");
   const [error, setError] = useState<string | null>(null);
@@ -1497,7 +1467,6 @@ function ReviewPublish({
 
   return (
     <div className="settings-stack">
-      <SyncStatus data={data} />
       <Box style={{ padding: 24 }}>
         <h2>Review and publish</h2>
         <p className="auth-card-copy">
@@ -1889,12 +1858,6 @@ function PublishBanner({
       ) : published ? (
         <div className="publish-banner publish-banner--live">
           <Pill variant="good">Live</Pill>
-          <p>
-            The live agent matches your draft line for line.
-            {latest
-              ? ` Version ${latest.version} · published ${new Date(latest.publishedAt).toLocaleString()}.`
-              : ""}
-          </p>
           <Link to="/app/$businessSlug/settings/history" params={{ businessSlug: slug }}>View history</Link>
         </div>
       ) : (
@@ -2364,7 +2327,6 @@ export function TenantSettingsPage({
                 {section === "history" ? (
                   <HistoryTab canEdit={canEditAgent} refresh={refresh} slug={slug} />
                 ) : null}
-                <SyncStatus data={data} />
               </div>
             );
           }}

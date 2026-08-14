@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { and, desc, eq, gt, isNull, lte } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull, lte } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 
 import { hashAuthToken, normalizeEmail, sendEmail } from "../auth/email";
@@ -29,6 +29,22 @@ import { canManageRole } from "./permissions";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const invitationTtlMs = 7 * 24 * 60 * 60 * 1000;
+
+async function countOwnedWorkspaces(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(memberships)
+    .innerJoin(businesses, eq(memberships.businessId, businesses.id))
+    .where(
+      and(
+        eq(memberships.userId, userId),
+        eq(memberships.role, "Owner"),
+        eq(memberships.status, "active"),
+        isNull(businesses.deletedAt),
+      ),
+    );
+  return row?.value ?? 0;
+}
 
 function randomToken(): string {
   return randomBytes(32).toString("base64url");
@@ -160,7 +176,15 @@ export const workspaceRoutes = new Elysia()
       .offset(offset);
 
     const page = paginate(rows, limit);
-    return { businesses: page.items, hasMore: page.hasMore, limit, offset };
+    const ownedCount = await countOwnedWorkspaces(session.user.id);
+    return {
+      businesses: page.items,
+      hasMore: page.hasMore,
+      limit,
+      offset,
+      workspaceLimit: env.maxOwnedWorkspaces,
+      canCreateWorkspace: ownedCount < env.maxOwnedWorkspaces,
+    };
   })
   .post(
     "/api/businesses",
@@ -174,6 +198,14 @@ export const workspaceRoutes = new Elysia()
           400,
           "INVALID_BUSINESS_NAME",
           "Enter a business name with at least two characters.",
+        );
+      }
+      const ownedCount = await countOwnedWorkspaces(session.user.id);
+      if (ownedCount >= env.maxOwnedWorkspaces) {
+        throw new ApiError(
+          403,
+          "WORKSPACE_LIMIT_REACHED",
+          `Your account can own up to ${env.maxOwnedWorkspaces} workspaces.`,
         );
       }
       const businessId = randomUUID();

@@ -102,6 +102,12 @@ export interface BusinessSummary {
   joinedAt: string | Date;
 }
 
+export interface BusinessListResponse {
+  businesses: BusinessSummary[];
+  workspaceLimit: number;
+  canCreateWorkspace: boolean;
+}
+
 export interface BusinessDetail {
   id: string;
   slug: string;
@@ -483,9 +489,13 @@ export const api = {
       unwrap(await client.api.b[slug].billing.portal.post()),
   },
   businesses: {
-    list: async (): Promise<BusinessSummary[]> => {
+    list: async (): Promise<BusinessListResponse> => {
       const result = unwrap(await client.api.businesses.get());
-      return result.businesses;
+      return {
+        businesses: result.businesses,
+        workspaceLimit: result.workspaceLimit,
+        canCreateWorkspace: result.canCreateWorkspace,
+      };
     },
     create: async (input: {
       name: string;
