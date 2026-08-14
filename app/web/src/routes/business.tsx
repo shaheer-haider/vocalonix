@@ -20,11 +20,11 @@ import {
   type KnowledgeGap,
   type PendingInvitation,
   type Role,
+  type BusinessListResponse,
   type TeamMember,
 } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
-import { DemoLink } from "../components/DemoLink";
 import {
   Alert,
   Box,
@@ -161,16 +161,21 @@ function useToken(): string {
   return params.token ?? "";
 }
 
+let businessListCache: BusinessListResponse | null = null;
+
 function useBusinesses() {
-  const [businesses, setBusinesses] = useState<BusinessSummary[]>([]);
+  const [data, setData] = useState<BusinessListResponse | null>(
+    businessListCache,
+  );
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(businessListCache === null);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
     setError(null);
     try {
-      setBusinesses(await api.businesses.list());
+      const result = await api.businesses.list();
+      businessListCache = result;
+      setData(result);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Unable to load workspaces.",
@@ -184,7 +189,14 @@ function useBusinesses() {
     void refresh();
   }, [refresh]);
 
-  return { businesses, error, loading, refresh };
+  return {
+    businesses: data?.businesses ?? [],
+    canCreateWorkspace: data?.canCreateWorkspace ?? true,
+    workspaceLimit: data?.workspaceLimit ?? 0,
+    error,
+    loading,
+    refresh,
+  };
 }
 
 function workspaceTarget(pathname: string, targetSlug: string): string {
@@ -204,7 +216,8 @@ export function WorkspaceShell({
   requiredPermission?: Parameters<typeof can>[1];
 }) {
   const slug = useBusinessSlug();
-  const { businesses, error, loading } = useBusinesses();
+  const { businesses, canCreateWorkspace, workspaceLimit, error, loading } =
+    useBusinesses();
   const business = useMemo(
     () => businesses.find((candidate) => candidate.slug === slug),
     [businesses, slug],
@@ -238,7 +251,12 @@ export function WorkspaceShell({
 
   if (requiredPermission && !can(business.role, requiredPermission)) {
     return (
-      <WorkspaceFrame business={business} businesses={businesses}>
+      <WorkspaceFrame
+        business={business}
+        businesses={businesses}
+        canCreateWorkspace={canCreateWorkspace}
+        workspaceLimit={workspaceLimit}
+      >
         <Box style={{ padding: 24 }}>
           <Pill variant="warn">{business.role}</Pill>
           <h1 className="account-title">You do not have access here</h1>
@@ -251,7 +269,12 @@ export function WorkspaceShell({
   }
 
   return (
-    <WorkspaceFrame business={business} businesses={businesses}>
+    <WorkspaceFrame
+      business={business}
+      businesses={businesses}
+      canCreateWorkspace={canCreateWorkspace}
+      workspaceLimit={workspaceLimit}
+    >
       {children(business)}
     </WorkspaceFrame>
   );
@@ -264,12 +287,17 @@ function navActiveClass(active: boolean): string {
 function WorkspaceFrame({
   business,
   businesses,
+  canCreateWorkspace,
+  workspaceLimit,
   children,
 }: {
   business: BusinessSummary;
   businesses: BusinessSummary[];
+  canCreateWorkspace: boolean;
+  workspaceLimit: number;
   children: ReactNode;
 }) {
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
@@ -342,6 +370,19 @@ function WorkspaceFrame({
             ))}
           </select>
         </label>
+        <button
+          type="button"
+          className="ui-button sidebar-new-workspace"
+          onClick={() => {
+            if (canCreateWorkspace) {
+              void navigate({ to: "/app/onboarding/create" });
+            } else {
+              setShowLimitModal(true);
+            }
+          }}
+        >
+          New workspace
+        </button>
         <nav aria-label="Workspace">
           <p className="nav-section">Today</p>
           <Link
@@ -436,10 +477,6 @@ function WorkspaceFrame({
             <BellIcon size={18} />
             Notifications
           </Link>
-          <DemoLink className="nav-item">
-            <SettingsIcon size={18} />
-            Hear it now
-          </DemoLink>
         </nav>
         <div className="sidebar-status">
           <div className="sidebar-status__head">
@@ -449,18 +486,23 @@ function WorkspaceFrame({
           Your agent picks up calls and website chats for {business.name}.
         </div>
       </aside>
-      <main className="workspace-main">
-        <div className="workspace-topbar">
-          <div>
-            <p className="eyebrow">{business.role}</p>
-            <h1>{business.name}</h1>
-          </div>
-          <Link className="ui-button" to="/app/onboarding/create">
-            New workspace
-          </Link>
-        </div>
-        {children}
-      </main>
+      <main className="workspace-main">{children}</main>
+      {showLimitModal ? (
+        <Modal
+          open
+          onClose={() => setShowLimitModal(false)}
+          titleId="workspace-limit-title"
+        >
+          <h2 id="workspace-limit-title">Workspace limit reached</h2>
+          <p className="auth-card-copy">
+            Your account can own up to {workspaceLimit} workspaces. Contact
+            support to raise the limit.
+          </p>
+          <Button variant="primary" onClick={() => setShowLimitModal(false)}>
+            Got it
+          </Button>
+        </Modal>
+      ) : null}
       <nav className="mobile-bottom-nav" aria-label="Mobile">
         <Link
           className={navActiveClass(isDashboard)}
@@ -589,8 +631,8 @@ export function CreateBusinessPage() {
           <p className="eyebrow">Step 1 of 1</p>
           <h1 className="account-title">Create a business workspace</h1>
           <p className="auth-card-copy">
-            This creates the business, your Owner membership, and a pending
-            Dograh workflow mapping in one transaction.
+            This creates the business, your Owner membership, and your voice
+            agent workspace in one step.
           </p>
           <div className="form-grid">
             <TextField
@@ -882,7 +924,6 @@ export function WorkspaceDashboardPage() {
                 <a className="ui-button" href={`/app/${business.slug}/conversations`}>
                   Test call
                 </a>
-                <DemoLink className="ui-button">Hear it now</DemoLink>
               </div>
             </Box>
           </div>
@@ -1052,10 +1093,6 @@ function BillingPreview() {
           <p>Only an Owner can change the plan, the card, or who owns the workspace.</p>
         </div>
       </div>
-      <Alert variant="info" title="Design preview">
-        Billing goes live once the payments backend lands. Everything below is
-        sample data.
-      </Alert>
       <div className="dash-surfaces">
         <Box className="dash-surface" style={{ padding: 20 }}>
           <p className="eyebrow">Minutes used</p>

@@ -96,7 +96,15 @@ export const app = new Elysia()
       credentials: true,
     }),
   )
-  .onError(({ error, set }) => {
+  .onError(({ code, error, set }) => {
+    if (code === "VALIDATION") {
+      set.status = 422;
+      return { error: "Invalid request body.", code: "VALIDATION" };
+    }
+    if (code === "NOT_FOUND") {
+      set.status = 404;
+      return { error: "Not found.", code: "NOT_FOUND" };
+    }
     if (error instanceof ApiError) {
       set.status = error.status;
       return { error: error.message, code: error.code };
