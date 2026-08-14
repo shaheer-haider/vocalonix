@@ -1,0 +1,48 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-hetzner
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: hetzner
+    env:
+      HOST: ${{ secrets.HETZNER_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf 'Host hetzner\n  HostName %s\n  User root\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$HOST" >> ~/.ssh/config
+
+      - name: Sync repo to server
+        run: |
+          rsync -az \
+            --exclude .git --exclude .terraform --exclude node_modules --exclude dist \
+            --exclude 'terraform/.ssh' --exclude 'terraform/*.tfstate*' \
+            --exclude '.env' --exclude 'deploy/hetzner/*/.env' \
+            . hetzner:/opt/vocalonix/repo
+
+      - name: Build and restart services
+        run: |
+          ssh hetzner 'cd /opt/vocalonix/repo/deploy/hetzner/vocalonix && docker compose --env-file .env up -d --build --wait'
+
+      - name: Verify deployment
+        run: |
+          sha=$(git rev-parse HEAD)
+          curl -fsS "https://$HOST/api/health"
+          curl -fsS "https://$HOST/api/dograh/health"
+          bundle=$(curl -fsS "https://$HOST/" | grep -o 'assets/index-[^"]*\.js' | head -1)
+          echo "Serving bundle: $bundle (commit $sha)"
