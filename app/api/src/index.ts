@@ -2,6 +2,7 @@ import { cors } from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
 
 import { authRoutes } from "./auth/routes";
+import { billingRoutes } from "./billing/routes";
 import { dograh, DograhError } from "./dograh/client";
 import type { AgentSettings } from "./dograh/types";
 import {
@@ -113,6 +114,7 @@ export const app = new Elysia()
   .use(agentToolRoutes)
   .use(tenantRoutes)
   .use(workspaceRoutes)
+  .use(billingRoutes)
   .use(demoRoutes)
   .get("/api/health", () => ({
     status: "ok",

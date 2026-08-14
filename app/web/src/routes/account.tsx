@@ -159,9 +159,6 @@ export function AccountContent() {
           <h1 className="account-title">{auth.session?.user.name}</h1>
           <p className="auth-card-copy">{auth.session?.user.email}</p>
         </div>
-        <Link className="ui-button" to="/app">
-          Back to app
-        </Link>
       </div>
 
       {error ? <Alert variant="error">{error}</Alert> : null}
@@ -221,6 +218,9 @@ export function AccountPage() {
       <div className="auth-header">
         <Link to="/" className="wordmark">
           vocalonix
+        </Link>
+        <Link className="ui-button" to="/app">
+          Back to app
         </Link>
       </div>
       <AccountContent />

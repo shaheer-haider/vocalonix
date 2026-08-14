@@ -1034,89 +1034,87 @@ export function WorkspaceDashboardPage() {
   );
 }
 
-const sampleInvoices = [
-  { when: "12 Jul", what: "Practice · July", amount: "£85.00" },
-  { when: "12 Jun", what: "Practice · June", amount: "£81.00" },
-  { when: "12 May", what: "Practice · May, 190 extra minutes", amount: "£92.40" },
-];
+function WorkspaceBilling({ slug }: { slug: string }) {
+  const [status, setStatus] = useState<{
+    configured: boolean;
+    plan: string;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
 
-function BillingPreview() {
-  const minutes = 742;
-  const minutesCap = 1200;
+  useEffect(() => {
+    let cancelled = false;
+    void api.billing
+      .status(slug)
+      .then((result) => {
+        if (!cancelled) setStatus(result);
+      })
+      .catch((caught: unknown) => {
+        if (!cancelled) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "Unable to load billing details.",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  async function openPortal() {
+    setError(null);
+    setOpening(true);
+    try {
+      const { url } = await api.billing.portal(slug);
+      window.location.assign(url);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to open the billing portal.",
+      );
+      setOpening(false);
+    }
+  }
 
   return (
     <section className="account-section">
       <div className="account-section__heading">
         <div>
           <h2>Plan &amp; billing</h2>
-          <p>Only an Owner can change the plan, the card, or who owns the workspace.</p>
+          <p>
+            Manage your plan, payment method, and invoices in the secure
+            billing portal.
+          </p>
         </div>
       </div>
-      <Alert variant="info" title="Design preview">
-        Billing goes live once the payments backend lands. Everything below is
-        sample data.
-      </Alert>
-      <div className="dash-surfaces">
+      {error ? <Alert variant="error">{error}</Alert> : null}
+      {status === null && !error ? (
+        <LoadingState label="Loading billing details…" />
+      ) : status ? (
         <Box className="dash-surface" style={{ padding: 20 }}>
-          <p className="eyebrow">Minutes used</p>
-          <h2>
-            {minutes} / {minutesCap} minutes
-          </h2>
-          <p>Cycle resets 12 Aug. Extra minutes are £0.045 each.</p>
-          <div className="billing-progress" aria-label="Minutes used">
-            <div
-              className="billing-progress__bar"
-              style={{ width: `${(minutes / minutesCap) * 100}%` }}
-            />
-          </div>
-        </Box>
-        <Box className="dash-surface" style={{ padding: 20 }}>
-          <p className="eyebrow">Your plan</p>
-          <h2>Practice · £79 a month</h2>
-          <p>1,200 answered minutes, 8 seats, 2 numbers included. Renews 12 Aug.</p>
+          <p className="eyebrow">Current plan</p>
+          <h2>{status.plan}</h2>
           <div className="stack-row">
-            <Button variant="ghost" disabled>
-              Change plan
-            </Button>
-            <Button variant="ghost" className="billing-cancel" disabled>
-              Cancel plan
+            <Button
+              variant="primary"
+              loading={opening}
+              disabled={!status.configured}
+              onClick={() => void openPortal()}
+            >
+              Manage billing &amp; subscription
             </Button>
           </div>
+          {!status.configured ? (
+            <p className="auth-card-copy">
+              Online billing isn&apos;t enabled for this workspace yet. Contact
+              support to change your plan.
+            </p>
+          ) : null}
         </Box>
-        <Box className="dash-surface" style={{ padding: 20 }}>
-          <p className="eyebrow">Phone numbers</p>
-          <h2>Two included</h2>
-          <p>0113 496 2288 · 020 7946 0822</p>
-          <p>Then £3 each a month. Numbers are answered by the agent, all hours.</p>
-          <div className="stack-row">
-            <Button variant="ghost" disabled>
-              Add a number
-            </Button>
-          </div>
-        </Box>
-      </div>
-      <Box style={{ padding: 20 }}>
-        <div className="account-section__heading">
-          <div>
-            <h2>Next invoice</h2>
-            <p>12 Aug · estimated £79.00</p>
-          </div>
-        </div>
-        <div className="session-list">
-          {sampleInvoices.map((invoice) => (
-            <div className="session-item" key={invoice.when}>
-              <div>
-                <strong>{invoice.what}</strong>
-                <span>{invoice.when}</span>
-              </div>
-              <div className="stack-row">
-                <Pill variant="good">Paid</Pill>
-                <span>{invoice.amount}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Box>
+      ) : null}
     </section>
   );
 }
@@ -1127,7 +1125,9 @@ export function WorkspaceAccountPage() {
       {(business) => (
         <>
           <AccountContent />
-          {can(business.role, "billing.access") ? <BillingPreview /> : null}
+          {can(business.role, "billing.access") ? (
+            <WorkspaceBilling slug={business.slug} />
+          ) : null}
         </>
       )}
     </WorkspaceShell>

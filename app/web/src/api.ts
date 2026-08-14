@@ -474,6 +474,14 @@ export const api = {
     verifyEmail: async (token: string) =>
       unwrap(await client.api.auth.email.verify.post({ token })),
   },
+  billing: {
+    status: async (
+      slug: string,
+    ): Promise<{ configured: boolean; plan: string }> =>
+      unwrap(await client.api.b[slug].billing.get()),
+    portal: async (slug: string): Promise<{ url: string }> =>
+      unwrap(await client.api.b[slug].billing.portal.post()),
+  },
   businesses: {
     list: async (): Promise<BusinessSummary[]> => {
       const result = unwrap(await client.api.businesses.get());
