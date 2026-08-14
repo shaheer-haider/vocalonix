@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { api, type AuthSession } from "../api";
+import { loadSession, setCachedSession } from "./session";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "error";
 
@@ -34,7 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const restore = useCallback(async () => {
-    const restored = await api.auth.session();
+    // Forced: the caller has just changed who is signed in, so a cached answer
+    // would be the previous user.
+    const restored = await loadSession({ force: true });
     setSession(restored);
     setStatus(restored ? "authenticated" : "unauthenticated");
     setError(null);
@@ -44,8 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    void api.auth
-      .session()
+    void loadSession()
       .then((restored) => {
         if (cancelled) return;
         setSession(restored);
@@ -73,11 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       logout: async () => {
         await api.auth.logout();
+        setCachedSession(null);
         setSession(null);
         setStatus("unauthenticated");
       },
       logoutAll: async () => {
         await api.auth.logoutAll();
+        setCachedSession(null);
         setSession(null);
         setStatus("unauthenticated");
       },
