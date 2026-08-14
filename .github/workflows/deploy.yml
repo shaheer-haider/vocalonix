@@ -57,6 +57,17 @@ jobs:
       - name: Verify deployment
         run: |
           sha=$(git rev-parse HEAD)
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o /dev/null "https://$HOST/api/health"; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "Health endpoint did not become reachable over TLS" >&2
+              exit 1
+            fi
+            echo "Waiting for TLS/health (attempt $attempt)..."
+            sleep 10
+          done
           curl -fsS "https://$HOST/api/health"
           curl -fsS "https://$HOST/api/dograh/health"
           bundle=$(curl -fsS "https://$HOST/" | grep -o 'assets/index-[^"]*\.js' | head -1)
