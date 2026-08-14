@@ -24,8 +24,8 @@ export function AppHomePage() {
     let cancelled = false;
     void api.businesses
       .list()
-      .then((items) => {
-        if (!cancelled) setBusinesses(items);
+      .then((result) => {
+        if (!cancelled) setBusinesses(result.businesses);
       })
       .catch((caught: unknown) => {
         if (!cancelled) {
