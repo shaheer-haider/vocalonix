@@ -176,8 +176,11 @@ Steps:
 ### 6. Dashboard
 
 - The dashboard should load with the workspace side nav visible.
-- The business name should appear in the top bar.
+- The business name appears in the side nav workspace switcher. There is no
+  topbar; it was removed in #43.
 - You should be able to navigate to other workspace pages from the side nav.
+- On a phone the bottom nav shows Today, Diary, Callbacks and Calls, plus
+  **More** for the remaining seven destinations.
 
 ### Verification checklist
 
