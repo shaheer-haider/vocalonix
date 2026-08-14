@@ -602,6 +602,28 @@
   color: var(--ink-4);
 }
 
+.contacts-activity__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.contacts-activity__row:last-child {
+  border-bottom: none;
+}
+
+.contacts-activity__title {
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.contacts-activity__meta {
+  font-size: 0.8125rem;
+  color: var(--ink-4);
+}
+
 .contacts-channel {
   background: var(--paper);
   border: 1px solid var(--line);

@@ -2,7 +2,7 @@ import "./contacts.css";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api, type Contact } from "../api";
+import { api, type Contact, type ContactActivityResponse } from "../api";
 import {
   Alert,
   Box,
@@ -105,6 +105,7 @@ function ContactsPage({ slug }: { slug: string }) {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [activity, setActivity] = useState<ContactActivityResponse | null>(null);
   const [toast, setToast] = useState("");
   const toastRef = useRef<number | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -162,6 +163,24 @@ function ContactsPage({ slug }: { slug: string }) {
     selected && list.some((c) => c.id === selected.id)
       ? selected
       : list[0] ?? null;
+
+  const activityContactId = selectedVisible?.id ?? null;
+  useEffect(() => {
+    setActivity(null);
+    if (!activityContactId) return;
+    let cancelled = false;
+    api.businesses
+      .contactActivity(slug, activityContactId)
+      .then((result) => {
+        if (!cancelled) setActivity(result);
+      })
+      .catch(() => {
+        if (!cancelled) setActivity({ bookings: [], callbacks: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, activityContactId]);
 
   const unnamedCount = pool.filter((c) => !c.name).length;
   const countLabel =
@@ -598,13 +617,62 @@ function ContactsPage({ slug }: { slug: string }) {
         <div className="contacts-detail__main">
           <div className="contacts-detail__body">
             <div className="contacts-section__head">
-              <span className="contacts-section__label">Calls</span>
-              <span className="contacts-section__count">Coming soon</span>
+              <span className="contacts-section__label">Bookings</span>
+              <span className="contacts-section__count">
+                {activity ? `${activity.bookings.length}` : "…"}
+              </span>
             </div>
             <div className="contacts-card">
-              <span className="contacts-timeline__empty">
-                Call history will appear here once calls are linked to contacts.
+              {!activity || activity.bookings.length === 0 ? (
+                <span className="contacts-timeline__empty">
+                  {activity
+                    ? "No bookings for this person yet."
+                    : "Loading bookings…"}
+                </span>
+              ) : (
+                activity.bookings.map((b) => (
+                  <div className="contacts-activity__row" key={b.id}>
+                    <span className="contacts-activity__title">{b.title}</span>
+                    <span className="contacts-activity__meta">
+                      {new Date(b.startAt).toLocaleString([], {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      {" · "}
+                      {b.durationMinutes} min · {b.status.replace("_", " ")}
+                      {b.source === "agent" ? " · booked by the agent" : ""}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="contacts-section__head">
+              <span className="contacts-section__label">Callbacks</span>
+              <span className="contacts-section__count">
+                {activity ? `${activity.callbacks.length}` : "…"}
               </span>
+            </div>
+            <div className="contacts-card">
+              {!activity || activity.callbacks.length === 0 ? (
+                <span className="contacts-timeline__empty">
+                  {activity
+                    ? "No callbacks for this person yet."
+                    : "Loading callbacks…"}
+                </span>
+              ) : (
+                activity.callbacks.map((task) => (
+                  <div className="contacts-activity__row" key={task.id}>
+                    <span className="contacts-activity__title">{task.reason}</span>
+                    <span className="contacts-activity__meta">
+                      promised {whenLabel(task.promisedAt)} · {task.status}
+                      {task.source === "call" ? " · from a call" : ""}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

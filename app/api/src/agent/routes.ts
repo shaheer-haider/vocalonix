@@ -14,6 +14,7 @@ import {
 } from "../db/schema";
 import { env } from "../env";
 import { ApiError } from "../errors";
+import { linkContact } from "../tenant/contactLink";
 import {
   computeOpenSlots,
   isValidDate,
@@ -274,6 +275,11 @@ export const agentToolRoutes = new Elysia()
 
       const id = randomUUID();
       const phone = body.customer_phone?.trim() ?? "";
+      const contactId = await linkContact(
+        params.businessId,
+        { name: customerName, phone },
+        "call",
+      );
       const [created] = await db
         .insert(bookings)
         .values({
@@ -283,12 +289,14 @@ export const agentToolRoutes = new Elysia()
           serviceId: service.id,
           title: service.name,
           customerName,
+          customerPhone: phone,
+          contactId,
           startAt,
           durationMinutes: service.durationMinutes,
           status: "booked",
           source: "agent",
           price: service.price,
-          note: phone ? `Phone: ${phone}` : "",
+          note: "",
         })
         .returning();
       await db.insert(auditLogs).values({

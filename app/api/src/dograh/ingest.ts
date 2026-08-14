@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { db } from "../db/client";
 import {
   businessDograhMappings,
   callbackTasks,
-  contacts,
   knowledgeGaps,
 } from "../db/schema";
+import { linkContact } from "../tenant/contactLink";
 import { dograh } from "./client";
 import { extractVariablesFromTranscript } from "./extract";
 import type { DograhWorkflowRun } from "./types";
@@ -171,49 +171,15 @@ async function extractRunInsights(
 async function upsertCallContact(
   businessId: string,
   caller: ExtractedCaller,
-): Promise<void> {
-  if (!caller.name && !caller.phone && !caller.email) return;
-  const matchers = [
-    caller.phone ? eq(contacts.phone, caller.phone) : null,
-    caller.email ? eq(contacts.email, caller.email) : null,
-  ].filter((matcher) => matcher !== null);
-  const [existing] = matchers.length
-    ? await db
-        .select()
-        .from(contacts)
-        .where(
-          and(
-            eq(contacts.businessId, businessId),
-            isNull(contacts.deletedAt),
-            or(...matchers),
-          ),
-        )
-        .limit(1)
-    : [];
-  if (existing) {
-    const updates: Partial<typeof contacts.$inferInsert> = {};
-    if (!existing.name && caller.name) updates.name = caller.name;
-    if (!existing.phone && caller.phone) updates.phone = caller.phone;
-    if (!existing.email && caller.email) updates.email = caller.email;
-    if (Object.keys(updates).length === 0) return;
-    updates.updatedAt = new Date();
-    await db.update(contacts).set(updates).where(eq(contacts.id, existing.id));
-    return;
-  }
-  await db.insert(contacts).values({
-    id: randomUUID(),
-    businessId,
-    name: caller.name,
-    phone: caller.phone,
-    email: caller.email,
-    source: "call",
-  });
+): Promise<string | null> {
+  return linkContact(businessId, caller, "call");
 }
 
 async function createCallCallback(
   businessId: string,
   run: DograhWorkflowRun,
   caller: ExtractedCaller,
+  contactId: string | null,
 ): Promise<void> {
   if (!caller.callbackRequested) return;
   const [existing] = await db
@@ -233,6 +199,7 @@ async function createCallCallback(
     contactName: caller.name ?? caller.phone ?? caller.email ?? "Caller",
     contactChannel:
       caller.phone ?? caller.email ?? "Browser call (no number left)",
+    contactId,
     reason: caller.callbackReason ?? "Caller asked for a callback.",
     source: "call",
     runId: run.id,
@@ -300,8 +267,8 @@ export async function ingestBusinessRuns(
   let highest = lastIngestedRunId;
   for (const run of fresh) {
     const { caller, gaps } = await extractRunInsights(run);
-    await upsertCallContact(businessId, caller);
-    await createCallCallback(businessId, run, caller);
+    const contactId = await upsertCallContact(businessId, caller);
+    await createCallCallback(businessId, run, caller, contactId);
     await recordKnowledgeGaps(businessId, run, gaps);
     highest = run.id;
   }

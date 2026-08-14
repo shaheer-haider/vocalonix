@@ -4,6 +4,7 @@ import { and, asc, desc, eq, gte, isNull, lt, ne, sql } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 
 import { normalizeEmail } from "../auth/email";
+import { linkContact } from "./contactLink";
 import { db } from "../db/client";
 import {
   auditLogs,
@@ -233,6 +234,7 @@ function callbackView(
     id: task.id,
     contactName: task.contactName,
     contactChannel: task.contactChannel,
+    contactId: task.contactId,
     reason: task.reason,
     source: task.source,
     runId: task.runId,
@@ -801,13 +803,25 @@ export const tenantRoutes = new Elysia()
         }
       }
       const id = randomUUID();
+      const channel = body.contactChannel.trim();
+      const contactId = await linkContact(
+        workspace.business.id,
+        {
+          name: body.contactName,
+          phone: channel.includes("@") ? null : channel,
+          email: channel.includes("@") ? channel : null,
+        },
+        "manual",
+        workspace.session.user.id,
+      );
       const [created] = await db
         .insert(callbackTasks)
         .values({
           id,
           businessId: workspace.business.id,
           contactName: body.contactName.trim(),
-          contactChannel: body.contactChannel.trim(),
+          contactChannel: channel,
+          contactId,
           reason: body.reason.trim(),
           promisedAt,
           assignedTo: body.assignedTo ?? null,
@@ -1174,6 +1188,72 @@ export const tenantRoutes = new Elysia()
         tags: t.Optional(t.Array(t.String({ maxLength: 40 }), { maxItems: 20 })),
         note: t.Optional(t.String({ maxLength: 2000 })),
       }),
+    },
+  )
+  .get(
+    "/api/b/:slug/contacts/:contactId/activity",
+    async ({ params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      const [contact] = await db
+        .select({ id: contacts.id })
+        .from(contacts)
+        .where(
+          and(
+            eq(contacts.id, params.contactId),
+            eq(contacts.businessId, workspace.business.id),
+            isNull(contacts.deletedAt),
+          ),
+        )
+        .limit(1);
+      if (!contact) {
+        throw new ApiError(
+          404,
+          "CONTACT_NOT_FOUND",
+          "Contact was not found for this business.",
+        );
+      }
+      const [contactBookings, contactCallbacks] = await Promise.all([
+        db
+          .select()
+          .from(bookings)
+          .where(
+            and(
+              eq(bookings.businessId, workspace.business.id),
+              eq(bookings.contactId, contact.id),
+            ),
+          )
+          .orderBy(desc(bookings.startAt))
+          .limit(50),
+        db
+          .select()
+          .from(callbackTasks)
+          .where(
+            and(
+              eq(callbackTasks.businessId, workspace.business.id),
+              eq(callbackTasks.contactId, contact.id),
+            ),
+          )
+          .orderBy(desc(callbackTasks.createdAt))
+          .limit(50),
+      ]);
+      return {
+        bookings: contactBookings.map((row) => ({
+          id: row.id,
+          title: row.title,
+          startAt: row.startAt.toISOString(),
+          durationMinutes: row.durationMinutes,
+          status: row.status,
+          source: row.source,
+        })),
+        callbacks: contactCallbacks.map((row) => ({
+          id: row.id,
+          reason: row.reason,
+          status: row.status,
+          promisedAt: row.promisedAt.toISOString(),
+          source: row.source,
+          createdAt: row.createdAt.toISOString(),
+        })),
+      };
     },
   )
   .delete("/api/b/:slug/contacts/:contactId", async ({ params, request }) => {
@@ -1734,6 +1814,14 @@ export const tenantRoutes = new Elysia()
         null,
       );
       const id = randomUUID();
+      const customerName = body.customerName?.trim() ?? "";
+      const customerPhone = body.customerPhone?.trim() ?? "";
+      const contactId = await linkContact(
+        workspace.business.id,
+        { name: customerName, phone: customerPhone },
+        "manual",
+        workspace.session.user.id,
+      );
       const [created] = await db
         .insert(bookings)
         .values({
@@ -1742,7 +1830,9 @@ export const tenantRoutes = new Elysia()
           resourceId: body.resourceId,
           serviceId: body.serviceId ?? null,
           title: body.title.trim(),
-          customerName: body.customerName?.trim() ?? "",
+          customerName,
+          customerPhone,
+          contactId,
           startAt,
           durationMinutes: body.durationMinutes,
           source: body.source ?? "desk",
@@ -1774,6 +1864,7 @@ export const tenantRoutes = new Elysia()
         serviceId: t.Optional(t.Nullable(t.String())),
         title: t.String({ minLength: 1, maxLength: 160 }),
         customerName: t.Optional(t.String({ maxLength: 160 })),
+        customerPhone: t.Optional(t.String({ maxLength: 40 })),
         startAt: t.String(),
         durationMinutes: t.Integer({ minimum: 5, maximum: 720 }),
         source: t.Optional(
@@ -1850,6 +1941,20 @@ export const tenantRoutes = new Elysia()
       if (body.note !== undefined) {
         updates.note = body.note.trim();
       }
+      if (body.customerName !== undefined || body.customerPhone !== undefined) {
+        const nextName =
+          body.customerName?.trim() ?? existing.customerName;
+        const nextPhone =
+          body.customerPhone?.trim() ?? existing.customerPhone;
+        updates.customerName = nextName;
+        updates.customerPhone = nextPhone;
+        updates.contactId = await linkContact(
+          workspace.business.id,
+          { name: nextName, phone: nextPhone },
+          "manual",
+          workspace.session.user.id,
+        );
+      }
       const [updated] = await db
         .update(bookings)
         .set(updates)
@@ -1886,6 +1991,8 @@ export const tenantRoutes = new Elysia()
           ]),
         ),
         note: t.Optional(t.String({ maxLength: 1000 })),
+        customerName: t.Optional(t.String({ maxLength: 160 })),
+        customerPhone: t.Optional(t.String({ maxLength: 40 })),
       }),
     },
   )
