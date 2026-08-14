@@ -433,6 +433,7 @@ function BookingsPage({ slug }: { slug: string }) {
                       {[
                         { k: "service", v: `${selected.title} · ${selected.durationMinutes} min` },
                         { k: "with", v: resources.find((r) => r.id === selected.resourceId)?.name ?? "—" },
+                        { k: "phone", v: selected.customerPhone || "—" },
                         { k: "price", v: selected.price || "—" },
                         { k: "note", v: selected.note || "—" },
                       ].map((f) => (
@@ -561,6 +562,7 @@ function NewBookingForm({
   const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
   const [resourceId, setResourceId] = useState(resources[0]?.id ?? "");
   const [customer, setCustomer] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [time, setTime] = useState("10:00");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -585,6 +587,7 @@ function NewBookingForm({
         serviceId: service?.id ?? null,
         title: service?.name ?? "Booking",
         customerName: customer,
+        customerPhone,
         startAt: minutesToIso(day, h * 60 + m),
         durationMinutes: service?.durationMinutes ?? 30,
         price: service?.price ?? "",
@@ -627,6 +630,12 @@ function NewBookingForm({
             label="Who is it for"
             value={customer}
             onChange={(event) => setCustomer(event.target.value)}
+          />
+          <TextField
+            label="Their phone (optional)"
+            type="tel"
+            value={customerPhone}
+            onChange={(event) => setCustomerPhone(event.target.value)}
           />
           <TextField
             label="Start time"

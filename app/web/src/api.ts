@@ -307,6 +307,7 @@ export interface CallbackTask {
   id: string;
   contactName: string;
   contactChannel: string;
+  contactId: string | null;
   reason: string;
   source: "call" | "manual";
   runId: number | null;
@@ -362,6 +363,8 @@ export interface Booking {
   serviceId: string | null;
   title: string;
   customerName: string;
+  customerPhone: string;
+  contactId: string | null;
   startAt: string;
   durationMinutes: number;
   status: "booked" | "arrived" | "cancelled" | "no_show";
@@ -369,6 +372,25 @@ export interface Booking {
   price: string;
   note: string;
   runId: number | null;
+}
+
+export interface ContactActivityResponse {
+  bookings: {
+    id: string;
+    title: string;
+    startAt: string;
+    durationMinutes: number;
+    status: Booking["status"];
+    source: Booking["source"];
+  }[];
+  callbacks: {
+    id: string;
+    reason: string;
+    status: CallbackTask["status"];
+    promisedAt: string;
+    source: "call" | "manual";
+    createdAt: string;
+  }[];
 }
 
 export interface BookingsResponse {
@@ -619,6 +641,13 @@ export const api = {
       unwrap(
         await client.api.b[slug].contacts[contactId].delete(),
       ) as unknown as { ok: boolean },
+    contactActivity: async (
+      slug: string,
+      contactId: string,
+    ): Promise<ContactActivityResponse> =>
+      unwrap(
+        await client.api.b[slug].contacts[contactId].activity.get(),
+      ) as unknown as ContactActivityResponse,
     callbacks: async (slug: string, offset = 0): Promise<CallbacksResponse> =>
       unwrap(
         await client.api.b[slug].callbacks.get({
@@ -727,6 +756,7 @@ export const api = {
         serviceId?: string | null;
         title: string;
         customerName?: string;
+        customerPhone?: string;
         startAt: string;
         durationMinutes: number;
         source?: Booking["source"];
@@ -745,6 +775,8 @@ export const api = {
         resourceId?: string;
         status?: Booking["status"];
         note?: string;
+        customerName?: string;
+        customerPhone?: string;
       },
     ): Promise<{ booking: Booking }> =>
       unwrap(

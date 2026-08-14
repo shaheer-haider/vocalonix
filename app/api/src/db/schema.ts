@@ -501,6 +501,9 @@ export const callbackTasks = pgTable(
       .references(() => businesses.id, { onDelete: "cascade" }),
     contactName: text("contact_name").notNull(),
     contactChannel: text("contact_channel").notNull(),
+    contactId: text("contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
     reason: text("reason").notNull(),
     source: callbackSourceEnum("source").notNull().default("manual"),
     runId: integer("run_id"),
@@ -530,6 +533,7 @@ export const callbackTasks = pgTable(
       table.businessId,
       table.promisedAt,
     ),
+    index("callback_tasks_contact_idx").on(table.contactId),
   ],
 );
 
@@ -651,6 +655,10 @@ export const bookings = pgTable(
     }),
     title: text("title").notNull(),
     customerName: text("customer_name").notNull().default(""),
+    customerPhone: text("customer_phone").notNull().default(""),
+    contactId: text("contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
     startAt: timestamp("start_at", { withTimezone: true }).notNull(),
     durationMinutes: integer("duration_minutes").notNull(),
     status: bookingStatusEnum("status").notNull().default("booked"),
@@ -672,6 +680,7 @@ export const bookings = pgTable(
   (table) => [
     index("bookings_business_start_idx").on(table.businessId, table.startAt),
     index("bookings_resource_start_idx").on(table.resourceId, table.startAt),
+    index("bookings_contact_idx").on(table.contactId),
   ],
 );
 
