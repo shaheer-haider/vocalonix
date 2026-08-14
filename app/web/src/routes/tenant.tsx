@@ -588,6 +588,11 @@ function KnowledgeManager({
   const [file, setFile] = useState<File | undefined>();
   const [replacementId, setReplacementId] = useState<string | undefined>();
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -794,19 +799,9 @@ function KnowledgeManager({
                       ) : null}
                       <Button
                         variant="destructive"
-                        onClick={() => {
-                          setError(null);
-                          void api.businesses
-                            .deleteKnowledge(slug, item.id)
-                            .then(refresh)
-                            .catch((caught: unknown) =>
-                              setError(
-                                caught instanceof Error
-                                  ? caught.message
-                                  : "Unable to delete knowledge.",
-                              ),
-                            );
-                        }}
+                        onClick={() =>
+                          setDeleteTarget({ id: item.id, title: item.title })
+                        }
                       >
                         Delete
                       </Button>
@@ -876,6 +871,47 @@ function KnowledgeManager({
           </Button>
         </Box>
       ) : null}
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        titleId="delete-knowledge-title"
+      >
+        <h2 id="delete-knowledge-title">Delete knowledge?</h2>
+        <p>
+          {deleteTarget
+            ? `"${deleteTarget.title}" will be removed from the agent's context. This cannot be undone.`
+            : null}
+        </p>
+        <div className="stack-row">
+          <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            loading={deleting}
+            onClick={async () => {
+              if (!deleteTarget) return;
+              setError(null);
+              setDeleting(true);
+              try {
+                await api.businesses.deleteKnowledge(slug, deleteTarget.id);
+                await refresh();
+              } catch (caught) {
+                setError(
+                  caught instanceof Error
+                    ? caught.message
+                    : "Unable to delete knowledge.",
+                );
+              } finally {
+                setDeleting(false);
+                setDeleteTarget(null);
+              }
+            }}
+          >
+            Delete knowledge
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

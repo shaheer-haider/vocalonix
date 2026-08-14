@@ -52,17 +52,20 @@ Fixed in the current branch:
       exits cleanly.
 - [x] Many internal links used `<a href>` / `window.location`, causing full
       page reloads — converted to typed SPA `Link`s.
+- [x] **Pagination** — list endpoints (businesses, team, contacts, callbacks,
+      knowledge, lab documents) now accept `limit`/`offset` and report
+      `hasMore` instead of returning unbounded rows.
+- [x] **Destructive-action confirmations** — revoking a member and deleting
+      knowledge/documents now require a styled Modal confirmation.
+- [x] **Worker healthcheck** — the outbox worker writes a heartbeat file and
+      Docker Compose checks its freshness.
 
 Still open (rough priority order):
 
-- [ ] **Pagination** for conversations, contacts, bookings, callbacks, and
-      notifications — all lists load everything at once.
 - [ ] **Integration tests** covering API routes end-to-end (auth, workspace,
       knowledge, outbox) — current tests are unit-level only.
-- [ ] **Destructive-action confirmations** (delete knowledge doc, revoke
-      member, offboard workspace) are inconsistent in the UI.
-- [ ] **Worker healthcheck** — no liveness signal for the outbox worker in
-      Docker Compose.
+- [ ] **Pagination UI** — the frontend does not yet expose load-more/paging
+      controls for the newly paginated endpoints.
 - [ ] Workspace switcher still uses `window.location.assign` (full reload).
 - [ ] Email verification flow is disabled and untested.
 - [ ] Rate limiting / abuse protection on public endpoints (signup, widget,

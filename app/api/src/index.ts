@@ -20,6 +20,7 @@ import {
   matchesDocumentSignature,
 } from "./uploads";
 import { ApiError } from "./errors";
+import { parseListQuery } from "./pagination";
 import { requireSession } from "./workspace/context";
 import { workspaceRoutes } from "./workspace/routes";
 import { agentToolRoutes } from "./agent/routes";
@@ -178,9 +179,10 @@ export const app = new Elysia()
     await requireSession(request.headers);
     return widgetPayload();
   })
-  .get("/api/knowledge", async ({ request }) => {
+  .get("/api/knowledge", async ({ query, request }) => {
     await requireSession(request.headers);
-    const response = await dograh.listDocuments();
+    const { limit, offset } = parseListQuery(query);
+    const response = await dograh.listDocuments(Math.min(limit, 100), offset);
     await syncCompletedDocuments(response.documents);
     return response;
   })

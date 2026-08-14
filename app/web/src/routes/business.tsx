@@ -1140,6 +1140,12 @@ export function TeamPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<{
+    userId: string;
+    name: string;
+    role: Role;
+  } | null>(null);
+  const [revoking, setRevoking] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [escalations, setEscalations] = useState<Record<string, boolean>>({});
   const [nights, setNights] = useState<Record<string, boolean>>({});
@@ -1327,8 +1333,14 @@ export function TeamPage() {
                       {business.role === "Owner" ||
                       (member.role !== "Owner" && member.role !== "Admin") ? (
                         <Button
-                          variant="ghost"
-                          onClick={() => void removeMember(member.userId)}
+                          variant="destructive"
+                          onClick={() =>
+                            setRevokeTarget({
+                              userId: member.userId,
+                              name: member.name,
+                              role: member.role,
+                            })
+                          }
                         >
                           Revoke
                         </Button>
@@ -1444,6 +1456,39 @@ export function TeamPage() {
             }
             slug={slug}
           />
+          <Modal
+            open={revokeTarget !== null}
+            onClose={() => setRevokeTarget(null)}
+            titleId="revoke-member-title"
+          >
+            <h2 id="revoke-member-title">Revoke access?</h2>
+            <p>
+              {revokeTarget
+                ? `${revokeTarget.name} (${revokeTarget.role}) will immediately lose access to this workspace. This cannot be undone.`
+                : null}
+            </p>
+            <div className="stack-row">
+              <Button variant="ghost" onClick={() => setRevokeTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                loading={revoking}
+                onClick={async () => {
+                  if (!revokeTarget) return;
+                  setRevoking(true);
+                  try {
+                    await removeMember(revokeTarget.userId);
+                  } finally {
+                    setRevoking(false);
+                    setRevokeTarget(null);
+                  }
+                }}
+              >
+                Revoke access
+              </Button>
+            </div>
+          </Modal>
         </>
       )}
     </WorkspaceShell>

@@ -19,6 +19,7 @@ import {
 } from "../db/schema";
 import { env } from "../env";
 import { ApiError } from "../errors";
+import { paginate, parseListQuery } from "../pagination";
 import {
   requirePermission,
   requireSession,
@@ -130,8 +131,9 @@ async function ensureAnotherOwner(
 }
 
 export const workspaceRoutes = new Elysia()
-  .get("/api/businesses", async ({ request }) => {
+  .get("/api/businesses", async ({ query, request }) => {
     const session = await requireSession(request.headers);
+    const { limit, offset } = parseListQuery(query);
     const rows = await db
       .select({
         id: businesses.id,
@@ -153,9 +155,12 @@ export const workspaceRoutes = new Elysia()
           isNull(businesses.deletedAt),
         ),
       )
-      .orderBy(desc(memberships.joinedAt));
+      .orderBy(desc(memberships.joinedAt))
+      .limit(limit + 1)
+      .offset(offset);
 
-    return { businesses: rows };
+    const page = paginate(rows, limit);
+    return { businesses: page.items, hasMore: page.hasMore, limit, offset };
   })
   .post(
     "/api/businesses",
@@ -295,9 +300,10 @@ export const workspaceRoutes = new Elysia()
       },
     };
   })
-  .get("/api/b/:slug/team", async ({ params, request }) => {
+  .get("/api/b/:slug/team", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "team.manage");
+    const { limit, offset } = parseListQuery(query);
     const members = await db
       .select({
         userId: users.id,
@@ -314,7 +320,9 @@ export const workspaceRoutes = new Elysia()
           eq(memberships.status, "active"),
         ),
       )
-      .orderBy(desc(memberships.joinedAt));
+      .orderBy(desc(memberships.joinedAt))
+      .limit(limit + 1)
+      .offset(offset);
     const pendingInvitations = await db
       .select({
         id: invitations.id,
@@ -333,9 +341,20 @@ export const workspaceRoutes = new Elysia()
           gt(invitations.expiresAt, new Date()),
         ),
       )
-      .orderBy(desc(invitations.createdAt));
+      .orderBy(desc(invitations.createdAt))
+      .limit(limit + 1)
+      .offset(offset);
 
-    return { members, invitations: pendingInvitations };
+    const memberPage = paginate(members, limit);
+    const invitationPage = paginate(pendingInvitations, limit);
+    return {
+      members: memberPage.items,
+      invitations: invitationPage.items,
+      hasMoreMembers: memberPage.hasMore,
+      hasMoreInvitations: invitationPage.hasMore,
+      limit,
+      offset,
+    };
   })
   .post(
     "/api/b/:slug/invitations",
