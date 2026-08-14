@@ -198,7 +198,12 @@ Steps:
 ## Notes
 
 - The API `build` script is currently `tsc --noEmit` only; the Docker image runs source directly.
-- The `/secret/*` lab routes and their `/api/agent*` + `/api/knowledge*` endpoints require a signed-in session.
+- The `/secret/*` lab routes are gone; they were a second app shell around the
+  same data. Their `/api/agent*` + `/api/knowledge*` endpoints still exist and
+  still require a signed-in session, now reached from the workspace pages.
+- Vite reads `VITE_*` from the repo-root `.env` (`envDir` in `app/web/vite.config.ts`), not from `app/web`.
+- Voice previews are 32 kbps AAC at `app/web/public/voices/<name>.m4a`. Keep new
+  ones in that format; the uncompressed WAVs were 4.3 MB across the set.
 - Dograh credentials are server-side only; the browser loads the widget via an embed token.
 - Local magic-link requests return a preview link instead of sending real email.
 - A real spoken call requires Dograh model providers (STT, LLM, TTS) configured in the Dograh UI.
