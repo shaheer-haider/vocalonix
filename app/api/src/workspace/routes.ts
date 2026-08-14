@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { and, desc, eq, gt, isNull, lte, ne } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lte } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 
 import { hashAuthToken, normalizeEmail, sendEmail } from "../auth/email";
@@ -101,11 +101,14 @@ async function sendInvitationEmail(input: {
   });
 }
 
+type DbOrTransaction = Pick<typeof db, "select">;
+
 async function ensureAnotherOwner(
+  tx: DbOrTransaction,
   businessId: string,
   targetUserId: string,
 ): Promise<void> {
-  const [otherOwner] = await db
+  const owners = await tx
     .select({ userId: memberships.userId })
     .from(memberships)
     .where(
@@ -113,12 +116,11 @@ async function ensureAnotherOwner(
         eq(memberships.businessId, businessId),
         eq(memberships.status, "active"),
         eq(memberships.role, "Owner"),
-        ne(memberships.userId, targetUserId),
       ),
     )
-    .limit(1);
+    .for("update");
 
-  if (!otherOwner) {
+  if (!owners.some((owner) => owner.userId !== targetUserId)) {
     throw new ApiError(
       409,
       "LAST_OWNER",
@@ -610,11 +612,10 @@ export const workspaceRoutes = new Elysia()
           "You cannot change this member.",
         );
       }
-      if (target.role === "Owner" && nextRole !== "Owner") {
-        await ensureAnotherOwner(workspace.business.id, params.userId);
-      }
-
       await db.transaction(async (tx) => {
+        if (target.role === "Owner" && nextRole !== "Owner") {
+          await ensureAnotherOwner(tx, workspace.business.id, params.userId);
+        }
         await tx
           .update(memberships)
           .set({ role: nextRole })
@@ -674,11 +675,10 @@ export const workspaceRoutes = new Elysia()
         "You cannot remove this member.",
       );
     }
-    if (target.role === "Owner") {
-      await ensureAnotherOwner(workspace.business.id, params.userId);
-    }
-
     await db.transaction(async (tx) => {
+      if (target.role === "Owner") {
+        await ensureAnotherOwner(tx, workspace.business.id, params.userId);
+      }
       await tx
         .update(memberships)
         .set({ status: "revoked", revokedAt: new Date() })

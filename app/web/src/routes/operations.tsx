@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -502,9 +503,9 @@ function BookingsPage({ slug }: { slug: string }) {
                     )}
 
                     <div className="bookings-detail__links">
-                      <a href={`/app/${slug}/contacts`}>Open contact</a>
+                      <Link to="/app/$businessSlug/contacts" params={{ businessSlug: slug }}>Open contact</Link>
                       {selected.runId ? (
-                        <a href={`/app/${slug}/conversations`}>Hear the call</a>
+                        <Link to="/app/$businessSlug/conversations" params={{ businessSlug: slug }}>Hear the call</Link>
                       ) : null}
                     </div>
                   </div>
@@ -1340,7 +1341,7 @@ function CallbacksPage({ slug }: { slug: string }) {
                 ))}
                 {selected.runId !== null && (
                   <div className="callbacks-links">
-                    <a href={`/app/${slug}/conversations`}>The call ↗</a>
+                    <Link to="/app/$businessSlug/conversations" params={{ businessSlug: slug }}>The call ↗</Link>
                   </div>
                 )}
               </div>

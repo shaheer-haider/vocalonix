@@ -321,9 +321,9 @@ function WorkspaceFrame({
   return (
     <div className="workspace-shell">
       <aside className="workspace-sidebar">
-        <a className="wordmark" href="/">
+        <Link className="wordmark" to="/">
           vocalonix
-        </a>
+        </Link>
         <label className="workspace-switcher">
           <span>Workspace</span>
           <select
@@ -343,98 +343,98 @@ function WorkspaceFrame({
         </label>
         <nav aria-label="Workspace">
           <p className="nav-section">Today</p>
-          <a
+          <Link
             className={navActiveClass(isDashboard)}
             aria-current={isDashboard ? "page" : undefined}
-            href={dashboardHref}
+            to={dashboardHref}
           >
             <CalendarIcon size={18} />
             Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isConversations)}
             aria-current={isConversations ? "page" : undefined}
-            href={conversationsHref}
+            to={conversationsHref}
           >
             <ChatIcon size={18} />
             Conversations
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isContacts)}
             aria-current={isContacts ? "page" : undefined}
-            href={contactsHref}
+            to={contactsHref}
           >
             <UsersIcon size={18} />
             Contacts
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isBookings)}
             aria-current={isBookings ? "page" : undefined}
-            href={bookingsHref}
+            to={bookingsHref}
           >
             <CalendarIcon size={18} />
             Bookings
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isCallbacks)}
             aria-current={isCallbacks ? "page" : undefined}
-            href={callbacksHref}
+            to={callbacksHref}
           >
             <PhoneIcon size={18} />
             Callbacks
             {counts.callbacks > 0 ? (
               <span className="nav-item__count">{counts.callbacks}</span>
             ) : null}
-          </a>
+          </Link>
           <p className="nav-section">Set up</p>
-          <a
+          <Link
             className={navActiveClass(isSettings)}
             aria-current={isSettings ? "page" : undefined}
-            href={settingsHref}
+            to={settingsHref}
           >
             <SettingsIcon size={18} />
             Configuration
-          </a>
+          </Link>
           {can(business.role, "knowledge.manage") ? (
-            <a
+            <Link
               className={navActiveClass(isKnowledge)}
               aria-current={isKnowledge ? "page" : undefined}
-              href={knowledgeHref}
+              to={knowledgeHref}
             >
               <BookIcon size={18} />
               Knowledge
               {counts.gaps > 0 ? (
                 <span className="nav-item__count">{counts.gaps}</span>
               ) : null}
-            </a>
+            </Link>
           ) : null}
           <p className="nav-section">Workspace</p>
           {can(business.role, "team.manage") ? (
-            <a
+            <Link
               className={navActiveClass(isTeam)}
               aria-current={isTeam ? "page" : undefined}
-              href={teamHref}
+              to={teamHref}
             >
               <UsersIcon size={18} />
               Team
-            </a>
+            </Link>
           ) : null}
-          <a
+          <Link
             className={navActiveClass(isAccount)}
             aria-current={isAccount ? "page" : undefined}
-            href={accountHref}
+            to={accountHref}
           >
             <PhoneIcon size={18} />
             Account &amp; billing
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isNotifications)}
             aria-current={isNotifications ? "page" : undefined}
-            href={notificationsHref}
+            to={notificationsHref}
           >
             <BellIcon size={18} />
             Notifications
-          </a>
+          </Link>
           <DemoLink className="nav-item">
             <SettingsIcon size={18} />
             Hear it now
@@ -454,32 +454,32 @@ function WorkspaceFrame({
             <p className="eyebrow">{business.role}</p>
             <h1>{business.name}</h1>
           </div>
-          <a className="ui-button" href="/app/onboarding/create">
+          <Link className="ui-button" to="/app/onboarding/create">
             New workspace
-          </a>
+          </Link>
         </div>
         {children}
       </main>
       <nav className="mobile-bottom-nav" aria-label="Mobile">
-        <a
+        <Link
           className={navActiveClass(isDashboard)}
-          href={dashboardHref}
+          to={dashboardHref}
           aria-label="Today"
         >
           <CalendarIcon size={20} />
           <span>Today</span>
-        </a>
-        <a
+        </Link>
+        <Link
           className={navActiveClass(isBookings)}
-          href={bookingsHref}
+          to={bookingsHref}
           aria-label="Diary"
         >
           <CalendarIcon size={20} />
           <span>Diary</span>
-        </a>
-        <a
+        </Link>
+        <Link
           className={navActiveClass(isCallbacks)}
-          href={callbacksHref}
+          to={callbacksHref}
           aria-label="Callbacks"
         >
           <PhoneIcon size={20} />
@@ -487,15 +487,15 @@ function WorkspaceFrame({
           {counts.callbacks > 0 ? (
             <span className="nav-item__count nav-item__count--bottom">{counts.callbacks}</span>
           ) : null}
-        </a>
-        <a
+        </Link>
+        <Link
           className={navActiveClass(isConversations)}
-          href={conversationsHref}
+          to={conversationsHref}
           aria-label="Calls"
         >
           <ChatIcon size={20} />
           <span>Calls</span>
-        </a>
+        </Link>
       </nav>
     </div>
   );

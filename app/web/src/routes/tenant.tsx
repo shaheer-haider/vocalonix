@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -1831,7 +1831,7 @@ function PublishBanner({
               ? ` Version ${latest.version} · published ${new Date(latest.publishedAt).toLocaleString()}.`
               : ""}
           </p>
-          <a href={`/app/${slug}/settings/history`}>View history</a>
+          <Link to="/app/$businessSlug/settings/history" params={{ businessSlug: slug }}>View history</Link>
         </div>
       ) : (
         <div className="publish-banner publish-banner--draft">

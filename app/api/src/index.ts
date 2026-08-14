@@ -14,7 +14,10 @@ import {
 import { env } from "./env";
 import {
   ALLOWED_DOCUMENT_TYPES_LABEL,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
   isAllowedDocumentFilename,
+  matchesDocumentSignature,
 } from "./uploads";
 import { ApiError } from "./errors";
 import { requireSession } from "./workspace/context";
@@ -22,8 +25,6 @@ import { workspaceRoutes } from "./workspace/routes";
 import { agentToolRoutes } from "./agent/routes";
 import { tenantRoutes } from "./tenant/routes";
 import { demoRoutes } from "./demo/routes";
-
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 function validateSettings(settings: AgentSettings): void {
   const required: Array<[keyof AgentSettings, number]> = [
@@ -189,11 +190,18 @@ export const app = new Elysia()
       await requireSession(request.headers);
       const { file } = body;
       if (file.size > MAX_UPLOAD_BYTES) {
-        throw new DograhError("File size must be 5MB or less", 400);
+        throw new DograhError(`File size must be ${MAX_UPLOAD_LABEL} or less`, 400);
       }
       if (!isAllowedDocumentFilename(file.name)) {
         throw new DograhError(
           `Supported file types: ${ALLOWED_DOCUMENT_TYPES_LABEL}`,
+          400,
+        );
+      }
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+      if (!matchesDocumentSignature(file.name, fileBytes)) {
+        throw new DograhError(
+          "The file contents do not match its extension.",
           400,
         );
       }

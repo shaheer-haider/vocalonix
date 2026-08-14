@@ -271,9 +271,9 @@ export function LoginPage() {
       </form>
       <p className="auth-switch">
         New here?{" "}
-        <a href={`/signup?redirect=${encodeURIComponent(intendedRoute())}`}>
+        <Link to="/signup" search={{ redirect: intendedRoute() }}>
           Create an account
-        </a>
+        </Link>
       </p>
     </AuthShell>
   );
@@ -385,9 +385,9 @@ export function SignupPage() {
       </form>
       <p className="auth-switch">
         Already have an account?{" "}
-        <a href={`/login?redirect=${encodeURIComponent(intendedRoute())}`}>
+        <Link to="/login" search={{ redirect: intendedRoute() }}>
           Log in
-        </a>
+        </Link>
       </p>
     </AuthShell>
   );

@@ -34,7 +34,10 @@ import type { DograhWorkflowRun } from "../dograh/types";
 import { ApiError } from "../errors";
 import {
   ALLOWED_DOCUMENT_TYPES_LABEL,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
   isAllowedDocumentFilename,
+  matchesDocumentSignature,
 } from "../uploads";
 import { requirePermission, requireWorkspace } from "../workspace/context";
 import { can } from "../workspace/permissions";
@@ -1384,11 +1387,11 @@ export const tenantRoutes = new Elysia()
             "Choose a document to upload.",
           );
         }
-        if (body.file.size > 10_000_000) {
+        if (body.file.size > MAX_UPLOAD_BYTES) {
           throw new ApiError(
             413,
             "KNOWLEDGE_FILE_TOO_LARGE",
-            "Knowledge documents must be 10 MB or smaller.",
+            `Knowledge documents must be ${MAX_UPLOAD_LABEL} or smaller.`,
           );
         }
         if (!isAllowedDocumentFilename(body.file.name)) {
@@ -1401,6 +1404,13 @@ export const tenantRoutes = new Elysia()
         filename = body.file.name;
         mimeType = body.file.type || "application/octet-stream";
         sourceBytes = new Uint8Array(await body.file.arrayBuffer());
+        if (!matchesDocumentSignature(filename, sourceBytes)) {
+          throw new ApiError(
+            400,
+            "KNOWLEDGE_FILE_CONTENT_MISMATCH",
+            "The file contents do not match its extension.",
+          );
+        }
       } else if (body.kind === "website_reference") {
         const website = body.websiteUrl?.trim();
         if (!website) {

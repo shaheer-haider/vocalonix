@@ -241,7 +241,7 @@ export function KnowledgeBase() {
           </div>
           <div>
             <h3>{uploading ? "Uploading document…" : "Add a document"}</h3>
-            <p>PDF, DOC, DOCX, TXT, or JSON up to 5MB.</p>
+            <p>PDF, DOC, DOCX, TXT, or JSON up to 10 MB.</p>
           </div>
         </div>
         <div className="upload-actions">
