@@ -7,6 +7,7 @@ import { db } from "../db/client";
 import { demoSessions } from "../db/schema";
 import { dograh } from "../dograh/client";
 import { env } from "../env";
+import { clientKey, createRateLimiter } from "../rateLimit";
 import { provisionDemoWorkflow } from "./workflow";
 import { getVertical, VERTICALS } from "../verticals";
 
@@ -18,6 +19,8 @@ function clientInfo(request: Request) {
     referrer: headers.get("referer") ?? null,
   };
 }
+
+const demoSessionLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 
 export const demoRoutes = new Elysia({ prefix: "/api" })
   .get(
@@ -60,6 +63,7 @@ export const demoRoutes = new Elysia({ prefix: "/api" })
   .post(
     "/demo/sessions",
     async ({ body, request }) => {
+      demoSessionLimiter.check(clientKey(request.headers));
       const vertical = getVertical(body.vertical);
       if (!vertical || vertical.status !== "live") {
         throw new Error("Invalid or unavailable vertical.");

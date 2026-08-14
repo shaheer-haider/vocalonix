@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useLocation, useParams } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import {
   useCallback,
   useEffect,
@@ -271,6 +271,7 @@ function WorkspaceFrame({
   children: ReactNode;
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const pathname = location.pathname;
 
   const dashboardHref = `/app/${business.slug}/dashboard`;
@@ -321,17 +322,17 @@ function WorkspaceFrame({
   return (
     <div className="workspace-shell">
       <aside className="workspace-sidebar">
-        <a className="wordmark" href="/">
+        <Link className="wordmark" to="/">
           vocalonix
-        </a>
+        </Link>
         <label className="workspace-switcher">
           <span>Workspace</span>
           <select
             value={business.slug}
             onChange={(event) => {
-              window.location.assign(
-                workspaceTarget(window.location.pathname, event.target.value),
-              );
+              void navigate({
+                to: workspaceTarget(pathname, event.target.value),
+              });
             }}
           >
             {businesses.map((item) => (
@@ -343,98 +344,98 @@ function WorkspaceFrame({
         </label>
         <nav aria-label="Workspace">
           <p className="nav-section">Today</p>
-          <a
+          <Link
             className={navActiveClass(isDashboard)}
             aria-current={isDashboard ? "page" : undefined}
-            href={dashboardHref}
+            to={dashboardHref}
           >
             <CalendarIcon size={18} />
             Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isConversations)}
             aria-current={isConversations ? "page" : undefined}
-            href={conversationsHref}
+            to={conversationsHref}
           >
             <ChatIcon size={18} />
             Conversations
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isContacts)}
             aria-current={isContacts ? "page" : undefined}
-            href={contactsHref}
+            to={contactsHref}
           >
             <UsersIcon size={18} />
             Contacts
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isBookings)}
             aria-current={isBookings ? "page" : undefined}
-            href={bookingsHref}
+            to={bookingsHref}
           >
             <CalendarIcon size={18} />
             Bookings
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isCallbacks)}
             aria-current={isCallbacks ? "page" : undefined}
-            href={callbacksHref}
+            to={callbacksHref}
           >
             <PhoneIcon size={18} />
             Callbacks
             {counts.callbacks > 0 ? (
               <span className="nav-item__count">{counts.callbacks}</span>
             ) : null}
-          </a>
+          </Link>
           <p className="nav-section">Set up</p>
-          <a
+          <Link
             className={navActiveClass(isSettings)}
             aria-current={isSettings ? "page" : undefined}
-            href={settingsHref}
+            to={settingsHref}
           >
             <SettingsIcon size={18} />
             Configuration
-          </a>
+          </Link>
           {can(business.role, "knowledge.manage") ? (
-            <a
+            <Link
               className={navActiveClass(isKnowledge)}
               aria-current={isKnowledge ? "page" : undefined}
-              href={knowledgeHref}
+              to={knowledgeHref}
             >
               <BookIcon size={18} />
               Knowledge
               {counts.gaps > 0 ? (
                 <span className="nav-item__count">{counts.gaps}</span>
               ) : null}
-            </a>
+            </Link>
           ) : null}
           <p className="nav-section">Workspace</p>
           {can(business.role, "team.manage") ? (
-            <a
+            <Link
               className={navActiveClass(isTeam)}
               aria-current={isTeam ? "page" : undefined}
-              href={teamHref}
+              to={teamHref}
             >
               <UsersIcon size={18} />
               Team
-            </a>
+            </Link>
           ) : null}
-          <a
+          <Link
             className={navActiveClass(isAccount)}
             aria-current={isAccount ? "page" : undefined}
-            href={accountHref}
+            to={accountHref}
           >
             <PhoneIcon size={18} />
             Account &amp; billing
-          </a>
-          <a
+          </Link>
+          <Link
             className={navActiveClass(isNotifications)}
             aria-current={isNotifications ? "page" : undefined}
-            href={notificationsHref}
+            to={notificationsHref}
           >
             <BellIcon size={18} />
             Notifications
-          </a>
+          </Link>
           <DemoLink className="nav-item">
             <SettingsIcon size={18} />
             Hear it now
@@ -454,32 +455,32 @@ function WorkspaceFrame({
             <p className="eyebrow">{business.role}</p>
             <h1>{business.name}</h1>
           </div>
-          <a className="ui-button" href="/app/onboarding/create">
+          <Link className="ui-button" to="/app/onboarding/create">
             New workspace
-          </a>
+          </Link>
         </div>
         {children}
       </main>
       <nav className="mobile-bottom-nav" aria-label="Mobile">
-        <a
+        <Link
           className={navActiveClass(isDashboard)}
-          href={dashboardHref}
+          to={dashboardHref}
           aria-label="Today"
         >
           <CalendarIcon size={20} />
           <span>Today</span>
-        </a>
-        <a
+        </Link>
+        <Link
           className={navActiveClass(isBookings)}
-          href={bookingsHref}
+          to={bookingsHref}
           aria-label="Diary"
         >
           <CalendarIcon size={20} />
           <span>Diary</span>
-        </a>
-        <a
+        </Link>
+        <Link
           className={navActiveClass(isCallbacks)}
-          href={callbacksHref}
+          to={callbacksHref}
           aria-label="Callbacks"
         >
           <PhoneIcon size={20} />
@@ -487,15 +488,15 @@ function WorkspaceFrame({
           {counts.callbacks > 0 ? (
             <span className="nav-item__count nav-item__count--bottom">{counts.callbacks}</span>
           ) : null}
-        </a>
-        <a
+        </Link>
+        <Link
           className={navActiveClass(isConversations)}
-          href={conversationsHref}
+          to={conversationsHref}
           aria-label="Calls"
         >
           <ChatIcon size={20} />
           <span>Calls</span>
-        </a>
+        </Link>
       </nav>
     </div>
   );
@@ -1140,6 +1141,12 @@ export function TeamPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<{
+    userId: string;
+    name: string;
+    role: Role;
+  } | null>(null);
+  const [revoking, setRevoking] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [escalations, setEscalations] = useState<Record<string, boolean>>({});
   const [nights, setNights] = useState<Record<string, boolean>>({});
@@ -1327,8 +1334,14 @@ export function TeamPage() {
                       {business.role === "Owner" ||
                       (member.role !== "Owner" && member.role !== "Admin") ? (
                         <Button
-                          variant="ghost"
-                          onClick={() => void removeMember(member.userId)}
+                          variant="destructive"
+                          onClick={() =>
+                            setRevokeTarget({
+                              userId: member.userId,
+                              name: member.name,
+                              role: member.role,
+                            })
+                          }
                         >
                           Revoke
                         </Button>
@@ -1444,6 +1457,39 @@ export function TeamPage() {
             }
             slug={slug}
           />
+          <Modal
+            open={revokeTarget !== null}
+            onClose={() => setRevokeTarget(null)}
+            titleId="revoke-member-title"
+          >
+            <h2 id="revoke-member-title">Revoke access?</h2>
+            <p>
+              {revokeTarget
+                ? `${revokeTarget.name} (${revokeTarget.role}) will immediately lose access to this workspace. This cannot be undone.`
+                : null}
+            </p>
+            <div className="stack-row">
+              <Button variant="ghost" onClick={() => setRevokeTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                loading={revoking}
+                onClick={async () => {
+                  if (!revokeTarget) return;
+                  setRevoking(true);
+                  try {
+                    await removeMember(revokeTarget.userId);
+                  } finally {
+                    setRevoking(false);
+                    setRevokeTarget(null);
+                  }
+                }}
+              >
+                Revoke access
+              </Button>
+            </div>
+          </Modal>
         </>
       )}
     </WorkspaceShell>

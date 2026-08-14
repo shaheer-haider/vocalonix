@@ -32,9 +32,13 @@ import {
 import { dograh } from "../dograh/client";
 import type { DograhWorkflowRun } from "../dograh/types";
 import { ApiError } from "../errors";
+import { paginate, parseListQuery } from "../pagination";
 import {
   ALLOWED_DOCUMENT_TYPES_LABEL,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
   isAllowedDocumentFilename,
+  matchesDocumentSignature,
 } from "../uploads";
 import { requirePermission, requireWorkspace } from "../workspace/context";
 import { can } from "../workspace/permissions";
@@ -719,8 +723,9 @@ export const tenantRoutes = new Elysia()
       recent: runs.slice(0, 8).map(conversationSummary),
     };
   })
-  .get("/api/b/:slug/callbacks", async ({ params, request }) => {
+  .get("/api/b/:slug/callbacks", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
+    const { limit, offset } = parseListQuery(query);
     const [rows, members] = await Promise.all([
       db
         .select({
@@ -730,7 +735,9 @@ export const tenantRoutes = new Elysia()
         .from(callbackTasks)
         .leftJoin(users, eq(callbackTasks.assignedTo, users.id))
         .where(eq(callbackTasks.businessId, workspace.business.id))
-        .orderBy(asc(callbackTasks.promisedAt)),
+        .orderBy(asc(callbackTasks.promisedAt))
+        .limit(limit + 1)
+        .offset(offset),
       db
         .select({
           userId: users.id,
@@ -747,10 +754,14 @@ export const tenantRoutes = new Elysia()
         )
         .orderBy(asc(users.name)),
     ]);
+    const page = paginate(rows, limit);
     return {
-      callbacks: rows.map(({ task, assigneeName }) =>
+      callbacks: page.items.map(({ task, assigneeName }) =>
         callbackView(task, assigneeName),
       ),
+      hasMore: page.hasMore,
+      limit,
+      offset,
       members,
       viewerId: workspace.session.user.id,
       canManage: can(workspace.role, "callbacks.manage"),
@@ -956,8 +967,9 @@ export const tenantRoutes = new Elysia()
       }),
     },
   )
-  .get("/api/b/:slug/contacts", async ({ params, request }) => {
+  .get("/api/b/:slug/contacts", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
+    const { limit, offset } = parseListQuery(query);
     const rows = await db
       .select()
       .from(contacts)
@@ -967,9 +979,15 @@ export const tenantRoutes = new Elysia()
           isNull(contacts.deletedAt),
         ),
       )
-      .orderBy(desc(contacts.updatedAt));
+      .orderBy(desc(contacts.updatedAt))
+      .limit(limit + 1)
+      .offset(offset);
+    const page = paginate(rows, limit);
     return {
-      contacts: rows.map(contactView),
+      contacts: page.items.map(contactView),
+      hasMore: page.hasMore,
+      limit,
+      offset,
       canManage: can(workspace.role, "contacts.manage"),
     };
   })
@@ -1334,8 +1352,9 @@ export const tenantRoutes = new Elysia()
       ...tenantWidgetScript(token.token),
     };
   })
-  .get("/api/b/:slug/knowledge", async ({ params, request }) => {
+  .get("/api/b/:slug/knowledge", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
+    const { limit, offset } = parseListQuery(query);
     const knowledge = await db
       .select({
         id: businessKnowledge.id,
@@ -1360,8 +1379,11 @@ export const tenantRoutes = new Elysia()
           ne(businessKnowledge.state, "deleted"),
         ),
       )
-      .orderBy(asc(businessKnowledge.createdAt));
-    return { knowledge };
+      .orderBy(asc(businessKnowledge.createdAt))
+      .limit(limit + 1)
+      .offset(offset);
+    const page = paginate(knowledge, limit);
+    return { knowledge: page.items, hasMore: page.hasMore, limit, offset };
   })
   .post(
     "/api/b/:slug/knowledge",
@@ -1384,11 +1406,11 @@ export const tenantRoutes = new Elysia()
             "Choose a document to upload.",
           );
         }
-        if (body.file.size > 10_000_000) {
+        if (body.file.size > MAX_UPLOAD_BYTES) {
           throw new ApiError(
             413,
             "KNOWLEDGE_FILE_TOO_LARGE",
-            "Knowledge documents must be 10 MB or smaller.",
+            `Knowledge documents must be ${MAX_UPLOAD_LABEL} or smaller.`,
           );
         }
         if (!isAllowedDocumentFilename(body.file.name)) {
@@ -1401,6 +1423,13 @@ export const tenantRoutes = new Elysia()
         filename = body.file.name;
         mimeType = body.file.type || "application/octet-stream";
         sourceBytes = new Uint8Array(await body.file.arrayBuffer());
+        if (!matchesDocumentSignature(filename, sourceBytes)) {
+          throw new ApiError(
+            400,
+            "KNOWLEDGE_FILE_CONTENT_MISMATCH",
+            "The file contents do not match its extension.",
+          );
+        }
       } else if (body.kind === "website_reference") {
         const website = body.websiteUrl?.trim();
         if (!website) {

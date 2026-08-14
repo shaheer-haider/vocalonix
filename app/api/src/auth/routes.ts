@@ -5,6 +5,7 @@ import { db } from "../db/client";
 import { magicLinkRequests, sessions, users } from "../db/schema";
 import { env } from "../env";
 import { ApiError } from "../errors";
+import { clientKey, createRateLimiter } from "../rateLimit";
 import { auth } from "./config";
 import {
   captureAuthLinks,
@@ -77,10 +78,15 @@ async function requireSession(headers: Headers) {
   return result;
 }
 
+const signupLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
+const loginLimiter = createRateLimiter({ limit: 20, windowMs: 60_000 });
+const magicLinkLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
+
 export const authRoutes = new Elysia({ prefix: "/api/auth" })
   .post(
     "/signup",
     async ({ body, request, set }) => {
+      signupLimiter.check(clientKey(request.headers));
       try {
         const captured = await captureAuthLinks(
           () =>
@@ -135,6 +141,7 @@ export const authRoutes = new Elysia({ prefix: "/api/auth" })
   .post(
     "/login",
     async ({ body, request, set }) => {
+      loginLimiter.check(clientKey(request.headers));
       try {
         const result = await auth.api.signInEmail({
           headers: request.headers,
@@ -248,6 +255,7 @@ export const authRoutes = new Elysia({ prefix: "/api/auth" })
   .post(
     "/magic/request",
     async ({ body, request }) => {
+      magicLinkLimiter.check(clientKey(request.headers));
       try {
         const captured = await captureAuthLinks(
           () =>

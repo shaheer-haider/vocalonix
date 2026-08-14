@@ -3,7 +3,7 @@ import { Outlet } from "@tanstack/react-router";
 
 import { api } from "./api";
 import { SideNav, type SideNavItem } from "./components/shell";
-import { LoadingState, SelectField, TextArea, TextField } from "./components/ui";
+import { Button, LoadingState, Modal, SelectField, TextArea, TextField } from "./components/ui";
 import { useDograhHealth } from "./hooks/useDograhHealth";
 import {
   BookIcon,
@@ -170,6 +170,8 @@ export function KnowledgeBase() {
     "full_document" | "chunked"
   >("full_document");
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DocumentItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -215,12 +217,15 @@ export function KnowledgeBase() {
   }
 
   async function remove(document: DocumentItem) {
-    if (!window.confirm(`Delete "${document.filename}"?`)) return;
+    setDeleting(true);
     try {
       await api.deleteDocument(document.document_uuid);
       await load();
     } catch (value) {
       setError(value instanceof Error ? value.message : "Delete failed.");
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   }
 
@@ -241,7 +246,7 @@ export function KnowledgeBase() {
           </div>
           <div>
             <h3>{uploading ? "Uploading document…" : "Add a document"}</h3>
-            <p>PDF, DOC, DOCX, TXT, or JSON up to 5MB.</p>
+            <p>PDF, DOC, DOCX, TXT, or JSON up to 10 MB.</p>
           </div>
         </div>
         <div className="upload-actions">
@@ -320,7 +325,7 @@ export function KnowledgeBase() {
                 <button
                   className="icon-button icon-button--danger"
                   aria-label={`Delete ${document.filename}`}
-                  onClick={() => void remove(document)}
+                  onClick={() => setDeleteTarget(document)}
                 >
                   <TrashIcon size={18} />
                 </button>
@@ -329,6 +334,32 @@ export function KnowledgeBase() {
           </div>
         )}
       </div>
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        titleId="delete-document-title"
+      >
+        <h2 id="delete-document-title">Delete document?</h2>
+        <p>
+          {deleteTarget
+            ? `"${deleteTarget.filename}" will be removed from the agent's knowledge base. This cannot be undone.`
+            : null}
+        </p>
+        <div className="stack-row">
+          <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            loading={deleting}
+            onClick={() => {
+              if (deleteTarget) void remove(deleteTarget);
+            }}
+          >
+            Delete document
+          </Button>
+        </div>
+      </Modal>
     </section>
   );
 }

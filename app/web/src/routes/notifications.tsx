@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { Alert, Box, Button, EmptyState, Pill, TextField } from "../components/ui";
@@ -184,8 +185,8 @@ export function WorkspaceNotificationsPage() {
                 </div>
 
                 <p className="notifications-matrix__footer">
-                  No-shows and held slots come out of <a href={`/app/${business.slug}/bookings`}>Bookings</a>. Escalations follow the rules in{" "}
-                  <a href={`/app/${business.slug}/settings/agent`}>Configuration → Agent</a> and the chain on <a href={`/app/${business.slug}/team`}>Team</a>.
+                  No-shows and held slots come out of <Link to="/app/$businessSlug/bookings" params={{ businessSlug: business.slug }}>Bookings</Link>. Escalations follow the rules in{" "}
+                  <Link to="/app/$businessSlug/settings/agent" params={{ businessSlug: business.slug }}>Configuration → Agent</Link> and the chain on <Link to="/app/$businessSlug/team" params={{ businessSlug: business.slug }}>Team</Link>.
                 </p>
               </Box>
 
@@ -305,7 +306,7 @@ export function WorkspaceNotificationsPage() {
                   <div className="notifications-rule">
                     <strong className="notifications-rule__title">One rule worth knowing</strong>
                     <p className="notifications-rule__copy">
-                      A text only goes out if you are in the escalation chain on <a href={`/app/${business.slug}/team`}>Team</a>. Turning SMS on here does not put you on the rota.
+                      A text only goes out if you are in the escalation chain on <Link to="/app/$businessSlug/team" params={{ businessSlug: business.slug }}>Team</Link>. Turning SMS on here does not put you on the rota.
                     </p>
                   </div>
                 </Box>
@@ -357,7 +358,7 @@ export function WorkspaceNotificationsPage() {
 
                 <p className="notifications-rail__note">
                   Tried top to bottom, 25 seconds each. What counts as an escalation is set in{" "}
-                  <a href={`/app/${business.slug}/settings/agent`}>Configuration → Agent</a>.
+                  <Link to="/app/$businessSlug/settings/agent" params={{ businessSlug: business.slug }}>Configuration → Agent</Link>.
                 </p>
               </div>
 
@@ -386,7 +387,7 @@ export function WorkspaceNotificationsPage() {
                   </div>
                 ) : (
                   <EmptyState title="Nobody on nights">
-                    Overnight calls wait in <a href={`/app/${business.slug}/callbacks`}>Callbacks</a> until morning.
+                    Overnight calls wait in <Link to="/app/$businessSlug/callbacks" params={{ businessSlug: business.slug }}>Callbacks</Link> until morning.
                   </EmptyState>
                 )}
 
@@ -434,7 +435,7 @@ export function WorkspaceNotificationsPage() {
 
                 <p className="notifications-rail__note">
                   You can see theirs, not change it. Nudge them, or move who is in the chain on{" "}
-                  <a href={`/app/${business.slug}/team`}>Team</a>.
+                  <Link to="/app/$businessSlug/team" params={{ businessSlug: business.slug }}>Team</Link>.
                 </p>
               </div>
             </Box>
