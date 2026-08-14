@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { and, desc, eq, gt, isNull, lte, ne } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull, lte } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 
 import { hashAuthToken, normalizeEmail, sendEmail } from "../auth/email";
@@ -19,6 +19,7 @@ import {
 } from "../db/schema";
 import { env } from "../env";
 import { ApiError } from "../errors";
+import { paginate, parseListQuery } from "../pagination";
 import {
   requirePermission,
   requireSession,
@@ -28,6 +29,22 @@ import { canManageRole } from "./permissions";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const invitationTtlMs = 7 * 24 * 60 * 60 * 1000;
+
+async function countOwnedWorkspaces(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(memberships)
+    .innerJoin(businesses, eq(memberships.businessId, businesses.id))
+    .where(
+      and(
+        eq(memberships.userId, userId),
+        eq(memberships.role, "Owner"),
+        eq(memberships.status, "active"),
+        isNull(businesses.deletedAt),
+      ),
+    );
+  return row?.value ?? 0;
+}
 
 function randomToken(): string {
   return randomBytes(32).toString("base64url");
@@ -101,11 +118,14 @@ async function sendInvitationEmail(input: {
   });
 }
 
+type DbOrTransaction = Pick<typeof db, "select">;
+
 async function ensureAnotherOwner(
+  tx: DbOrTransaction,
   businessId: string,
   targetUserId: string,
 ): Promise<void> {
-  const [otherOwner] = await db
+  const owners = await tx
     .select({ userId: memberships.userId })
     .from(memberships)
     .where(
@@ -113,12 +133,11 @@ async function ensureAnotherOwner(
         eq(memberships.businessId, businessId),
         eq(memberships.status, "active"),
         eq(memberships.role, "Owner"),
-        ne(memberships.userId, targetUserId),
       ),
     )
-    .limit(1);
+    .for("update");
 
-  if (!otherOwner) {
+  if (!owners.some((owner) => owner.userId !== targetUserId)) {
     throw new ApiError(
       409,
       "LAST_OWNER",
@@ -128,8 +147,9 @@ async function ensureAnotherOwner(
 }
 
 export const workspaceRoutes = new Elysia()
-  .get("/api/businesses", async ({ request }) => {
+  .get("/api/businesses", async ({ query, request }) => {
     const session = await requireSession(request.headers);
+    const { limit, offset } = parseListQuery(query);
     const rows = await db
       .select({
         id: businesses.id,
@@ -151,9 +171,20 @@ export const workspaceRoutes = new Elysia()
           isNull(businesses.deletedAt),
         ),
       )
-      .orderBy(desc(memberships.joinedAt));
+      .orderBy(desc(memberships.joinedAt))
+      .limit(limit + 1)
+      .offset(offset);
 
-    return { businesses: rows };
+    const page = paginate(rows, limit);
+    const ownedCount = await countOwnedWorkspaces(session.user.id);
+    return {
+      businesses: page.items,
+      hasMore: page.hasMore,
+      limit,
+      offset,
+      workspaceLimit: env.maxOwnedWorkspaces,
+      canCreateWorkspace: ownedCount < env.maxOwnedWorkspaces,
+    };
   })
   .post(
     "/api/businesses",
@@ -167,6 +198,14 @@ export const workspaceRoutes = new Elysia()
           400,
           "INVALID_BUSINESS_NAME",
           "Enter a business name with at least two characters.",
+        );
+      }
+      const ownedCount = await countOwnedWorkspaces(session.user.id);
+      if (ownedCount >= env.maxOwnedWorkspaces) {
+        throw new ApiError(
+          403,
+          "WORKSPACE_LIMIT_REACHED",
+          `Your account can own up to ${env.maxOwnedWorkspaces} workspaces.`,
         );
       }
       const businessId = randomUUID();
@@ -293,9 +332,10 @@ export const workspaceRoutes = new Elysia()
       },
     };
   })
-  .get("/api/b/:slug/team", async ({ params, request }) => {
+  .get("/api/b/:slug/team", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "team.manage");
+    const { limit, offset } = parseListQuery(query);
     const members = await db
       .select({
         userId: users.id,
@@ -312,7 +352,9 @@ export const workspaceRoutes = new Elysia()
           eq(memberships.status, "active"),
         ),
       )
-      .orderBy(desc(memberships.joinedAt));
+      .orderBy(desc(memberships.joinedAt))
+      .limit(limit + 1)
+      .offset(offset);
     const pendingInvitations = await db
       .select({
         id: invitations.id,
@@ -331,9 +373,20 @@ export const workspaceRoutes = new Elysia()
           gt(invitations.expiresAt, new Date()),
         ),
       )
-      .orderBy(desc(invitations.createdAt));
+      .orderBy(desc(invitations.createdAt))
+      .limit(limit + 1)
+      .offset(offset);
 
-    return { members, invitations: pendingInvitations };
+    const memberPage = paginate(members, limit);
+    const invitationPage = paginate(pendingInvitations, limit);
+    return {
+      members: memberPage.items,
+      invitations: invitationPage.items,
+      hasMoreMembers: memberPage.hasMore,
+      hasMoreInvitations: invitationPage.hasMore,
+      limit,
+      offset,
+    };
   })
   .post(
     "/api/b/:slug/invitations",
@@ -610,11 +663,10 @@ export const workspaceRoutes = new Elysia()
           "You cannot change this member.",
         );
       }
-      if (target.role === "Owner" && nextRole !== "Owner") {
-        await ensureAnotherOwner(workspace.business.id, params.userId);
-      }
-
       await db.transaction(async (tx) => {
+        if (target.role === "Owner" && nextRole !== "Owner") {
+          await ensureAnotherOwner(tx, workspace.business.id, params.userId);
+        }
         await tx
           .update(memberships)
           .set({ role: nextRole })
@@ -674,11 +726,10 @@ export const workspaceRoutes = new Elysia()
         "You cannot remove this member.",
       );
     }
-    if (target.role === "Owner") {
-      await ensureAnotherOwner(workspace.business.id, params.userId);
-    }
-
     await db.transaction(async (tx) => {
+      if (target.role === "Owner") {
+        await ensureAnotherOwner(tx, workspace.business.id, params.userId);
+      }
       await tx
         .update(memberships)
         .set({ status: "revoked", revokedAt: new Date() })

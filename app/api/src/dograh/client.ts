@@ -38,7 +38,8 @@ function errorDetail(value: unknown): string {
   if (typeof value === "string") return value;
   if (value && typeof value === "object" && "detail" in value) {
     const detail = (value as { detail: unknown }).detail;
-    return typeof detail === "string" ? detail : JSON.stringify(detail);
+    if (typeof detail === "string") return detail;
+    console.error("Dograh error detail:", detail);
   }
   return "Dograh request failed";
 }
@@ -248,8 +249,10 @@ export class DograhClient implements DograhManagementClient {
     });
   }
 
-  listDocuments(): Promise<DograhDocumentList> {
-    return this.rawRequest("/knowledge-base/documents?limit=100&offset=0");
+  listDocuments(limit = 100, offset = 0): Promise<DograhDocumentList> {
+    return this.rawRequest(
+      `/knowledge-base/documents?limit=${limit}&offset=${offset}`,
+    );
   }
 
   requestUpload(

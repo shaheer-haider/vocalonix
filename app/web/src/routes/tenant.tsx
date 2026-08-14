@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -443,8 +443,8 @@ function WidgetForm({
       <Box padding="lg">
         <h2>Widget</h2>
         <p className="auth-card-copy">
-          Publish a domain-restricted browser voice widget. The embed token is public;
-          Dograh management credentials remain server-only.
+          Publish a domain-restricted browser voice widget. The embed token is
+          public; management credentials remain server-only.
         </p>
         <div className="form-grid">
           <TextField
@@ -670,11 +670,20 @@ function KnowledgeManager({
   const [file, setFile] = useState<File | undefined>();
   const [replacementId, setReplacementId] = useState<string | undefined>();
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      setItems(await api.businesses.knowledge(slug));
+      const result = await api.businesses.knowledge(slug);
+      setItems(result.knowledge);
+      setHasMore(result.hasMore);
       setError(null);
     } catch (caught) {
       setError(
@@ -688,6 +697,21 @@ function KnowledgeManager({
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const result = await api.businesses.knowledge(slug, items.length);
+      setItems((prev) => [...prev, ...result.knowledge]);
+      setHasMore(result.hasMore);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unable to load more.",
+      );
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [slug, items.length]);
 
   const processing = useMemo(
     () =>
@@ -876,19 +900,9 @@ function KnowledgeManager({
                       ) : null}
                       <Button
                         variant="destructive"
-                        onClick={() => {
-                          setError(null);
-                          void api.businesses
-                            .deleteKnowledge(slug, item.id)
-                            .then(refresh)
-                            .catch((caught: unknown) =>
-                              setError(
-                                caught instanceof Error
-                                  ? caught.message
-                                  : "Unable to delete knowledge.",
-                              ),
-                            );
-                        }}
+                        onClick={() =>
+                          setDeleteTarget({ id: item.id, title: item.title })
+                        }
                       >
                         Delete
                       </Button>
@@ -928,6 +942,15 @@ function KnowledgeManager({
                 </div>
               );
             })}
+            {hasMore ? (
+              <Button
+                variant="ghost"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+              >
+                {loadingMore ? "Loading…" : "Load more"}
+              </Button>
+            ) : null}
           </div>
         )}
       </Box>
@@ -958,6 +981,47 @@ function KnowledgeManager({
           </Button>
         </Box>
       ) : null}
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        titleId="delete-knowledge-title"
+      >
+        <h2 id="delete-knowledge-title">Delete knowledge?</h2>
+        <p>
+          {deleteTarget
+            ? `"${deleteTarget.title}" will be removed from the agent's context. This cannot be undone.`
+            : null}
+        </p>
+        <div className="stack-row">
+          <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            loading={deleting}
+            onClick={async () => {
+              if (!deleteTarget) return;
+              setError(null);
+              setDeleting(true);
+              try {
+                await api.businesses.deleteKnowledge(slug, deleteTarget.id);
+                await refresh();
+              } catch (caught) {
+                setError(
+                  caught instanceof Error
+                    ? caught.message
+                    : "Unable to delete knowledge.",
+                );
+              } finally {
+                setDeleting(false);
+                setDeleteTarget(null);
+              }
+            }}
+          >
+            Delete knowledge
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -1018,7 +1082,7 @@ function AnswersTab({ slug }: { slug: string }) {
     setLoading(true);
     try {
       setItems(
-        (await api.businesses.knowledge(slug)).filter(
+        (await api.businesses.knowledge(slug)).knowledge.filter(
           (item) => item.kind === "text",
         ),
       );
@@ -1384,36 +1448,6 @@ function GapsTab({ slug }: { slug: string }) {
   );
 }
 
-function SyncStatus({ data }: { data: TenantSettingsResponse }) {
-  const variant =
-    data.dograh.syncState === "synced"
-      ? "good"
-      : data.dograh.syncState === "rejected" ||
-          data.dograh.syncState === "failed"
-        ? "warn"
-        : "default";
-  return (
-    <Box padding="md">
-      <div className="account-section__heading">
-        <div>
-          <p className="eyebrow">Dograh synchronization</p>
-          <h2>{data.dograh.syncState.replaceAll("_", " ")}</h2>
-        </div>
-        <Pill variant={variant}>{data.dograh.syncState}</Pill>
-      </div>
-      {data.dograh.lastError ? (
-        <Alert variant="error">{data.dograh.lastError}</Alert>
-      ) : (
-        <p className="auth-card-copy">
-          {data.dograh.syncState === "synced"
-            ? "This business has its own published Dograh workflow."
-            : "Saved Vocalonix changes are waiting for this business only."}
-        </p>
-      )}
-    </Box>
-  );
-}
-
 function BrowserTestCall({ widget }: { widget: TenantWidget }) {
   const [status, setStatus] = useState("Ready to load the published web-call widget.");
   const [error, setError] = useState<string | null>(null);
@@ -1515,7 +1549,6 @@ function ReviewPublish({
 
   return (
     <div className="settings-stack">
-      <SyncStatus data={data} />
       <Box padding="lg">
         <h2>Review and publish</h2>
         <p className="auth-card-copy">
@@ -1907,13 +1940,7 @@ function PublishBanner({
       ) : published ? (
         <div className="publish-banner publish-banner--live">
           <Pill variant="good">Live</Pill>
-          <p>
-            The live agent matches your draft line for line.
-            {latest
-              ? ` Version ${latest.version} · published ${new Date(latest.publishedAt).toLocaleString()}.`
-              : ""}
-          </p>
-          <a href={`/app/${slug}/settings/history`}>View history</a>
+          <Link to="/app/$businessSlug/settings/history" params={{ businessSlug: slug }}>View history</Link>
         </div>
       ) : (
         <div className="publish-banner publish-banner--draft">
@@ -2371,7 +2398,6 @@ export function TenantSettingsPage({
                 {section === "history" ? (
                   <HistoryTab canEdit={canEditAgent} refresh={refresh} slug={slug} />
                 ) : null}
-                <SyncStatus data={data} />
               </div>
             );
           }}

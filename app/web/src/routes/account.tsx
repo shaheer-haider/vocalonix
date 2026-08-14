@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { api, type AccountSession, type BusinessSummary } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
-import { DemoLink } from "../components/DemoLink";
 import { Alert, Box, Button, LoadingState, Pill } from "../components/ui";
 
 function formatDate(value: string | Date): string {
@@ -24,8 +23,8 @@ export function AppHomePage() {
     let cancelled = false;
     void api.businesses
       .list()
-      .then((items) => {
-        if (!cancelled) setBusinesses(items);
+      .then((result) => {
+        if (!cancelled) setBusinesses(result.businesses);
       })
       .catch((caught: unknown) => {
         if (!cancelled) {
@@ -95,7 +94,6 @@ export function AppHomePage() {
           <Link className="ui-button" to="/account">
             Account settings
           </Link>
-          <DemoLink className="ui-button">Hear it now</DemoLink>
         </div>
       </Box>
     </AuthShell>
@@ -159,9 +157,6 @@ export function AccountContent() {
           <h1 className="account-title">{auth.session?.user.name}</h1>
           <p className="auth-card-copy">{auth.session?.user.email}</p>
         </div>
-        <Link className="ui-button" to="/app">
-          Back to app
-        </Link>
       </div>
 
       {error ? <Alert variant="error">{error}</Alert> : null}
@@ -221,6 +216,9 @@ export function AccountPage() {
       <div className="auth-header">
         <Link to="/" className="wordmark">
           vocalonix
+        </Link>
+        <Link className="ui-button" to="/app">
+          Back to app
         </Link>
       </div>
       <AccountContent />

@@ -2,6 +2,7 @@ import { cors } from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
 
 import { authRoutes } from "./auth/routes";
+import { billingRoutes } from "./billing/routes";
 import { dograh, DograhError } from "./dograh/client";
 import type { AgentSettings } from "./dograh/types";
 import {
@@ -14,16 +15,18 @@ import {
 import { env } from "./env";
 import {
   ALLOWED_DOCUMENT_TYPES_LABEL,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
   isAllowedDocumentFilename,
+  matchesDocumentSignature,
 } from "./uploads";
 import { ApiError } from "./errors";
+import { parseListQuery } from "./pagination";
 import { requireSession } from "./workspace/context";
 import { workspaceRoutes } from "./workspace/routes";
 import { agentToolRoutes } from "./agent/routes";
 import { tenantRoutes } from "./tenant/routes";
 import { demoRoutes } from "./demo/routes";
-
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 function validateSettings(settings: AgentSettings): void {
   const required: Array<[keyof AgentSettings, number]> = [
@@ -94,7 +97,15 @@ export const app = new Elysia()
       credentials: true,
     }),
   )
-  .onError(({ error, set }) => {
+  .onError(({ code, error, set }) => {
+    if (code === "VALIDATION") {
+      set.status = 422;
+      return { error: "Invalid request body.", code: "VALIDATION" };
+    }
+    if (code === "NOT_FOUND") {
+      set.status = 404;
+      return { error: "Not found.", code: "NOT_FOUND" };
+    }
     if (error instanceof ApiError) {
       set.status = error.status;
       return { error: error.message, code: error.code };
@@ -111,6 +122,7 @@ export const app = new Elysia()
   .use(agentToolRoutes)
   .use(tenantRoutes)
   .use(workspaceRoutes)
+  .use(billingRoutes)
   .use(demoRoutes)
   .get("/api/health", () => ({
     status: "ok",
@@ -177,9 +189,10 @@ export const app = new Elysia()
     await requireSession(request.headers);
     return widgetPayload();
   })
-  .get("/api/knowledge", async ({ request }) => {
+  .get("/api/knowledge", async ({ query, request }) => {
     await requireSession(request.headers);
-    const response = await dograh.listDocuments();
+    const { limit, offset } = parseListQuery(query);
+    const response = await dograh.listDocuments(Math.min(limit, 100), offset);
     await syncCompletedDocuments(response.documents);
     return response;
   })
@@ -189,11 +202,18 @@ export const app = new Elysia()
       await requireSession(request.headers);
       const { file } = body;
       if (file.size > MAX_UPLOAD_BYTES) {
-        throw new DograhError("File size must be 5MB or less", 400);
+        throw new DograhError(`File size must be ${MAX_UPLOAD_LABEL} or less`, 400);
       }
       if (!isAllowedDocumentFilename(file.name)) {
         throw new DograhError(
           `Supported file types: ${ALLOWED_DOCUMENT_TYPES_LABEL}`,
+          400,
+        );
+      }
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+      if (!matchesDocumentSignature(file.name, fileBytes)) {
+        throw new DograhError(
+          "The file contents do not match its extension.",
           400,
         );
       }

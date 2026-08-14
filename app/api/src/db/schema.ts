@@ -191,6 +191,8 @@ export const businesses = pgTable(
     contactEmail: text("contact_email"),
     vertical: text("vertical"),
     locations: text("locations"),
+    stripeCustomerId: text("stripe_customer_id"),
+    planName: text("plan_name"),
     createdBy: text("created_by")
       .notNull()
       .references(() => users.id),

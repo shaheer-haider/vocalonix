@@ -4,6 +4,7 @@ import { tenantWorkflowConfigurations } from "./config";
 import type { AgentSettings, DograhDocument, DograhWorkflow } from "./types";
 
 const WORKFLOW_PREFIX = "[Vocalonix]";
+const TENANT_WORKFLOW_PREFIX = "[Vocalonix:";
 
 export const defaultAgentSettings: AgentSettings = {
   agentName: "Nova",
@@ -187,7 +188,11 @@ async function completedDocumentUuids(): Promise<string[]> {
 
 export async function ensureWorkflow(): Promise<DograhWorkflow> {
   const workflows = await dograh.listWorkflows();
-  const managed = workflows.find((workflow) => workflow.name.startsWith(WORKFLOW_PREFIX));
+  const managed = workflows.find(
+    (workflow) =>
+      workflow.name.startsWith(WORKFLOW_PREFIX) &&
+      !workflow.name.startsWith(TENANT_WORKFLOW_PREFIX),
+  );
   if (managed) return dograh.getWorkflow(managed.id);
 
   const documents = await completedDocumentUuids();

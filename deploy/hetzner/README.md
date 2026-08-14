@@ -140,6 +140,33 @@ resource "hcloud_server" "vocalonix" {
 Access on the running servers is governed by `authorized_keys` (steps 2 and 4),
 not by this attribute.
 
+## Automatic deploys (GitHub Actions)
+
+`.github/workflows/deploy.yml` deploys the Vocalonix server on every push to
+`main` (and via manual `workflow_dispatch`): it rsyncs the repo with the
+mandatory excludes above, runs `docker compose up -d --build --wait`, and then
+checks `/api/health`, `/api/dograh/health`, and the served bundle.
+
+It needs two things configured once in the GitHub repo:
+
+1. An environment named `hetzner` (Settings → Environments) with two secrets:
+   - `HETZNER_HOST` — the Vocalonix host, e.g. `62-238-101-107.sslip.io`
+     (a hostname with a valid certificate, not a bare IP, so the health
+     checks can use HTTPS).
+   - `HETZNER_SSH_KEY` — a private key whose public half is in the server's
+     `~/.ssh/authorized_keys`. Prefer a **dedicated CI keypair** over the
+     operator key in `terraform/.ssh/`:
+
+     ```bash
+     ssh-keygen -t ed25519 -N "" -C "vocalonix-ci" -f ci_deploy_key
+     ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
+       "printf '%s\n' '$(cat ci_deploy_key.pub)' >> ~/.ssh/authorized_keys"
+     # paste ci_deploy_key into the HETZNER_SSH_KEY secret, then delete both files
+     ```
+
+The pipeline never touches the server's `.env` files or the Dograh server; use
+the manual steps below for those.
+
 ## Redeploying a change
 
 Infrastructure already exists, so a code change does **not** need `tofu apply`.

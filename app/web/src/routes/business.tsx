@@ -20,11 +20,11 @@ import {
   type KnowledgeGap,
   type PendingInvitation,
   type Role,
+  type BusinessListResponse,
   type TeamMember,
 } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
-import { DemoLink } from "../components/DemoLink";
 import {
   Alert,
   Box,
@@ -165,16 +165,21 @@ function useToken(): string {
   return params.token ?? "";
 }
 
+let businessListCache: BusinessListResponse | null = null;
+
 function useBusinesses() {
-  const [businesses, setBusinesses] = useState<BusinessSummary[]>([]);
+  const [data, setData] = useState<BusinessListResponse | null>(
+    businessListCache,
+  );
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(businessListCache === null);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
     setError(null);
     try {
-      setBusinesses(await api.businesses.list());
+      const result = await api.businesses.list();
+      businessListCache = result;
+      setData(result);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Unable to load workspaces.",
@@ -188,7 +193,14 @@ function useBusinesses() {
     void refresh();
   }, [refresh]);
 
-  return { businesses, error, loading, refresh };
+  return {
+    businesses: data?.businesses ?? [],
+    canCreateWorkspace: data?.canCreateWorkspace ?? true,
+    workspaceLimit: data?.workspaceLimit ?? 0,
+    error,
+    loading,
+    refresh,
+  };
 }
 
 function workspaceTarget(pathname: string, targetSlug: string): string {
@@ -208,7 +220,8 @@ export function WorkspaceShell({
   requiredPermission?: Parameters<typeof can>[1];
 }) {
   const slug = useBusinessSlug();
-  const { businesses, error, loading } = useBusinesses();
+  const { businesses, canCreateWorkspace, workspaceLimit, error, loading } =
+    useBusinesses();
   const business = useMemo(
     () => businesses.find((candidate) => candidate.slug === slug),
     [businesses, slug],
@@ -242,7 +255,12 @@ export function WorkspaceShell({
 
   if (requiredPermission && !can(business.role, requiredPermission)) {
     return (
-      <WorkspaceFrame business={business} businesses={businesses}>
+      <WorkspaceFrame
+        business={business}
+        businesses={businesses}
+        canCreateWorkspace={canCreateWorkspace}
+        workspaceLimit={workspaceLimit}
+      >
         <Box padding="lg">
           <Pill variant="warn">{business.role}</Pill>
           <h1 className="account-title">You do not have access here</h1>
@@ -255,7 +273,12 @@ export function WorkspaceShell({
   }
 
   return (
-    <WorkspaceFrame business={business} businesses={businesses}>
+    <WorkspaceFrame
+      business={business}
+      businesses={businesses}
+      canCreateWorkspace={canCreateWorkspace}
+      workspaceLimit={workspaceLimit}
+    >
       {children(business)}
     </WorkspaceFrame>
   );
@@ -268,13 +291,19 @@ function navActiveClass(active: boolean): string {
 function WorkspaceFrame({
   business,
   businesses,
+  canCreateWorkspace,
+  workspaceLimit,
   children,
 }: {
   business: BusinessSummary;
   businesses: BusinessSummary[];
+  canCreateWorkspace: boolean;
+  workspaceLimit: number;
   children: ReactNode;
 }) {
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const pathname = location.pathname;
 
   const dashboardHref = `/app/${business.slug}/dashboard`;
@@ -302,7 +331,6 @@ function WorkspaceFrame({
 
   const [counts, setCounts] = useState({ callbacks: 0, gaps: 0 });
   const [moreOpen, setMoreOpen] = useState(false);
-  const navigate = useNavigate();
   /**
    * The status card used to claim "Live & answering" unconditionally, which
    * contradicted the publish banner two feet away and told brand-new workspaces
@@ -349,16 +377,16 @@ function WorkspaceFrame({
   return (
     <div className="workspace-shell">
       <aside className="workspace-sidebar">
-        <a className="wordmark" href="/">
+        <Link className="wordmark" to="/">
           vocalonix
-        </a>
+        </Link>
         <label className="workspace-switcher">
           <span>Workspace</span>
           <select
             value={business.slug}
             onChange={(event) => {
               void navigate({
-                to: workspaceTarget(window.location.pathname, event.target.value),
+                to: workspaceTarget(pathname, event.target.value),
               });
             }}
           >
@@ -369,6 +397,19 @@ function WorkspaceFrame({
             ))}
           </select>
         </label>
+        <button
+          type="button"
+          className="ui-button sidebar-new-workspace"
+          onClick={() => {
+            if (canCreateWorkspace) {
+              void navigate({ to: "/app/onboarding/create" });
+            } else {
+              setShowLimitModal(true);
+            }
+          }}
+        >
+          New workspace
+        </button>
         <nav aria-label="Workspace">
           <p className="nav-section">Today</p>
           <Link
@@ -463,10 +504,6 @@ function WorkspaceFrame({
             <BellIcon size={18} />
             Notifications
           </Link>
-          <DemoLink className="nav-item">
-            <SettingsIcon size={18} />
-            Hear it now
-          </DemoLink>
         </nav>
         {publishState === "unknown" ? null : (
           <div
@@ -482,40 +519,60 @@ function WorkspaceFrame({
           </div>
         )}
       </aside>
-      <main className="workspace-main">
-        <div className="workspace-topbar">
-          <div>
-            <p className="eyebrow">{business.role}</p>
-            <h1>{business.name}</h1>
-          </div>
-          <Link className="ui-button" to="/app/onboarding/create">
-            New workspace
-          </Link>
-        </div>
-        {children}
-      </main>
-      {/* Labels match the desktop sidebar exactly: learning "Bookings" on a laptop
-          and hunting for "Diary" on a phone was pure extraneous load. "More" opens
-          the seven destinations that previously had no mobile route at all. */}
-      <nav className="mobile-bottom-nav" aria-label="Sections">
-        <Link className={navActiveClass(isDashboard)} to={dashboardHref}>
+      <main className="workspace-main">{children}</main>
+      {showLimitModal ? (
+        <Modal
+          open
+          onClose={() => setShowLimitModal(false)}
+          titleId="workspace-limit-title"
+        >
+          <h2 id="workspace-limit-title">Workspace limit reached</h2>
+          <p className="auth-card-copy">
+            Your account can own up to {workspaceLimit} workspaces. Contact
+            support to raise the limit.
+          </p>
+          <Button variant="primary" onClick={() => setShowLimitModal(false)}>
+            Got it
+          </Button>
+        </Modal>
+      ) : null}
+      {/* Four most-used destinations inline; "More" opens the seven that
+          previously had no mobile route at all. */}
+      <nav className="mobile-bottom-nav" aria-label="Mobile">
+        <Link
+          className={navActiveClass(isDashboard)}
+          to={dashboardHref}
+          aria-label="Today"
+        >
           <CalendarIcon size={20} />
-          <span>Dashboard</span>
+          <span>Today</span>
         </Link>
-        <Link className={navActiveClass(isBookings)} to={bookingsHref}>
-          <BookIcon size={20} />
-          <span>Bookings</span>
+        <Link
+          className={navActiveClass(isBookings)}
+          to={bookingsHref}
+          aria-label="Diary"
+        >
+          <CalendarIcon size={20} />
+          <span>Diary</span>
         </Link>
-        <Link className={navActiveClass(isCallbacks)} to={callbacksHref}>
+        <Link
+          className={navActiveClass(isCallbacks)}
+          to={callbacksHref}
+          aria-label="Callbacks"
+        >
           <PhoneIcon size={20} />
           <span>Callbacks</span>
           {counts.callbacks > 0 ? (
             <span className="nav-item__count nav-item__count--bottom">{counts.callbacks}</span>
           ) : null}
         </Link>
-        <Link className={navActiveClass(isConversations)} to={conversationsHref}>
+        <Link
+          className={navActiveClass(isConversations)}
+          to={conversationsHref}
+          aria-label="Calls"
+        >
           <ChatIcon size={20} />
-          <span>Conversations</span>
+          <span>Calls</span>
         </Link>
         <button
           type="button"
@@ -660,8 +717,8 @@ export function CreateBusinessPage() {
           <p className="eyebrow">Step 1 of 1</p>
           <h1 className="account-title">Create a business workspace</h1>
           <p className="auth-card-copy">
-            This creates the business, your Owner membership, and a pending
-            Dograh workflow mapping in one transaction.
+            This creates the business, your Owner membership, and your voice
+            agent workspace in one step.
           </p>
           <div className="form-grid">
             <TextField
@@ -949,7 +1006,6 @@ export function WorkspaceDashboardPage() {
                 <Link className="ui-button" to="/app/$businessSlug/conversations" params={{ businessSlug: business.slug }}>
                   Test call
                 </Link>
-                <DemoLink className="ui-button">Hear it now</DemoLink>
               </div>
             </Box>
           </div>
@@ -1101,89 +1157,87 @@ export function WorkspaceDashboardPage() {
   );
 }
 
-const sampleInvoices = [
-  { when: "12 Jul", what: "Practice · July", amount: "£85.00" },
-  { when: "12 Jun", what: "Practice · June", amount: "£81.00" },
-  { when: "12 May", what: "Practice · May, 190 extra minutes", amount: "£92.40" },
-];
+function WorkspaceBilling({ slug }: { slug: string }) {
+  const [status, setStatus] = useState<{
+    configured: boolean;
+    plan: string;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
 
-function BillingPreview() {
-  const minutes = 742;
-  const minutesCap = 1200;
+  useEffect(() => {
+    let cancelled = false;
+    void api.billing
+      .status(slug)
+      .then((result) => {
+        if (!cancelled) setStatus(result);
+      })
+      .catch((caught: unknown) => {
+        if (!cancelled) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "Unable to load billing details.",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  async function openPortal() {
+    setError(null);
+    setOpening(true);
+    try {
+      const { url } = await api.billing.portal(slug);
+      window.location.assign(url);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to open the billing portal.",
+      );
+      setOpening(false);
+    }
+  }
 
   return (
     <section className="account-section">
       <div className="account-section__heading">
         <div>
           <h2>Plan &amp; billing</h2>
-          <p>Only an Owner can change the plan, the card, or who owns the workspace.</p>
+          <p>
+            Manage your plan, payment method, and invoices in the secure
+            billing portal.
+          </p>
         </div>
       </div>
-      <Alert variant="info" title="Design preview">
-        Billing goes live once the payments backend lands. Everything below is
-        sample data.
-      </Alert>
-      <div className="dash-surfaces">
-        <Box className="dash-surface">
-          <p className="eyebrow">Minutes used</p>
-          <h2>
-            {minutes} / {minutesCap} minutes
-          </h2>
-          <p>Cycle resets 12 Aug. Extra minutes are £0.045 each.</p>
-          <div className="billing-progress" aria-label="Minutes used">
-            <div
-              className="billing-progress__bar"
-              style={{ width: `${(minutes / minutesCap) * 100}%` }}
-            />
-          </div>
-        </Box>
-        <Box className="dash-surface">
-          <p className="eyebrow">Your plan</p>
-          <h2>Practice · £79 a month</h2>
-          <p>1,200 answered minutes, 8 seats, 2 numbers included. Renews 12 Aug.</p>
+      {error ? <Alert variant="error">{error}</Alert> : null}
+      {status === null && !error ? (
+        <LoadingState label="Loading billing details…" />
+      ) : status ? (
+        <Box className="dash-surface" style={{ padding: 20 }}>
+          <p className="eyebrow">Current plan</p>
+          <h2>{status.plan}</h2>
           <div className="stack-row">
-            <Button variant="ghost" disabled>
-              Change plan
-            </Button>
-            <Button variant="ghost" className="billing-cancel" disabled>
-              Cancel plan
+            <Button
+              variant="primary"
+              loading={opening}
+              disabled={!status.configured}
+              onClick={() => void openPortal()}
+            >
+              Manage billing &amp; subscription
             </Button>
           </div>
+          {!status.configured ? (
+            <p className="auth-card-copy">
+              Online billing isn&apos;t enabled for this workspace yet. Contact
+              support to change your plan.
+            </p>
+          ) : null}
         </Box>
-        <Box className="dash-surface">
-          <p className="eyebrow">Phone numbers</p>
-          <h2>Two included</h2>
-          <p>0113 496 2288 · 020 7946 0822</p>
-          <p>Then £3 each a month. Numbers are answered by the agent, all hours.</p>
-          <div className="stack-row">
-            <Button variant="ghost" disabled>
-              Add a number
-            </Button>
-          </div>
-        </Box>
-      </div>
-      <Box padding="md">
-        <div className="account-section__heading">
-          <div>
-            <h2>Next invoice</h2>
-            <p>12 Aug · estimated £79.00</p>
-          </div>
-        </div>
-        <div className="session-list">
-          {sampleInvoices.map((invoice) => (
-            <div className="session-item" key={invoice.when}>
-              <div>
-                <strong>{invoice.what}</strong>
-                <span>{invoice.when}</span>
-              </div>
-              <div className="stack-row">
-                <Pill variant="good">Paid</Pill>
-                <span>{invoice.amount}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Box>
+      ) : null}
     </section>
   );
 }
@@ -1194,7 +1248,9 @@ export function WorkspaceAccountPage() {
       {(business) => (
         <>
           <AccountContent />
-          {can(business.role, "billing.access") ? <BillingPreview /> : null}
+          {can(business.role, "billing.access") ? (
+            <WorkspaceBilling slug={business.slug} />
+          ) : null}
         </>
       )}
     </WorkspaceShell>
@@ -1208,6 +1264,12 @@ export function TeamPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<{
+    userId: string;
+    name: string;
+    role: Role;
+  } | null>(null);
+  const [revoking, setRevoking] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [escalations, setEscalations] = useState<Record<string, boolean>>({});
   const [nights, setNights] = useState<Record<string, boolean>>({});
@@ -1395,8 +1457,14 @@ export function TeamPage() {
                       {business.role === "Owner" ||
                       (member.role !== "Owner" && member.role !== "Admin") ? (
                         <Button
-                          variant="ghost"
-                          onClick={() => void removeMember(member.userId)}
+                          variant="destructive"
+                          onClick={() =>
+                            setRevokeTarget({
+                              userId: member.userId,
+                              name: member.name,
+                              role: member.role,
+                            })
+                          }
                         >
                           Revoke
                         </Button>
@@ -1512,6 +1580,39 @@ export function TeamPage() {
             }
             slug={slug}
           />
+          <Modal
+            open={revokeTarget !== null}
+            onClose={() => setRevokeTarget(null)}
+            titleId="revoke-member-title"
+          >
+            <h2 id="revoke-member-title">Revoke access?</h2>
+            <p>
+              {revokeTarget
+                ? `${revokeTarget.name} (${revokeTarget.role}) will immediately lose access to this workspace. This cannot be undone.`
+                : null}
+            </p>
+            <div className="stack-row">
+              <Button variant="ghost" onClick={() => setRevokeTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                loading={revoking}
+                onClick={async () => {
+                  if (!revokeTarget) return;
+                  setRevoking(true);
+                  try {
+                    await removeMember(revokeTarget.userId);
+                  } finally {
+                    setRevoking(false);
+                    setRevokeTarget(null);
+                  }
+                }}
+              >
+                Revoke access
+              </Button>
+            </div>
+          </Modal>
         </>
       )}
     </WorkspaceShell>
