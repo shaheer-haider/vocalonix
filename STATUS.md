@@ -66,9 +66,11 @@ Still open (rough priority order):
       knowledge, outbox) — current tests are unit-level only.
 - [ ] **Pagination UI** — the frontend does not yet expose load-more/paging
       controls for the newly paginated endpoints.
+- [x] Basic rate limiting added on public endpoints (signup, login, magic
+      links, demo session creation) — per-IP fixed windows.
 - [ ] Email verification flow is disabled and untested.
-- [ ] Rate limiting / abuse protection on public endpoints (signup, widget,
-      demo agent).
+- [ ] Rate limiting is in-memory only; move to a shared store (e.g. Redis)
+      when the API scales past one instance.
 
 ## Product suggestions
 
