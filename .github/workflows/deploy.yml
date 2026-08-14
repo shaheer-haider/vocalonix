@@ -37,7 +37,22 @@ jobs:
 
       - name: Build and restart services
         run: |
-          ssh hetzner 'cd /opt/vocalonix/repo/deploy/hetzner/vocalonix && docker compose --env-file .env up -d --build --wait'
+          ssh hetzner /bin/bash -s <<'EOF'
+          set -eu
+          cd /opt/vocalonix/repo/deploy/hetzner/vocalonix
+          # The stack may already be running under a different compose project
+          # name (e.g. from a manual deploy). Reuse it so existing containers
+          # and volumes (including the postgres data volume) are adopted
+          # instead of colliding on the fixed "caddy" container name.
+          project=$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' caddy 2>/dev/null || true)
+          if [ -z "$project" ]; then
+            # caddy is absent or unmanaged; remove any unmanaged leftover.
+            docker rm -f caddy 2>/dev/null || true
+            project=vocalonix
+          fi
+          echo "Using compose project: $project"
+          docker compose -p "$project" --env-file .env up -d --build --wait
+          EOF
 
       - name: Verify deployment
         run: |
