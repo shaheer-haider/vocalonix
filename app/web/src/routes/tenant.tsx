@@ -39,6 +39,7 @@ import {
 import { CopyIcon } from "../icons";
 import { useVerticals, verticalOptions } from "../hooks/useVerticals";
 import type {
+  AvailableNumber,
   BusinessPhoneResponse,
   VoiceCatalogueEntry,
   VoiceWidgetStatus,
@@ -2475,9 +2476,12 @@ function PhoneTab({
 }) {
   const [phone, setPhone] = useState<BusinessPhoneResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [number, setNumber] = useState("");
+  const [country, setCountry] = useState("US");
+  const [areaCode, setAreaCode] = useState("");
   const [label, setLabel] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [results, setResults] = useState<AvailableNumber[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [claiming, setClaiming] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [releasing, setReleasing] = useState<string | null>(null);
 
@@ -2572,50 +2576,122 @@ function PhoneTab({
           </ul>
         ) : (
           <EmptyState title="No phone number yet">
-            Add a number you already own with the telephony provider, and calls
-            to it will be answered by this agent.
+            Pick a number below and it is yours — we buy it and point it at this
+            agent. Nothing to set up with a phone company.
           </EmptyState>
         )}
 
-        {canEdit && phone?.available && published ? (
-          <form
-            onSubmit={async (event) => {
-              event.preventDefault();
-              setBusy(true);
-              setNotice(null);
-              try {
-                await api.businesses.attachPhone(slug, { number, label });
-                setNumber("");
-                setLabel("");
-                await load();
-                setNotice(ok("Number connected. Give it a call."));
-              } catch (caught) {
-                setNotice(fail(caught, "Could not connect that number."));
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <div className="form-grid">
-              <TextField
-                label="Phone number"
-                required
-                placeholder="+14155550123"
-                helper="Full international format, including the country code."
-                value={number}
-                onChange={(event) => setNumber(event.target.value)}
-              />
-              <TextField
-                label="Label"
-                placeholder="Main line"
-                value={label}
-                onChange={(event) => setLabel(event.target.value)}
-              />
-            </div>
-            <Button type="submit" variant="primary" loading={busy}>
-              Connect this number
-            </Button>
-          </form>
+        {canEdit && phone?.available && published && !phone.atNumberLimit ? (
+          <div className="phone-picker">
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setSearching(true);
+                setNotice(null);
+                try {
+                  const found = await api.businesses.availableNumbers(slug, {
+                    country,
+                    areaCode: areaCode.trim() || undefined,
+                  });
+                  setResults(found.numbers);
+                  if (found.numbers.length === 0) {
+                    // Not an error — the search worked, the inventory is just
+                    // empty for that filter.
+                    setNotice({
+                      tone: "info",
+                      message: "No numbers matched. Try a different area code.",
+                    });
+                  }
+                } catch (caught) {
+                  setNotice(fail(caught, "Could not load available numbers."));
+                } finally {
+                  setSearching(false);
+                }
+              }}
+            >
+              <div className="form-grid">
+                <SelectField
+                  label="Country"
+                  value={country}
+                  onChange={(event) => setCountry(event.target.value)}
+                  options={[
+                    { value: "US", label: "United States" },
+                    { value: "CA", label: "Canada" },
+                    { value: "GB", label: "United Kingdom" },
+                    { value: "AU", label: "Australia" },
+                  ]}
+                />
+                <TextField
+                  label="Area code"
+                  placeholder="415"
+                  helper="Optional. Leave blank to see any area."
+                  value={areaCode}
+                  onChange={(event) => setAreaCode(event.target.value)}
+                />
+                <TextField
+                  label="Label"
+                  placeholder="Main line"
+                  helper="What you'll call this number internally."
+                  value={label}
+                  onChange={(event) => setLabel(event.target.value)}
+                />
+              </div>
+              <Button type="submit" loading={searching}>
+                Search numbers
+              </Button>
+            </form>
+
+            {results && results.length > 0 ? (
+              <ul className="phone-list phone-list--available">
+                {results.map((row) => (
+                  <li key={row.e164} className="phone-row">
+                    <div>
+                      <strong className="phone-row__number">{row.e164}</strong>
+                      <div className="ui-field-message">
+                        {[row.locality, row.region].filter(Boolean).join(", ") ||
+                          row.countryCode}
+                        {row.monthlyCost
+                          ? ` · ${row.monthlyCost} ${row.currency ?? ""}/month`
+                          : ""}
+                      </div>
+                    </div>
+                    <Button
+                      variant="primary"
+                      loading={claiming === row.e164}
+                      disabled={claiming !== null && claiming !== row.e164}
+                      onClick={async () => {
+                        setClaiming(row.e164);
+                        setNotice(null);
+                        try {
+                          await api.businesses.attachPhone(slug, {
+                            number: row.e164,
+                            label,
+                          });
+                          setResults(null);
+                          setLabel("");
+                          await load();
+                          setNotice(ok("Number is yours. Give it a call."));
+                        } catch (caught) {
+                          setNotice(fail(caught, "Could not get that number."));
+                        } finally {
+                          setClaiming(null);
+                        }
+                      }}
+                    >
+                      Get this number
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+
+        {canEdit && phone?.atNumberLimit ? (
+          <p className="ui-field-message">
+            Each agent answers one number. Release this one to choose a
+            different number.
+          </p>
         ) : null}
       </Box>
 

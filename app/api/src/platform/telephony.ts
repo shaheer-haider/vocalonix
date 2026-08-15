@@ -25,9 +25,24 @@ import { dograh, DograhError } from "../dograh/client";
 import type { DograhManagementClient } from "../dograh/client";
 import { env } from "../env";
 import { ApiError } from "../errors";
+import {
+  findOwnedNumber,
+  purchaseNumber,
+  releaseOwnedNumber,
+  TelnyxError,
+} from "./telnyx";
 
 const SETTINGS_KEY = "dograh.telephony";
 const CONFIG_NAME = "Vocalonix";
+
+/**
+ * One number per business. A second number on the same agent would ring the
+ * same workflow with no way for the caller — or the conversation list — to tell
+ * the two apart, so the limit is a product rule rather than a provider one.
+ * `business_phone_numbers_one_live_per_business` enforces the same thing in the
+ * database, because this check alone races two concurrent purchases.
+ */
+const MAX_NUMBERS_PER_BUSINESS = 1;
 
 export interface TelephonyStatus {
   configured: boolean;
@@ -172,7 +187,17 @@ export interface AttachedPhoneNumber {
   status: "pending" | "active" | "failed" | "released";
 }
 
-export async function attachPhoneNumber(input: {
+/**
+ * Buys `raw` on the platform's Telnyx account and points it at this business's
+ * agent.
+ *
+ * The two halves are ordered so the recoverable failure is the one that can
+ * happen: a number we own but cannot route is released again before returning,
+ * because that is the state that quietly bills us every month for a line no
+ * caller reaches. A number routed but not owned cannot occur — the order comes
+ * first.
+ */
+export async function provisionPhoneNumber(input: {
   businessId: string;
   raw: string;
   label: string;
@@ -183,6 +208,23 @@ export async function attachPhoneNumber(input: {
   const e164 = normalizeE164(input.raw);
   const workflowId = await workflowIdFor(input.businessId);
   const configId = await ensureTelephonyConfiguration(client);
+
+  const live = await db
+    .select({ id: businessPhoneNumbers.id })
+    .from(businessPhoneNumbers)
+    .where(
+      and(
+        eq(businessPhoneNumbers.businessId, input.businessId),
+        ne(businessPhoneNumbers.status, "released"),
+      ),
+    );
+  if (live.length >= MAX_NUMBERS_PER_BUSINESS) {
+    throw new ApiError(
+      409,
+      "PHONE_NUMBER_LIMIT",
+      "This agent already has a phone number. Release it before choosing another.",
+    );
+  }
 
   const [claimed] = await db
     .select({ id: businessPhoneNumbers.id, businessId: businessPhoneNumbers.businessId })
@@ -204,13 +246,6 @@ export async function attachPhoneNumber(input: {
     );
   }
 
-  // Dograh may already know the number from an earlier attempt; re-point it
-  // rather than failing on the provider's uniqueness check.
-  const remote = await client.listPhoneNumbers(configId);
-  const existingRemote = remote.find(
-    (row) => row.address_normalized === e164 || row.address === e164,
-  );
-
   const id = randomUUID();
   await db.insert(businessPhoneNumbers).values({
     id,
@@ -224,7 +259,34 @@ export async function attachPhoneNumber(input: {
     createdBy: input.createdBy,
   });
 
+  // A number we already hold is a retry of a half-finished purchase, not a
+  // second rental — and it must not be released if the routing step fails.
+  let purchasedHere = false;
   try {
+    if (!(await findOwnedNumber(e164))) {
+      await purchaseNumber(e164);
+      purchasedHere = true;
+    }
+  } catch (error) {
+    const message =
+      error instanceof TelnyxError
+        ? error.message
+        : "Telnyx could not sell that number.";
+    await db
+      .update(businessPhoneNumbers)
+      .set({ status: "failed", lastError: message, updatedAt: new Date() })
+      .where(eq(businessPhoneNumbers.id, id));
+    throw new ApiError(502, "PHONE_NUMBER_UNAVAILABLE", message);
+  }
+
+  // Dograh may already know the number from an earlier attempt; re-point it
+  // rather than failing on the provider's uniqueness check.
+  try {
+    const remote = await client.listPhoneNumbers(configId);
+    const existingRemote = remote.find(
+      (row) => row.address_normalized === e164 || row.address === e164,
+    );
+
     const saved = existingRemote
       ? await client.updatePhoneNumber(configId, existingRemote.id, {
           label: input.label.trim() || undefined,
@@ -265,9 +327,19 @@ export async function attachPhoneNumber(input: {
       error instanceof DograhError
         ? error.message
         : "The telephony provider rejected this number.";
+    // Hand back what we just bought; keeping it would bill us for a line no
+    // caller can reach.
+    if (purchasedHere) {
+      await releaseOwnedNumber(e164).catch(() => undefined);
+    }
     await db
       .update(businessPhoneNumbers)
-      .set({ status: "failed", lastError: message, updatedAt: new Date() })
+      .set({
+        status: purchasedHere ? "released" : "failed",
+        lastError: message,
+        ...(purchasedHere ? { releasedAt: new Date() } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(businessPhoneNumbers.id, id));
     throw new ApiError(502, "PHONE_NUMBER_FAILED", message);
   }
@@ -301,6 +373,10 @@ export async function releasePhoneNumber(
         throw error;
       });
   }
+
+  // Stop the rental. Un-routing alone leaves us paying Telnyx every month for a
+  // number the customer has already given up.
+  await releaseOwnedNumber(row.e164);
 
   await db
     .update(businessPhoneNumbers)

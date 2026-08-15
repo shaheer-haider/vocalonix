@@ -5,6 +5,7 @@ import type {
   AgentResponse,
   AgentSettings,
   BusinessPhoneNumber,
+  AvailableNumber,
   BusinessPhoneResponse,
   DemoSession,
   DemoStartResponse,
@@ -575,6 +576,13 @@ export const api = {
     ) => unwrap(await client.api.b[slug].settings.agent.put(input)),
     phone: async (slug: string): Promise<BusinessPhoneResponse> =>
       unwrap(await client.api.b[slug].phone.get()) as BusinessPhoneResponse,
+    availableNumbers: async (
+      slug: string,
+      query: { country?: string; areaCode?: string; contains?: string },
+    ): Promise<{ numbers: AvailableNumber[] }> =>
+      unwrap(
+        await client.api.b[slug].phone.available.get({ $query: query }),
+      ) as { numbers: AvailableNumber[] },
     attachPhone: async (
       slug: string,
       input: { number: string; label?: string },
