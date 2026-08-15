@@ -62,5 +62,31 @@ if [[ -z "$vocalonix_database_url" || "$vocalonix_database_url" == "postgres://v
   set_value "DATABASE_URL" "postgres://vocalonix:${vocalonix_database_password}@localhost:5433/vocalonix"
 fi
 
+# Provider keys stay empty on purpose — the operator pastes them. Writing the
+# lines out means an .env created before these existed still shows every key
+# there is to fill in, rather than the operator having to diff against the
+# example file.
+for placeholder in \
+  VOICE_STACK DEEPGRAM_API_KEY OPENAI_API_KEY GEMINI_API_KEY \
+  CARTESIA_API_KEY CARTESIA_VOICE_ID ELEVENLABS_API_KEY ELEVENLABS_VOICE_ID \
+  TELNYX_API_KEY TELNYX_CONNECTION_ID TELNYX_WEBHOOK_PUBLIC_KEY \
+  RESEND_API_KEY STRIPE_SECRET_KEY; do
+  if ! grep -q "^${placeholder}=" "$ENV_FILE"; then
+    printf '%s=\n' "$placeholder" >> "$ENV_FILE"
+  fi
+done
+ensure_value "VOICE_STACK" "auto"
+
 docker compose config >/dev/null
-echo "Vocalonix is configured. Run ./scripts/start.sh to start the stack."
+
+cat <<'MESSAGE'
+Vocalonix is configured. Run ./scripts/start.sh to start the stack.
+
+To make real calls work, put at least one speech key in .env:
+  GEMINI_API_KEY=...                       quickest start
+  DEEPGRAM_API_KEY=... OPENAI_API_KEY=...  recommended for launch
+
+Optional: TELNYX_API_KEY for phone numbers, RESEND_API_KEY for real email.
+After editing .env, restart the API. The dashboard's setup panel reports
+whether each key was accepted.
+MESSAGE

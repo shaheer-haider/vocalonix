@@ -5,6 +5,14 @@ from today's state to a launchable product, including the external integrations
 required. Based on a full codebase review and a hands-on UI test pass of every
 page and option (2026-08-05).
 
+> **Superseded in part (2026-08-15).** Phases A and B are done, Phase C
+> (telephony) landed via Telnyx, and the §2 blocker — unreliable spoken-call
+> recognition on Gemini Live — is addressed by defaulting to a Deepgram speech
+> pipeline instead of speech-to-speech. Provider keys are now provisioned from
+> the environment rather than by hand in the Dograh UI. See `STATUS.md` for
+> what is actually true today; keep this file for the reasoning behind the
+> plan.
+
 ---
 
 ## 1. Where the product stands today

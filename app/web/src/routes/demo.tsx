@@ -26,8 +26,10 @@ import { useDograhHealth } from "../hooks/useDograhHealth";
 import type {
   DemoSession,
   DemoStartResponse,
-  DograhWidget,
   Vertical,
+  VoiceCatalogueEntry,
+  VoiceWidget,
+  VoiceWidgetStatus,
 } from "../types";
 
 type Step =
@@ -52,55 +54,19 @@ const CALL_DURATION_SECONDS = 60;
 const TOTAL_STEPS = 6;
 
 /**
- * `desc` is what a business owner is actually choosing between; `name` is the
- * upstream voice id, kept visible only so support can match a report to a voice.
- * The six `recommended` voices lead — nobody picks well from thirty at once.
+ * Voices come from the API so the demo offers exactly what a published agent
+ * can use. Picking one here carries through signup into the real workspace.
  */
-interface Voice {
-  value: string;
-  name: string;
-  desc: string;
-  recommended?: boolean;
-}
+type Voice = VoiceCatalogueEntry;
 
-const VOICES: Voice[] = [
-  { value: "sulafat", name: "Sulafat", desc: "Warm and welcoming", recommended: true },
-  { value: "achird", name: "Achird", desc: "Friendly and down-to-earth", recommended: true },
-  { value: "iapetus", name: "Iapetus", desc: "Clear and professional", recommended: true },
-  { value: "callirrhoe", name: "Callirrhoe", desc: "Easy-going and unhurried", recommended: true },
-  { value: "autonoe", name: "Autonoe", desc: "Bright and quick", recommended: true },
-  { value: "vindemiatrix", name: "Vindemiatrix", desc: "Gentle and calm", recommended: true },
-  { value: "zephyr", name: "Zephyr", desc: "Bright, higher pitch" },
-  { value: "puck", name: "Puck", desc: "Upbeat, middle pitch" },
-  { value: "charon", name: "Charon", desc: "Informative, lower pitch" },
-  { value: "kore", name: "Kore", desc: "Firm, middle pitch" },
-  { value: "fenrir", name: "Fenrir", desc: "Excitable, lower-middle pitch" },
-  { value: "leda", name: "Leda", desc: "Youthful, higher pitch" },
-  { value: "orus", name: "Orus", desc: "Firm, lower-middle pitch" },
-  { value: "aoede", name: "Aoede", desc: "Breezy, middle pitch" },
-  { value: "enceladus", name: "Enceladus", desc: "Breathy, lower pitch" },
-  { value: "umbriel", name: "Umbriel", desc: "Easy-going, lower-middle pitch" },
-  { value: "algieba", name: "Algieba", desc: "Smooth, lower pitch" },
-  { value: "despina", name: "Despina", desc: "Smooth, middle pitch" },
-  { value: "erinome", name: "Erinome", desc: "Clear, middle pitch" },
-  { value: "algenib", name: "Algenib", desc: "Gravelly, lower pitch" },
-  { value: "rasalgethi", name: "Rasalgethi", desc: "Informative, middle pitch" },
-  { value: "laomedeia", name: "Laomedeia", desc: "Upbeat, higher pitch" },
-  { value: "achernar", name: "Achernar", desc: "Soft, higher pitch" },
-  { value: "alnilam", name: "Alnilam", desc: "Firm, lower-middle pitch" },
-  { value: "schedar", name: "Schedar", desc: "Even, lower-middle pitch" },
-  { value: "gacrux", name: "Gacrux", desc: "Mature, middle pitch" },
-  { value: "pulcherrima", name: "Pulcherrima", desc: "Forward, middle pitch" },
-  { value: "zubenelgenubi", name: "Zubenelgenubi", desc: "Casual, lower-middle pitch" },
-  { value: "sadachbia", name: "Sadachbia", desc: "Lively, lower pitch" },
-  { value: "sadaltager", name: "Sadaltager", desc: "Knowledgeable, middle pitch" },
-];
-
-/** The widget reports a free-form status string; anything unrecognised is "idle". */
-function toOrbState(status: string): VoiceOrbState {
-  return status === "connecting" || status === "connected" || status === "failed"
-    ? status
-    : "idle";
+/**
+ * The orb has one "live" state; the widget distinguishes listening from
+ * speaking, which matters inside the panel but not on the demo's single orb.
+ */
+function toOrbState(status: VoiceWidgetStatus): VoiceOrbState {
+  if (status === "listening" || status === "speaking") return "connected";
+  if (status === "connecting" || status === "failed") return status;
+  return "idle";
 }
 
 const FEEDBACK_CHIPS = [
@@ -140,7 +106,7 @@ function emptyDraft(): Partial<DemoSession> {
     services: [],
     verticalAnswers: {},
     demoMode: "browser",
-    voice: "zephyr",
+    voice: "aria",
   };
 }
 
@@ -313,45 +279,44 @@ function LiveCall({
 
   useEffect(() => {
     return () => {
-      (window as unknown as { DograhWidget?: DograhWidget }).DograhWidget?.end();
+      window.VocalonixWidget?.end();
     };
   }, []);
 
-  const bindCallbacks = useCallback((widget: DograhWidget) => {
-    widget.onStatusChange((s) => {
-      setStatus(toOrbState(s));
-      if (s === "connected" || s === "connecting") setCallError(null);
+  const bindCallbacks = useCallback((widget: VoiceWidget) => {
+    widget.onStatusChange(({ status: next, detail }) => {
+      setStatus(toOrbState(next));
+      if (next === "failed") setCallError(detail || "The call failed.");
+      else setCallError(null);
     });
     widget.onError((err) => {
       setCallError(
         err instanceof Error ? err.message : String(err ?? "Call failed"),
       );
     });
-    setStatus(toOrbState(widget.getState().connectionStatus));
+    setStatus(toOrbState(widget.getState().status));
     setWidgetReady(true);
   }, []);
 
   const unloadWidget = () => {
-    document.getElementById("dograh-widget-script")?.remove();
-    document.getElementById("dograh-widget-audio")?.remove();
-    delete (window as unknown as { DograhWidget?: DograhWidget }).DograhWidget;
+    document.getElementById("vocalonix-widget-script")?.remove();
+    delete (window as { VocalonixWidget?: VoiceWidget }).VocalonixWidget;
   };
 
   useEffect(() => {
-    const global = window as unknown as { DograhWidget?: DograhWidget };
-    if (global.DograhWidget && loadedTokenRef.current === call.token) {
-      bindCallbacks(global.DograhWidget);
+    if (window.VocalonixWidget && loadedTokenRef.current === call.token) {
+      bindCallbacks(window.VocalonixWidget);
       return;
     }
-    if (global.DograhWidget) unloadWidget();
+    if (window.VocalonixWidget) unloadWidget();
 
     const script = document.createElement("script");
-    script.id = "dograh-widget-script";
+    script.id = "vocalonix-widget-script";
     script.src = call.scriptUrl;
     script.async = true;
     script.onload = () => {
       loadedTokenRef.current = call.token;
-      if (global.DograhWidget) bindCallbacks(global.DograhWidget);
+      if (window.VocalonixWidget) bindCallbacks(window.VocalonixWidget);
     };
     script.onerror = () => setCallError("Could not load the call widget.");
     document.body.appendChild(script);
@@ -374,9 +339,7 @@ function LiveCall({
   }, [status]);
 
   const endCall = () => {
-    const widget = (window as unknown as { DograhWidget?: DograhWidget })
-      .DograhWidget;
-    if (widget) widget.end();
+    window.VocalonixWidget?.end();
     const duration = startedAtRef.current
       ? Math.max(0, Math.round((Date.now() - startedAtRef.current) / 1000))
       : 0;
@@ -384,11 +347,9 @@ function LiveCall({
   };
 
   const start = () => {
-    const widget = (window as unknown as { DograhWidget?: DograhWidget })
-      .DograhWidget;
-    if (!widget) return;
+    if (!window.VocalonixWidget) return;
     setCallError(null);
-    widget.start();
+    window.VocalonixWidget.start();
   };
 
   const inCall = status === "connecting" || status === "connected";
@@ -673,12 +634,14 @@ function IntakeStep({
 }
 
 function VoiceStep({
+  voices,
   selectedVoice,
   onSelect,
   onStart,
   loading,
   turnEnabled,
 }: {
+  voices: Voice[];
   selectedVoice: string;
   onSelect: (voice: string) => void;
   onStart: () => void;
@@ -687,13 +650,11 @@ function VoiceStep({
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
-  const [search, setSearch] = useState("");
 
-  const preview = (value: string) => {
+  const preview = (voice: Voice) => {
     const el = audioRef.current;
     if (!el) return;
-    if (playing === value) {
+    if (playing === voice.id) {
       el.pause();
       setPlaying(null);
       return;
@@ -702,43 +663,32 @@ function VoiceStep({
     // 4.4 MB across the set, and every tap paid it. 32 kbps holds up for a
     // 24 kHz mono voice sample — which matters, since this audio is the whole
     // basis on which someone picks a voice.
-    el.src = `/voices/${value}.m4a`;
+    el.src = voice.preview;
     el.currentTime = 0;
     void el.play().catch(() => setPlaying(null));
-    setPlaying(value);
+    setPlaying(voice.id);
   };
 
-  const recommended = VOICES.filter((voice) => voice.recommended);
-  const rest = VOICES.filter((voice) => !voice.recommended);
-  const query = search.trim().toLowerCase();
-  const matches = query
-    ? rest.filter(
-        (voice) =>
-          voice.desc.toLowerCase().includes(query) ||
-          voice.name.toLowerCase().includes(query),
-      )
-    : rest;
-
   const renderVoice = (voice: Voice) => {
-    const selected = selectedVoice === voice.value;
-    const isPlaying = playing === voice.value;
+    const selected = selectedVoice === voice.id;
+    const isPlaying = playing === voice.id;
     return (
-      <li key={voice.value} className="voice-row">
+      <li key={voice.id} className="voice-row">
         <button
           type="button"
-          onClick={() => onSelect(voice.value)}
+          onClick={() => onSelect(voice.id)}
           className={`voice-row__pick ${selected ? "voice-row__pick--selected" : ""}`}
           aria-pressed={selected}
         >
-          <span className="voice-row__desc">{voice.desc}</span>
-          <span className="voice-row__name">{voice.name}</span>
+          <span className="voice-row__desc">{voice.description}</span>
+          <span className="voice-row__name">{voice.label}</span>
         </button>
         <button
           type="button"
           className="voice-row__preview"
-          onClick={() => preview(voice.value)}
+          onClick={() => preview(voice)}
           aria-pressed={isPlaying}
-          aria-label={`${isPlaying ? "Stop" : "Play"} sample of ${voice.desc}`}
+          aria-label={`${isPlaying ? "Stop" : "Play"} sample of ${voice.label}`}
         >
           {isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
         </button>
@@ -753,33 +703,16 @@ function VoiceStep({
       </p>
       <audio ref={audioRef} onEnded={() => setPlaying(null)} hidden />
 
-      <ul className="voice-list">{recommended.map(renderVoice)}</ul>
-
-      <details
-        className="voice-more"
-        open={showAll}
-        onToggle={(event) => setShowAll(event.currentTarget.open)}
-      >
-        <summary>More voices ({rest.length})</summary>
-        <TextField
-          label="Search voices"
-          placeholder="Try “warm”, “clear”, “lower”"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-        {matches.length > 0 ? (
-          <ul className="voice-list">{matches.map(renderVoice)}</ul>
-        ) : (
-          <p className="voice-more__empty">
-            No voice matches “{search}”. Try a word like warm, clear, or bright.
-          </p>
-        )}
-      </details>
+      {voices.length > 0 ? (
+        <ul className="voice-list">{voices.map(renderVoice)}</ul>
+      ) : (
+        <p style={{ color: "var(--ink-3)" }}>Loading voices\u2026</p>
+      )}
 
       {!turnEnabled ? (
         <div style={{ marginTop: 14 }}>
           <Alert variant="warn">
-            Live calls are unavailable right now. You can still choose a voice —
+            Live calls are unavailable right now. You can still choose a voice \u2014
             we&apos;ll email you when the call is ready.
           </Alert>
         </div>
@@ -928,7 +861,14 @@ export function DemoPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [call, setCall] = useState<DemoStartResponse | null>(null);
+  const [voices, setVoices] = useState<Voice[]>([]);
   const health = useDograhHealth();
+
+  useEffect(() => {
+    // A failed catalogue leaves the picker empty rather than blocking the
+    // funnel; every other step still works.
+    api.platform.voices().then(setVoices).catch(() => setVoices([]));
+  }, []);
 
   const updateDraft = (patch: Partial<DemoSession>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -983,7 +923,7 @@ export function DemoPage() {
         ...prev,
         vertical: v.slug,
         services: v.defaultServices,
-        voice: prev?.voice ?? "zephyr",
+        voice: prev?.voice ?? "aria",
       }));
       setStep("business");
     } catch (err) {
@@ -1187,7 +1127,8 @@ export function DemoPage() {
         )}
         {step === "voice" && (
           <VoiceStep
-            selectedVoice={draft.voice ?? "zephyr"}
+            voices={voices}
+            selectedVoice={draft.voice ?? "aria"}
             onSelect={(voice) => updateDraft({ voice })}
             onStart={startCall}
             loading={loading}

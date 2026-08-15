@@ -64,9 +64,9 @@ const landingChannels = [
   },
   {
     title: "Real phone number",
-    pill: "Soon",
-    live: false,
-    body: "Port yours or take a new one. Overflow only, or every call — your call.",
+    pill: "Live",
+    live: true,
+    body: "Point a number at the same agent and it answers every call on it — with warm transfer to a person when the caller asks.",
   },
   {
     title: "SMS & email",
@@ -118,10 +118,10 @@ export function LandingPage() {
         <Pill variant="accent">For appointment businesses</Pill>
         <h1>Never lose another booking to a missed call.</h1>
         <p>
-          Vocalonix answers your website out loud, 24/7 — quoting your real
-          prices, reading your real knowledge, and passing the caller to you
-          when it matters. Configure the agent, publish once, and visitors
-          start a browser voice call without a phone provider.
+          Vocalonix answers out loud, 24/7 — quoting your real prices, reading
+          your real knowledge, booking into your real diary, and passing the
+          caller to you when it matters. Set it up once; it answers on your
+          website and on your phone line.
         </p>
         <div className="landing__actions">
           <Link to={primaryHref} className="ui-button ui-button--primary">
@@ -134,7 +134,8 @@ export function LandingPage() {
           ) : null}
         </div>
         <p className="landing-hero__note">
-          Live in an afternoon · no phone line to set up · cancel in two clicks
+          Live in an afternoon · works on your site before you add a number ·
+          cancel in two clicks
         </p>
       </section>
 

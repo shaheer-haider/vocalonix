@@ -36,6 +36,20 @@ const schema = z
     MAX_OWNED_WORKSPACES: z.coerce.number().int().min(1).default(3),
     GEMINI_API_KEY: z.string().optional(),
     GEMINI_EXTRACTION_MODEL: z.string().min(1),
+    VOICE_STACK: z.enum(["auto", "pipeline", "realtime"]),
+    DEEPGRAM_API_KEY: z.string().optional(),
+    OPENAI_API_KEY: z.string().optional(),
+    ELEVENLABS_API_KEY: z.string().optional(),
+    ELEVENLABS_VOICE_ID: z.string().optional(),
+    CARTESIA_API_KEY: z.string().optional(),
+    CARTESIA_VOICE_ID: z.string().optional(),
+    VOICE_LLM_MODEL: z.string().min(1),
+    VOICE_STT_MODEL: z.string().min(1),
+    VOICE_LANGUAGE: z.string().min(1),
+    VOICE_REALTIME_MODEL: z.string().min(1),
+    TELNYX_API_KEY: z.string().optional(),
+    TELNYX_CONNECTION_ID: z.string().optional(),
+    TELNYX_WEBHOOK_PUBLIC_KEY: z.string().optional(),
   })
   .superRefine((value, context) => {
     if (!isProduction) return;
@@ -170,6 +184,22 @@ const parsed = schema.safeParse({
   GEMINI_API_KEY: process.env.GEMINI_API_KEY?.trim() || undefined,
   GEMINI_EXTRACTION_MODEL:
     process.env.GEMINI_EXTRACTION_MODEL?.trim() || "gemini-flash-latest",
+  VOICE_STACK: process.env.VOICE_STACK?.trim() || "auto",
+  DEEPGRAM_API_KEY: process.env.DEEPGRAM_API_KEY?.trim() || undefined,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY?.trim() || undefined,
+  ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY?.trim() || undefined,
+  ELEVENLABS_VOICE_ID: process.env.ELEVENLABS_VOICE_ID?.trim() || undefined,
+  CARTESIA_API_KEY: process.env.CARTESIA_API_KEY?.trim() || undefined,
+  CARTESIA_VOICE_ID: process.env.CARTESIA_VOICE_ID?.trim() || undefined,
+  VOICE_LLM_MODEL: process.env.VOICE_LLM_MODEL?.trim() || "gpt-4.1-mini",
+  VOICE_STT_MODEL: process.env.VOICE_STT_MODEL?.trim() || "nova-3-general",
+  VOICE_LANGUAGE: process.env.VOICE_LANGUAGE?.trim() || "multi",
+  VOICE_REALTIME_MODEL:
+    process.env.VOICE_REALTIME_MODEL?.trim() || "gemini-3.1-flash-live-preview",
+  TELNYX_API_KEY: process.env.TELNYX_API_KEY?.trim() || undefined,
+  TELNYX_CONNECTION_ID: process.env.TELNYX_CONNECTION_ID?.trim() || undefined,
+  TELNYX_WEBHOOK_PUBLIC_KEY:
+    process.env.TELNYX_WEBHOOK_PUBLIC_KEY?.trim() || undefined,
 });
 
 if (!parsed.success) {
@@ -236,4 +266,18 @@ export const env = {
   maxOwnedWorkspaces: parsed.data.MAX_OWNED_WORKSPACES,
   geminiApiKey: parsed.data.GEMINI_API_KEY ?? null,
   geminiExtractionModel: parsed.data.GEMINI_EXTRACTION_MODEL,
+  voiceStack: parsed.data.VOICE_STACK,
+  deepgramApiKey: parsed.data.DEEPGRAM_API_KEY ?? null,
+  openaiApiKey: parsed.data.OPENAI_API_KEY ?? null,
+  elevenlabsApiKey: parsed.data.ELEVENLABS_API_KEY ?? null,
+  elevenlabsVoiceId: parsed.data.ELEVENLABS_VOICE_ID ?? null,
+  cartesiaApiKey: parsed.data.CARTESIA_API_KEY ?? null,
+  cartesiaVoiceId: parsed.data.CARTESIA_VOICE_ID ?? null,
+  voiceLlmModel: parsed.data.VOICE_LLM_MODEL,
+  voiceSttModel: parsed.data.VOICE_STT_MODEL,
+  voiceLanguage: parsed.data.VOICE_LANGUAGE,
+  voiceRealtimeModel: parsed.data.VOICE_REALTIME_MODEL,
+  telnyxApiKey: parsed.data.TELNYX_API_KEY ?? null,
+  telnyxConnectionId: parsed.data.TELNYX_CONNECTION_ID ?? null,
+  telnyxWebhookPublicKey: parsed.data.TELNYX_WEBHOOK_PUBLIC_KEY ?? null,
 };

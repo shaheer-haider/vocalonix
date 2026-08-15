@@ -1,0 +1,1 @@
+ALTER TABLE "business_agent_settings" ALTER COLUMN "voice" SET DEFAULT 'aria';

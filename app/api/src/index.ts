@@ -25,6 +25,8 @@ import { parseListQuery } from "./pagination";
 import { requireSession } from "./workspace/context";
 import { workspaceRoutes } from "./workspace/routes";
 import { agentToolRoutes } from "./agent/routes";
+import { platformRoutes } from "./platform/routes";
+import { reconcileProviderConfiguration } from "./platform/providers";
 import { tenantRoutes } from "./tenant/routes";
 import { demoRoutes } from "./demo/routes";
 
@@ -71,7 +73,7 @@ async function widgetPayload() {
   const settings = readSettings(workflow);
   const token = await dograh.createEmbedToken(workflow.id, widgetSettings(settings));
   const scriptUrl =
-    `${env.dograhWidgetUrl}/embed/dograh-widget.js` +
+    `${env.dograhWidgetUrl}/embed/vocalonix-widget.js` +
     `?token=${encodeURIComponent(token.token)}` +
     `&environment=local` +
     `&apiEndpoint=${encodeURIComponent(env.dograhPublicApiUrl)}`;
@@ -120,6 +122,7 @@ export const app = new Elysia()
   })
   .use(authRoutes)
   .use(agentToolRoutes)
+  .use(platformRoutes)
   .use(tenantRoutes)
   .use(workspaceRoutes)
   .use(billingRoutes)
@@ -252,4 +255,11 @@ export type App = typeof app;
 if (import.meta.main) {
   app.listen(env.port);
   console.log(`Vocalonix API listening on http://localhost:${app.server?.port}`);
+  // Push whatever provider keys the environment carries into Dograh, so the
+  // operator never has to configure models by hand. Deliberately not awaited:
+  // the engine may still be starting, and a failed push is reported through
+  // the readiness panel rather than blocking the API.
+  void reconcileProviderConfiguration().catch((error: unknown) => {
+    console.error("Provider reconciliation failed at boot:", error);
+  });
 }

@@ -43,6 +43,31 @@ import {
 } from "../uploads";
 import { requirePermission, requireWorkspace } from "../workspace/context";
 import { can } from "../workspace/permissions";
+import {
+  attachPhoneNumber,
+  listBusinessPhoneNumbers,
+  releasePhoneNumber,
+  telephonyStatus,
+} from "../platform/telephony";
+import { providerStatus } from "../platform/providers";
+import { resolveVoice, voiceCatalogue } from "../voices";
+
+/**
+ * A transfer target is dialled by the engine, so it has to be E.164 or nothing.
+ * An empty string is the documented way to turn transfers off.
+ */
+function normalizeTransferPhone(raw: string | undefined): string {
+  const trimmed = (raw ?? "").trim().replace(/[\s\-().]/g, "");
+  if (!trimmed) return "";
+  if (!/^\+\d{8,15}$/.test(trimmed)) {
+    throw new ApiError(
+      400,
+      "TRANSFER_PHONE_INVALID",
+      "Enter the transfer number in full international format, for example +14155550123, or leave it blank.",
+    );
+  }
+  return trimmed;
+}
 
 async function assertNoClash(
   businessId: string,
@@ -85,6 +110,9 @@ async function assertNoClash(
 export const onboardingSteps = [
   "business-profile",
   "agent",
+  // Hours are part of setup, not an advanced setting: without them the agent
+  // cannot answer "are you open?" — the single most common call there is.
+  "hours",
   "knowledge",
   "widget",
   "review",
@@ -203,6 +231,7 @@ async function snapshotBusinessConfig(
     voice: row.settings.voice,
     allowInterrupt: row.settings.allowInterrupt,
     escalationGuidance: row.settings.escalationGuidance,
+    transferPhone: row.settings.transferPhone,
     businessHours: row.settings.businessHours,
     widgetButtonText: row.settings.widgetButtonText,
     widgetColor: row.settings.widgetColor,
@@ -401,7 +430,9 @@ export const tenantRoutes = new Elysia()
         vertical: workspace.business.vertical,
         role: workspace.role,
       },
-      settings: row.settings,
+      // Voices are normalised on the way out so a legacy value ("natural", or a
+      // raw provider voice name) still lights up the right row in the picker.
+      settings: { ...row.settings, voice: resolveVoice(row.settings.voice).id },
       onboarding: row.onboarding,
       dograh: {
         workflowId: row.mapping.workflowId,
@@ -483,9 +514,10 @@ export const tenantRoutes = new Elysia()
             prompt: body.prompt.trim(),
             closing: body.closing.trim(),
             tone: body.tone,
-            voice: body.voice,
+            voice: resolveVoice(body.voice).id,
             allowInterrupt: body.allowInterrupt,
             escalationGuidance: body.escalationGuidance.trim(),
+            transferPhone: normalizeTransferPhone(body.transferPhone),
             updatedAt: now,
           })
           .where(
@@ -521,6 +553,7 @@ export const tenantRoutes = new Elysia()
         voice: t.String({ minLength: 1, maxLength: 40 }),
         allowInterrupt: t.Boolean(),
         escalationGuidance: t.String({ minLength: 1, maxLength: 1000 }),
+        transferPhone: t.Optional(t.String({ maxLength: 40 })),
       }),
     },
   )
@@ -538,6 +571,7 @@ export const tenantRoutes = new Elysia()
           .where(
             eq(businessAgentSettings.businessId, workspace.business.id),
           );
+        await completeStep(tx, workspace.business.id, "hours");
         await queueBusinessSync(tx, workspace.business.id);
         await tx.insert(auditLogs).values({
           id: randomUUID(),
@@ -641,6 +675,84 @@ export const tenantRoutes = new Elysia()
       );
     }
     return { dograh: mapping };
+  })
+  /**
+   * Everything the workspace needs to know about how its agent will actually
+   * sound and be reached: the voice catalogue, whether the platform can vary
+   * voices, and the numbers pointed at this agent.
+   */
+  .get("/api/b/:slug/phone", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    const [numbers, telephony, providers, settings] = await Promise.all([
+      listBusinessPhoneNumbers(workspace.business.id),
+      telephonyStatus(),
+      providerStatus(),
+      db
+        .select({ transferPhone: businessAgentSettings.transferPhone })
+        .from(businessAgentSettings)
+        .where(eq(businessAgentSettings.businessId, workspace.business.id))
+        .limit(1),
+    ]);
+    return {
+      numbers,
+      transferPhone: settings[0]?.transferPhone ?? "",
+      available: telephony.configured,
+      unavailableReason: telephony.reason ?? null,
+      voices: voiceCatalogue(),
+      voiceSelectable: providers.perBusinessVoice,
+      canManage: can(workspace.role, "agent.edit"),
+    };
+  })
+  .post(
+    "/api/b/:slug/phone",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "agent.edit");
+      const attached = await attachPhoneNumber({
+        businessId: workspace.business.id,
+        raw: body.number,
+        label: body.label ?? "",
+        createdBy: workspace.session.user.id,
+      });
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "business.phone.attach",
+        targetType: "phone_number",
+        targetId: attached.id,
+        payload: { number: attached.e164 },
+      });
+      // The agent's own instructions change once it has a phone leg, so the
+      // workflow has to be rebuilt rather than left describing a browser call.
+      await db.transaction(async (tx) => {
+        await queueBusinessSync(tx, workspace.business.id);
+      });
+      return { number: attached };
+    },
+    {
+      body: t.Object({
+        number: t.String({ minLength: 5, maxLength: 40 }),
+        label: t.Optional(t.String({ maxLength: 60 })),
+      }),
+    },
+  )
+  .delete("/api/b/:slug/phone/:phoneNumberId", async ({ params, request }) => {
+    const workspace = await requireWorkspace(request.headers, params.slug);
+    requirePermission(workspace.role, "agent.edit");
+    await releasePhoneNumber(workspace.business.id, params.phoneNumberId);
+    await db.insert(auditLogs).values({
+      id: randomUUID(),
+      businessId: workspace.business.id,
+      actorUserId: workspace.session.user.id,
+      action: "business.phone.release",
+      targetType: "phone_number",
+      targetId: params.phoneNumberId,
+    });
+    await db.transaction(async (tx) => {
+      await queueBusinessSync(tx, workspace.business.id);
+    });
+    return { ok: true };
   })
   .get("/api/b/:slug/conversations", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);

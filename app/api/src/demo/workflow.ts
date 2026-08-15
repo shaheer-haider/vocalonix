@@ -1,13 +1,10 @@
-import {
-  buildTenantWorkflow,
-  tenantWorkflowConfigurations,
-  tenantWorkflowName,
-  type TenantBusinessProfile,
-} from "../dograh/config";
+import { tenantDesiredConfiguration, type TenantBusinessProfile } from "../dograh/config";
 import { type TenantAgentSettings } from "../dograh/types";
 import { dograh } from "../dograh/client";
 import { env } from "../env";
+import { businessVoiceOverride } from "../platform/providers";
 import { getVertical } from "../verticals";
+import { DEFAULT_VOICE_ID, resolveVoice } from "../voices";
 
 export interface DemoWorkflowInput {
   sessionId: string;
@@ -27,20 +24,6 @@ export interface DemoWorkflowResult {
   workflowUuid: string | null;
   embedToken: string;
   scriptUrl: string;
-}
-
-function escapeVoiceName(voice?: string | null): string {
-  if (!voice) return "default";
-  return voice
-    .trim()
-    .replace(/[^a-zA-Z0-9-_]/g, "")
-    .replace(/^[0-9-]+/, "")
-    .slice(0, 40)
-    .toLowerCase();
-}
-
-function capitalizeVoice(voice: string): string {
-  return voice.charAt(0).toUpperCase() + voice.slice(1);
 }
 
 function buildDemoPrompt(input: DemoWorkflowInput): string {
@@ -81,8 +64,6 @@ Do not claim booking, live availability, SMS, payments, phone routing, or other 
 
 export function buildDemoAgentSettings(input: DemoWorkflowInput): TenantAgentSettings {
   const vertical = getVertical(input.vertical);
-  const rawVoice = escapeVoiceName(input.voice);
-  const voiceLabel = rawVoice ? capitalizeVoice(rawVoice) : "default";
   const tone = vertical?.tone ?? "warm";
   const agentName = input.agentName?.trim() || "Ava";
 
@@ -98,10 +79,11 @@ export function buildDemoAgentSettings(input: DemoWorkflowInput): TenantAgentSet
     prompt: buildDemoPrompt(input),
     closing: "Thanks for trying Vocalonix. If you'd like this answering your website too, just sign up and we can publish it in a few minutes.",
     tone,
-    voice: voiceLabel,
+    voice: resolveVoice(input.voice).id,
     allowInterrupt: true,
     escalationGuidance:
-      "If the caller says they want to speak to a human, the question is complex, or they are upset, politely offer to take a message and have the team follow up.",
+      "This is a one-minute demo of what the agent sounds like, not the business's real line. Never promise a callback or a booking.",
+    transferPhone: "",
     businessHours: {},
     widgetButtonText: "Speak with us",
     widgetColor: "#4f46e5",
@@ -126,20 +108,30 @@ export async function provisionDemoWorkflow(
   const business = buildDemoBusinessProfile(input);
   const settings = buildDemoAgentSettings(input);
 
-  const workflowDefinition = buildTenantWorkflow(business, settings, []);
+  const voiceId = resolveVoice(input.voice).id;
+  const desired = tenantDesiredConfiguration({
+    business,
+    settings,
+    documentUuids: [],
+    // A demo agent has no diary, no callback queue and no phone leg behind it,
+    // so it must not offer any of them.
+    capabilities: { telephony: false, transfer: false, takeMessage: false },
+    voiceOverride: voiceId === DEFAULT_VOICE_ID ? null : businessVoiceOverride(voiceId),
+  });
   const workflowConfigurations = {
-    ...tenantWorkflowConfigurations(settings),
+    ...desired.workflowConfigurations,
     max_call_duration: 60,
     max_user_idle_timeout: 15,
   };
 
-  const workflowName = tenantWorkflowName(business, settings);
-
-  const created = await dograh.createWorkflow(workflowName, workflowDefinition);
+  const created = await dograh.createWorkflow(
+    desired.name,
+    desired.workflowDefinition,
+  );
   await dograh.updateWorkflow(
     created.id,
-    workflowName,
-    workflowDefinition,
+    desired.name,
+    desired.workflowDefinition,
     workflowConfigurations,
   );
   await dograh.publishWorkflow(created.id);
@@ -147,10 +139,12 @@ export async function provisionDemoWorkflow(
   const token = await dograh.createEmbedToken(created.id, {
     embedMode: "headless",
     autoStart: false,
+    agentName: settings.agentName,
+    businessName: business.name,
   });
 
   const scriptUrl =
-    `${env.dograhWidgetUrl}/embed/dograh-widget.js` +
+    `${env.dograhWidgetUrl}/embed/vocalonix-widget.js` +
     `?token=${encodeURIComponent(token.token)}` +
     `&environment=local` +
     `&apiEndpoint=${encodeURIComponent(env.dograhPublicApiUrl)}`;

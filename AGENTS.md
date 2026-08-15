@@ -37,6 +37,13 @@ docker compose up -d --build --wait
 ## Important paths
 
 - Backend entry: `app/api/src/index.ts`
+- Voice provider provisioning: `app/api/src/platform/voiceStack.ts`, `app/api/src/platform/providers.ts`
+- Telephony (phone numbers): `app/api/src/platform/telephony.ts`
+- Agent workflow generator: `app/api/src/dograh/config.ts`
+- Agent tools the engine calls back into: `app/api/src/dograh/agent-tools.ts`, `app/api/src/agent/routes.ts`
+- Voice catalogue: `app/api/src/voices.ts`
+- Trade-specific agent rules: `app/api/src/verticals.ts` (`VERTICAL_AGENT_RULES`)
+- Embeddable widget: `app/web/public/embed/vocalonix-widget.js`
 - Worker entry: `app/api/src/worker.ts`
 - Frontend entry: `app/web/src/main.tsx`
 - Route definitions: `app/web/src/router.tsx`
@@ -66,36 +73,67 @@ The same applies to `terraform/*.tfstate`, the root `.env`, and
 See `deploy/hetzner/README.md` for the full deploy and redeploy commands, an
 audit snippet that finds stray copies on the servers, and the key-rotation steps.
 
+## How calls are configured
+
+The operator never opens the Dograh dashboard. `app/api/src/platform/providers.ts`
+resolves a speech stack from the API keys in the environment and pushes it to
+Dograh's organisation model configuration at API boot, then records the result
+so `/api/platform/status` can report it. `VOICE_STACK=auto` prefers the pipeline
+stack (Deepgram STT → LLM → Deepgram TTS) whenever the keys allow it, and falls
+back to a realtime speech-to-speech model otherwise.
+
+A business that picked a non-default voice also gets a per-workflow
+`model_configuration_v2_override`, which is how two tenants on one platform end
+up sounding different. Businesses on the default voice inherit the organisation
+configuration, so the common case costs no extra provider validation.
+
+`app/api/src/dograh/config.ts` builds each tenant's workflow. The graph is
+deliberate — greeting → answer / book / hand over → message → close, with a
+separate early ending for spam — and the prompts follow Dograh's own voice
+prompting guide (`dograh/api/services/voice_prompting_guide/`). Bump
+`TENANT_CONFIG_VERSION` whenever the graph changes shape; every business
+re-syncs on the next deploy because the version is part of the config hash.
+
+## Widget
+
+`app/web/public/embed/vocalonix-widget.js` is ours and is what published
+snippets load. It speaks Dograh's public embed protocol but owns its interface,
+renders inside a shadow root so it cannot collide with the host page's CSS, and
+aliases `window.DograhWidget` so snippets published before it existed keep
+working. The vendored `dograh/ui/public/embed/dograh-widget.js` is still served
+at `/embed/dograh-widget.js` for exactly that reason — do not remove it.
+
 ## Verification status
 
-Last verified: 2026-08-05
-- `bun install --frozen-lockfile`: OK
+Last verified: 2026-08-15
 - `bun run typecheck`: OK
-- `bun run test`: 23 tests passed
-- `bun run --cwd app/web build`: OK
+- `bun run test`: 81 tests passed
 - `docker compose up -d --build --wait`: OK (all services healthy)
-- Hetzner deploy: OK (`vocalonix-api`, `vocalonix-web`, `vocalonix-worker`, `caddy` healthy)
-- `/api/dograh/health` reports `turnEnabled: true` (local and Hetzner)
-- `/api/verticals` and `/api/demo/sessions` endpoints respond on Hetzner
-- Browser walkthrough of the full `/demo` → signup → onboarding → dashboard flow:
-  OK on both `http://localhost:3000` and `https://62-238-101-107.sslip.io`,
-  driven with Playwright against real Chrome.
-- Real spoken demo call verified end to end on both environments: microphone
-  granted, caller speech transcribed, agent replied within its guardrails
-  (declined to quote or check availability and offered a message instead),
-  the caller interrupted the agent mid-sentence, and hanging up advanced to
-  the feedback step. Transcripts are in the Dograh DB (`workflow_runs`) and
-  MinIO (`voice-audio/transcripts/<run_id>.txt`); local runs used
-  `gemini-3.1-flash-live-preview`.
-- Demo lifecycle persists to `demo_sessions` (status, duration, score, outcome,
-  workflow id).
-- Both feedback branches verified: score 4–5 redirects to `/signup` with the
-  demo params; score 1–3 lands on the thanks page.
+- Full browser walkthrough on `http://localhost:3000`: signup → workspace
+  creation → onboarding (profile, agent with the new voice picker and transfer
+  number, opening hours, knowledge, widget) → publish → dashboard.
+- Generated workflow inspected on the engine: seven nodes, seven edges, trade
+  rules for the chosen vertical present, opening hours present, knowledge
+  attached to the greeting and answering nodes, the message tool attached only
+  to the message node.
+- Widget verified on a third-party origin (`http://localhost:8099`): launcher,
+  panel, suggested prompts, host-theme matching, mobile sheet layout, and the
+  microphone-denied error path. Config, session init and TURN credential
+  requests all returned 200 against the engine.
+- Provider reconciliation verified against the running engine: a bad
+  Deepgram/OpenAI pair is rejected with the per-service reason, and a bad
+  Gemini key is caught by Vocalonix's own check.
+- Telephony attach → duplicate-claim refusal → re-route → release → re-claim
+  exercised against the dev database with a stubbed engine client.
 
 Not covered by the last run:
-- The email-verification branch of signup. Both environments run with
-  `REQUIRE_EMAIL_VERIFICATION=false`, so signup completes without a preview
-  link.
+- A real spoken call. No provider keys were available in this environment, so
+  the audio path itself was not exercised end to end; everything up to the
+  microphone prompt was.
+- Real inbound PSTN. The Telnyx path was exercised with a stubbed engine
+  client, not a live number.
+- The email-verification branch of signup (`REQUIRE_EMAIL_VERIFICATION=false`
+  locally).
 
 ## Local demo prerequisites
 

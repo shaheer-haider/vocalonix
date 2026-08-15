@@ -1,6 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useParams } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -30,6 +37,12 @@ import {
   TextField,
 } from "../components/ui";
 import { CopyIcon } from "../icons";
+import { useVerticals, verticalOptions } from "../hooks/useVerticals";
+import type {
+  BusinessPhoneResponse,
+  VoiceCatalogueEntry,
+  VoiceWidgetStatus,
+} from "../types";
 import { can } from "../permissions";
 import { useNavigate } from "@tanstack/react-router";
 import { COUNTRY_OPTIONS, useBusinessSlug, WorkspaceShell } from "./business";
@@ -38,6 +51,7 @@ import { timezoneOptions } from "../timezones";
 const onboardingSteps = [
   { label: "Business profile", slug: "business-profile" },
   { label: "Agent", slug: "agent" },
+  { label: "Opening hours", slug: "hours" },
   { label: "Knowledge", slug: "knowledge" },
   { label: "Widget", slug: "widget" },
   { label: "Review and publish", slug: "review" },
@@ -59,6 +73,13 @@ const agentSchema = z.object({
   closing: z.string().min(1, "Enter a closing.").max(500),
   tone: z.string().min(1).max(40),
   voice: z.string().min(1).max(40),
+  transferPhone: z
+    .string()
+    .trim()
+    .max(40)
+    .refine((value) => value === "" || /^\+\d{8,15}$/.test(value.replace(/[\s\-().]/g, "")), {
+      message: "Use full international format, for example +14155550123.",
+    }),
   allowInterrupt: z.boolean(),
   escalationGuidance: z.string().min(1, "Enter escalation guidance.").max(1000),
 });
@@ -74,13 +95,6 @@ const TONE_OPTIONS = [
   { label: "Professional", value: "professional" },
   { label: "Concise", value: "concise" },
   { label: "Friendly", value: "friendly" },
-];
-
-const VOICE_OPTIONS = [
-  { label: "Natural", value: "natural" },
-  { label: "Calm", value: "calm" },
-  { label: "Energetic", value: "energetic" },
-  { label: "Measured", value: "measured" },
 ];
 
 function withSavedOption(
@@ -200,6 +214,7 @@ function ProfileForm({
   slug: string;
 }) {
   const navigate = useNavigate();
+  const { verticals } = useVerticals();
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -273,8 +288,10 @@ function ProfileForm({
             error={form.formState.errors.timezone?.message}
             {...form.register("timezone")}
           />
-          <TextField
-            label="Business type"
+          <SelectField
+            label="Kind of business"
+            helper="Your agent follows the rules that matter in this trade."
+            options={verticalOptions(verticals, data.business.vertical)}
             error={form.formState.errors.vertical?.message}
             {...form.register("vertical")}
           />
@@ -285,6 +302,84 @@ function ProfileForm({
         </Button>
       </Box>
     </form>
+  );
+}
+
+/**
+ * Picks the agent's voice from the platform catalogue, with a sample of each.
+ *
+ * The catalogue is server-owned because which voices exist depends on the
+ * speech provider the operator configured; `voiceSelectable` is false when that
+ * provider is pinned to a single voice, and the picker says so rather than
+ * offering a choice that would not take effect.
+ */
+function VoicePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (voice: string) => void;
+}) {
+  const [voices, setVoices] = useState<VoiceCatalogueEntry[]>([]);
+  const [playing, setPlaying] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    api.platform.voices().then(setVoices).catch(() => setVoices([]));
+  }, []);
+
+  const preview = (voice: VoiceCatalogueEntry) => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (playing === voice.id) {
+      el.pause();
+      setPlaying(null);
+      return;
+    }
+    el.src = voice.preview;
+    el.currentTime = 0;
+    void el.play().catch(() => setPlaying(null));
+    setPlaying(voice.id);
+  };
+
+  if (voices.length === 0) return null;
+
+  return (
+    <fieldset style={{ border: 0, padding: 0, margin: "0 0 18px" }}>
+      <legend className="ui-field-label">Voice</legend>
+      <p className="ui-field-message" style={{ marginTop: 0 }}>
+        Press play to hear a sample of each voice.
+      </p>
+      <audio ref={audioRef} onEnded={() => setPlaying(null)} hidden />
+      <ul className="voice-list">
+        {voices.map((voice) => {
+          const selected = value === voice.id;
+          const isPlaying = playing === voice.id;
+          return (
+            <li key={voice.id} className="voice-row">
+              <button
+                type="button"
+                onClick={() => onChange(voice.id)}
+                className={`voice-row__pick ${selected ? "voice-row__pick--selected" : ""}`}
+                aria-pressed={selected}
+              >
+                <span className="voice-row__desc">{voice.description}</span>
+                <span className="voice-row__name">{voice.label}</span>
+              </button>
+              <button
+                type="button"
+                className="voice-row__preview"
+                onClick={() => preview(voice)}
+                aria-pressed={isPlaying}
+                aria-label={`${isPlaying ? "Stop" : "Play"} sample of ${voice.label}`}
+              >
+                {isPlaying ? "\u25a0" : "\u25b6"}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </fieldset>
   );
 }
 
@@ -311,6 +406,7 @@ function AgentForm({
       voice: data.settings.voice,
       allowInterrupt: data.settings.allowInterrupt,
       escalationGuidance: data.settings.escalationGuidance,
+      transferPhone: data.settings.transferPhone ?? "",
     },
   });
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -332,8 +428,8 @@ function AgentForm({
       <Box padding="lg">
         <h2>Agent</h2>
         <p className="auth-card-copy">
-          Configure a browser-based voice conversation grounded in saved context and
-          knowledge. No phone routing or booking tools are enabled.
+          How your agent introduces itself, sounds, and behaves when it cannot
+          help. These settings apply to every call, on the web and on the phone.
         </p>
         <div className="form-grid">
           <TextField
@@ -347,13 +443,13 @@ function AgentForm({
             options={withSavedOption(TONE_OPTIONS, data.settings.tone)}
             {...form.register("tone")}
           />
-          <SelectField
-            label="Voice style"
-            helper="This guides the workflow's speaking style without changing global model credentials."
-            options={withSavedOption(VOICE_OPTIONS, data.settings.voice)}
-            {...form.register("voice")}
-          />
         </div>
+        <VoicePicker
+          value={form.watch("voice")}
+          onChange={(voice) =>
+            form.setValue("voice", voice, { shouldDirty: true })
+          }
+        />
         <TextArea
           label="Greeting"
           required
@@ -378,6 +474,13 @@ function AgentForm({
           required
           error={form.formState.errors.closing?.message}
           {...form.register("closing")}
+        />
+        <TextField
+          label="Transfer calls to"
+          helper="Optional. On phone calls the agent can put a caller through to this number. Browser callers always get a message taken instead."
+          placeholder="+14155550123"
+          error={form.formState.errors.transferPhone?.message}
+          {...form.register("transferPhone")}
         />
         <label className="ui-check-row">
           <input type="checkbox" {...form.register("allowInterrupt")} />
@@ -511,13 +614,16 @@ function defaultHours(
 
 function HoursForm({
   data,
+  nextHref,
   onSaved,
   slug,
 }: {
   data: TenantSettingsResponse;
+  nextHref?: string;
   onSaved: () => Promise<void>;
   slug: string;
 }) {
+  const navigate = useNavigate();
   const [hours, setHours] = useState(defaultHours(data.settings.businessHours));
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -559,10 +665,11 @@ function HoursForm({
 
   return (
     <Box padding="lg">
-      <h2>Business hours</h2>
+      <h2>Opening hours</h2>
       <p className="auth-card-copy">
-        Hours set when the agent can offer and book appointment slots. Days
-        without hours are treated as closed.
+        Your agent compares these against the current local time, so it can say
+        whether you are open and only offer slots you actually work. Days left
+        off are treated as closed.
       </p>
       <div className="hours-grid">
         {days.map((day) => {
@@ -622,14 +729,17 @@ function HoursForm({
           void api.businesses
             .updateHours(slug, hours)
             .then(onSaved)
-            .then(() => setNotice(ok("Business hours saved.")))
+            .then(() => {
+              if (nextHref) void navigate({ to: nextHref });
+              else setNotice(ok("Opening hours saved."));
+            })
             .catch((caught: unknown) =>
               setNotice(fail(caught, "Unable to save business hours.")),
             )
             .finally(() => setSaving(false));
         }}
       >
-        Save hours
+        {nextHref ? "Save and continue \u2192" : "Save hours"}
       </Button>
     </Box>
   );
@@ -1448,80 +1558,110 @@ function GapsTab({ slug }: { slug: string }) {
   );
 }
 
+/**
+ * Lets an owner call their own agent from the dashboard before they put it in
+ * front of customers. It drives the same published widget a visitor gets, in
+ * headless mode, so what they hear here is exactly what a caller hears.
+ */
 function BrowserTestCall({ widget }: { widget: TenantWidget }) {
-  const [status, setStatus] = useState("Ready to load the published web-call widget.");
+  const [status, setStatus] = useState<VoiceWidgetStatus>("idle");
+  const [detail, setDetail] = useState(
+    "Call your agent the way a visitor would, and hear exactly what they hear.",
+  );
   const [error, setError] = useState<string | null>(null);
-  const [inCall, setInCall] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     return () => {
-      window.DograhWidget?.end();
+      window.VocalonixWidget?.end();
       document.getElementById("vocalonix-tenant-widget-script")?.remove();
     };
   }, []);
 
+  const bind = () => {
+    const instance = window.VocalonixWidget;
+    if (!instance) return;
+    instance.onStatusChange(({ status: next, detail: message }) => {
+      setStatus(next);
+      if (message) setDetail(message);
+      if (next !== "failed") setError(null);
+    });
+    instance.onError((value) => {
+      setError(
+        value instanceof Error
+          ? value.message
+          : "The call could not be started. Check microphone access and try again.",
+      );
+    });
+  };
+
+  const startCall = () => {
+    setError(null);
+    setLoading(true);
+    if (loadedRef.current && window.VocalonixWidget) {
+      window.VocalonixWidget.start();
+      setLoading(false);
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "vocalonix-tenant-widget-script";
+    // `headless` keeps the widget's own launcher off this page — the dashboard
+    // supplies the controls, the widget supplies the call.
+    script.src = `${widget.scriptUrl}&headless=1`;
+    script.async = true;
+    script.onload = () => {
+      loadedRef.current = true;
+      setLoading(false);
+      bind();
+      window.VocalonixWidget?.start();
+    };
+    script.onerror = () => {
+      setLoading(false);
+      setError("The published widget could not be loaded. Republish and try again.");
+    };
+    document.body.appendChild(script);
+  };
+
+  const live = status === "listening" || status === "speaking";
+  const label: Record<VoiceWidgetStatus, string> = {
+    idle: "Ready to call",
+    connecting: "Connecting…",
+    listening: "Connected — say hello",
+    speaking: "Your agent is speaking",
+    ended: "Call ended",
+    failed: "Call failed",
+  };
+
   return (
     <Box padding="md">
-      <h2>Browser test call</h2>
-      <p className="auth-card-copy">{status}</p>
+      <h2>Try your agent</h2>
+      <p className="auth-card-copy">{label[status]}</p>
+      <p className="ui-field-message" style={{ marginTop: -6 }}>
+        {detail}
+      </p>
       {error ? <Alert variant="error">{error}</Alert> : null}
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
         <Button
           variant="accent"
-          disabled={inCall}
-          onClick={() => {
-            setError(null);
-            document.getElementById("vocalonix-tenant-widget-script")?.remove();
-            window.DograhWidget?.end();
-            const script = document.createElement("script");
-            script.id = "vocalonix-tenant-widget-script";
-            script.src = widget.scriptUrl;
-            script.async = true;
-            script.onload = () => {
-              setStatus("Widget loaded. Requesting microphone access for a web call…");
-              window.DograhWidget?.onStatusChange((state, text, subtext) => {
-                setStatus([text ?? state, subtext].filter(Boolean).join(" — "));
-              });
-              window.DograhWidget?.onCallStart(() => {
-                setInCall(true);
-                setStatus("Connecting the call…");
-              });
-              window.DograhWidget?.onCallConnected(() =>
-                setStatus("Call connected. Speak with the agent, then hang up when done."),
-              );
-              window.DograhWidget?.onCallEnd(() => {
-                setInCall(false);
-                setStatus("Call ended. Start another test call anytime.");
-              });
-              window.DograhWidget?.onError((value) => {
-                setInCall(false);
-                setError(
-                  value instanceof Error
-                    ? value.message
-                    : "The call could not be started. Check microphone access and try again.",
-                );
-              });
-              window.setTimeout(() => window.DograhWidget?.start(), 1000);
-            };
-            script.onerror = () => setStatus("The published widget could not be loaded.");
-            document.body.appendChild(script);
-          }}
+          loading={loading}
+          disabled={live || status === "connecting"}
+          onClick={startCall}
         >
-          Start browser test call
+          {status === "failed" ? "Try again" : "Start a test call"}
         </Button>
         <Button
           variant="ghost"
-          disabled={!inCall}
-          onClick={() => {
-            window.DograhWidget?.end();
-            setInCall(false);
-            setStatus("Call ended. Start another test call anytime.");
-          }}
+          disabled={!live && status !== "connecting"}
+          onClick={() => window.VocalonixWidget?.end()}
         >
           End call
         </Button>
       </div>
-      <p className="ui-field-message">Web call only. No phone setup is required.</p>
+      <p className="ui-field-message">
+        This is a real call against your published agent. It appears in
+        Conversations like any other.
+      </p>
     </Box>
   );
 }
@@ -1702,6 +1842,14 @@ export function TenantOnboardingPage() {
                 data={data}
                 slug={slug}
                 onSaved={refresh}
+                nextHref={`/app/${slug}/onboarding/hours`}
+              />
+            ) : null}
+            {step === "hours" ? (
+              <HoursForm
+                data={data}
+                slug={slug}
+                onSaved={refresh}
                 nextHref={`/app/${slug}/onboarding/knowledge`}
               />
             ) : null}
@@ -1744,6 +1892,7 @@ const CONFIG_FIELD_LABELS: Record<string, { label: string; section: string }> = 
   voice: { label: "Voice", section: "Agent" },
   allowInterrupt: { label: "Callers may interrupt", section: "Agent" },
   escalationGuidance: { label: "Escalation guidance", section: "Agent" },
+  transferPhone: { label: "Transfer calls to", section: "Agent" },
   businessHours: { label: "Opening hours", section: "Hours" },
   widgetButtonText: { label: "Launcher label", section: "Appearance" },
   widgetColor: { label: "Accent colour", section: "Appearance" },
@@ -2208,6 +2357,7 @@ function HistoryTab({
         voice: config.voice,
         allowInterrupt: config.allowInterrupt,
         escalationGuidance: config.escalationGuidance,
+        transferPhone: config.transferPhone ?? "",
       });
       await api.businesses.updateHours(slug, config.businessHours);
       await api.businesses.updateWidget(slug, {
@@ -2307,10 +2457,192 @@ function HistoryTab({
   );
 }
 
+/**
+ * Connects a real phone number to this agent.
+ *
+ * Numbers live with the telephony provider; this page only claims one for the
+ * workspace and points inbound calls at its published workflow. The provider
+ * credentials never reach the browser.
+ */
+function PhoneTab({
+  canEdit,
+  data,
+  slug,
+}: {
+  canEdit: boolean;
+  data: TenantSettingsResponse;
+  slug: string;
+}) {
+  const [phone, setPhone] = useState<BusinessPhoneResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [number, setNumber] = useState("");
+  const [label, setLabel] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [releasing, setReleasing] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setPhone(await api.businesses.phone(slug));
+    } catch (caught) {
+      setNotice(fail(caught, "Could not load phone numbers."));
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const published = Boolean(data.onboarding.publishedAt);
+
+  if (loading) return <LoadingState label="Loading phone numbers…" />;
+
+  return (
+    <div className="settings-stack">
+      <Box padding="lg">
+        <h2>Phone number</h2>
+        <p className="auth-card-copy">
+          Point a number at {data.settings.agentName} and it answers every call
+          on it — the same agent, the same knowledge, the same diary.
+        </p>
+
+        {phone && !phone.available ? (
+          <Alert variant="warn">
+            {phone.unavailableReason ??
+              "Phone numbers are not switched on for this platform yet."}
+          </Alert>
+        ) : null}
+
+        {!published ? (
+          <Alert variant="warn">
+            Publish this agent first — a number can only be pointed at a live
+            agent.
+          </Alert>
+        ) : null}
+
+        {notice ? <Alert variant={notice.tone}>{notice.message}</Alert> : null}
+
+        {phone && phone.numbers.length > 0 ? (
+          <ul className="phone-list">
+            {phone.numbers.map((row) => (
+              <li key={row.id} className="phone-row">
+                <div>
+                  <strong className="phone-row__number">{row.e164}</strong>
+                  {row.label ? (
+                    <span className="phone-row__label"> · {row.label}</span>
+                  ) : null}
+                  <div className="ui-field-message">
+                    {row.status === "active"
+                      ? `Answering as ${data.settings.agentName}.`
+                      : (row.lastError ??
+                        "Waiting for the telephony provider to confirm.")}
+                  </div>
+                </div>
+                <div className="stack-row">
+                  <Pill variant={row.status === "active" ? "accent" : "warn"}>
+                    {row.status === "active" ? "Live" : row.status}
+                  </Pill>
+                  {canEdit ? (
+                    <Button
+                      variant="ghost"
+                      loading={releasing === row.id}
+                      onClick={async () => {
+                        setReleasing(row.id);
+                        setNotice(null);
+                        try {
+                          await api.businesses.releasePhone(slug, row.id);
+                          await load();
+                          setNotice(ok("Number released."));
+                        } catch (caught) {
+                          setNotice(fail(caught, "Could not release the number."));
+                        } finally {
+                          setReleasing(null);
+                        }
+                      }}
+                    >
+                      Release
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState title="No phone number yet">
+            Add a number you already own with the telephony provider, and calls
+            to it will be answered by this agent.
+          </EmptyState>
+        )}
+
+        {canEdit && phone?.available && published ? (
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setBusy(true);
+              setNotice(null);
+              try {
+                await api.businesses.attachPhone(slug, { number, label });
+                setNumber("");
+                setLabel("");
+                await load();
+                setNotice(ok("Number connected. Give it a call."));
+              } catch (caught) {
+                setNotice(fail(caught, "Could not connect that number."));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <div className="form-grid">
+              <TextField
+                label="Phone number"
+                required
+                placeholder="+14155550123"
+                helper="Full international format, including the country code."
+                value={number}
+                onChange={(event) => setNumber(event.target.value)}
+              />
+              <TextField
+                label="Label"
+                placeholder="Main line"
+                value={label}
+                onChange={(event) => setLabel(event.target.value)}
+              />
+            </div>
+            <Button type="submit" variant="primary" loading={busy}>
+              Connect this number
+            </Button>
+          </form>
+        ) : null}
+      </Box>
+
+      <Box padding="md">
+        <h3>What changes on a phone call</h3>
+        <ul className="plain-list">
+          <li>
+            The agent knows it is on the phone, and asks for a number to call
+            back on rather than assuming it has one.
+          </li>
+          <li>
+            {data.settings.transferPhone
+              ? `It can put callers through to ${data.settings.transferPhone} when they ask for a person.`
+              : "Set a transfer number on the Agent tab and it can put callers through to a person."}
+          </li>
+          <li>Calls appear in Conversations alongside web calls.</li>
+        </ul>
+      </Box>
+    </div>
+  );
+}
+
 const configTabs = [
   { slug: "business", label: "Business" },
   { slug: "agent", label: "Agent" },
   { slug: "hours", label: "Hours" },
+  { slug: "phone", label: "Phone" },
   { slug: "widget", label: "Widget" },
   { slug: "appearance", label: "Appearance" },
   { slug: "history", label: "History" },
@@ -2379,6 +2711,9 @@ export function TenantSettingsPage({
                   ) : (
                     readOnlyNote
                   )
+                ) : null}
+                {section === "phone" ? (
+                  <PhoneTab canEdit={canEditAgent} data={data} slug={slug} />
                 ) : null}
                 {section === "widget" ? (
                   <WidgetTab

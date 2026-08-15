@@ -106,6 +106,20 @@
       "when": 1786728171872,
       "tag": "0014_stale_wolverine",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1786750452294,
+      "tag": "0015_nasty_hex",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1786751941939,
+      "tag": "0016_rare_sleeper",
+      "breakpoints": true
     }
   ]
 }

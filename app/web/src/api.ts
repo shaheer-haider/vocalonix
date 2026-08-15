@@ -4,11 +4,15 @@ import type { App } from "../../api/src/index";
 import type {
   AgentResponse,
   AgentSettings,
+  BusinessPhoneNumber,
+  BusinessPhoneResponse,
   DemoSession,
   DemoStartResponse,
   DocumentItem,
   DograhHealth,
+  PlatformStatus,
   Vertical,
+  VoiceCatalogueEntry,
   WidgetResponse,
 } from "./types";
 
@@ -167,6 +171,7 @@ export interface TenantSettings {
   voice: string;
   allowInterrupt: boolean;
   escalationGuidance: string;
+  transferPhone: string;
   businessHours: Record<string, BusinessHoursDay>;
   widgetButtonText: string;
   widgetColor: string;
@@ -250,6 +255,7 @@ export interface TenantConfigSnapshot {
   voice: string;
   allowInterrupt: boolean;
   escalationGuidance: string;
+  transferPhone: string;
   businessHours: Record<string, BusinessHoursDay>;
   widgetButtonText: string;
   widgetColor: string;
@@ -564,8 +570,26 @@ export const api = {
         | "voice"
         | "allowInterrupt"
         | "escalationGuidance"
+        | "transferPhone"
       >,
     ) => unwrap(await client.api.b[slug].settings.agent.put(input)),
+    phone: async (slug: string): Promise<BusinessPhoneResponse> =>
+      unwrap(await client.api.b[slug].phone.get()) as BusinessPhoneResponse,
+    attachPhone: async (
+      slug: string,
+      input: { number: string; label?: string },
+    ): Promise<{ number: BusinessPhoneNumber }> =>
+      unwrap(await client.api.b[slug].phone.post(input)) as {
+        number: BusinessPhoneNumber;
+      },
+    releasePhone: async (slug: string, phoneNumberId: string) => {
+      const phone = client.api.b[slug].phone as unknown as Record<string, unknown>;
+      return unwrap(
+        await (
+          phone[phoneNumberId] as { delete: () => Promise<ClientResult<unknown>> }
+        ).delete(),
+      );
+    },
     updateHours: async (
       slug: string,
       businessHours: Record<string, BusinessHoursDay>,
@@ -906,6 +930,16 @@ export const api = {
   },
   dograhHealth: async (): Promise<DograhHealth> =>
     unwrap(await client.api.dograh.health.get()),
+  platform: {
+    voices: async (): Promise<VoiceCatalogueEntry[]> => {
+      const result = unwrap(await client.api.platform.voices.get());
+      return (result.voices ?? []) as VoiceCatalogueEntry[];
+    },
+    status: async (): Promise<PlatformStatus> =>
+      unwrap(await client.api.platform.status.get()) as PlatformStatus,
+    recheck: async (): Promise<PlatformStatus> =>
+      unwrap(await client.api.platform.recheck.post()) as PlatformStatus,
+  },
   verticals: async (): Promise<Vertical[]> => {
     const result = unwrap(await client.api.verticals.get());
     return result.verticals ?? [];

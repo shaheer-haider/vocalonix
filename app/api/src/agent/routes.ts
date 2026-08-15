@@ -11,6 +11,7 @@ import {
   bookings,
   businessAgentSettings,
   businesses,
+  callbackTasks,
 } from "../db/schema";
 import { env } from "../env";
 import { ApiError } from "../errors";
@@ -322,6 +323,95 @@ export const agentToolRoutes = new Elysia()
         time: t.String(),
         customer_name: t.String(),
         customer_phone: t.Optional(t.String()),
+      }),
+    },
+  )
+  /**
+   * Records a callback during the call rather than after it.
+   *
+   * Post-call extraction already mines transcripts for follow-ups, but it only
+   * runs once the run completes and the transcript lands. A caller who is
+   * promised a call back deserves to be in the queue before they hang up, and
+   * the agent needs a confirmation it can read out.
+   */
+  .post(
+    "/api/agent-tools/:businessId/message",
+    async ({ params, request, body }) => {
+      requireAgentKey(request.headers);
+      const [business] = await db
+        .select({ id: businesses.id, timezone: businesses.timezone })
+        .from(businesses)
+        .where(eq(businesses.id, params.businessId))
+        .limit(1);
+      if (!business) {
+        throw new ApiError(404, "NOT_FOUND", "This business was not found.");
+      }
+
+      const name = body.customer_name.trim().slice(0, 120);
+      const reason = body.reason.trim().slice(0, 500);
+      if (!name) {
+        return {
+          result: "missing_name",
+          message: "Ask for the caller's name before recording the message.",
+        };
+      }
+      if (!reason) {
+        return {
+          result: "missing_reason",
+          message: "Ask what the caller needs before recording the message.",
+        };
+      }
+
+      const phone = body.customer_phone?.trim().slice(0, 40) ?? "";
+      const email = body.customer_email?.trim().slice(0, 200) ?? "";
+      const urgent = body.urgent === true;
+      const contactId = await linkContact(
+        params.businessId,
+        { name, phone, email },
+        "call",
+      );
+
+      // Urgent messages jump to the front of the queue; everything else gets a
+      // couple of hours, which matches how the callbacks board buckets work.
+      const promisedAt = new Date(
+        Date.now() + (urgent ? 15 * 60_000 : 2 * 60 * 60_000),
+      );
+      const id = randomUUID();
+      await db.insert(callbackTasks).values({
+        id,
+        businessId: params.businessId,
+        contactName: name,
+        contactChannel: phone || email || "No number left",
+        contactId,
+        reason: urgent ? `URGENT — ${reason}` : reason,
+        source: "call",
+        promisedAt,
+      });
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: params.businessId,
+        actorUserId: null,
+        action: "callback.create",
+        targetType: "callback",
+        targetId: id,
+        payload: { source: "agent", urgent },
+      });
+
+      return {
+        result: "recorded",
+        message_id: id,
+        confirmation: urgent
+          ? `Message recorded for ${name} and flagged urgent. Tell the caller the team has been alerted and will call back as soon as they can.`
+          : `Message recorded for ${name}. Tell the caller somebody will get back to them.`,
+      };
+    },
+    {
+      body: t.Object({
+        customer_name: t.String(),
+        reason: t.String(),
+        customer_phone: t.Optional(t.String()),
+        customer_email: t.Optional(t.String()),
+        urgent: t.Optional(t.Boolean()),
       }),
     },
   );
