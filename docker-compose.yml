@@ -68,6 +68,7 @@ services:
       REQUIRE_EMAIL_VERIFICATION: "${REQUIRE_EMAIL_VERIFICATION:-false}"
       RESEND_API_KEY: "${RESEND_API_KEY:-}"
       EMAIL_FROM: "${EMAIL_FROM:-Vocalonix <hello@vocalonix.ai>}"
+      MAGIC_LINK_TTL_SECONDS: "${MAGIC_LINK_TTL_SECONDS:-300}"
       DOGRAH_INTERNAL_URL: "http://api:8000"
       DOGRAH_PUBLIC_API_URL: "${DOGRAH_PUBLIC_API_URL:-http://localhost:8000}"
       DOGRAH_WIDGET_URL: "${DOGRAH_WIDGET_URL:-http://localhost:3000}"
@@ -94,6 +95,8 @@ services:
       TELNYX_API_KEY: "${TELNYX_API_KEY:-}"
       TELNYX_CONNECTION_ID: "${TELNYX_CONNECTION_ID:-}"
       TELNYX_WEBHOOK_PUBLIC_KEY: "${TELNYX_WEBHOOK_PUBLIC_KEY:-}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      MAX_OWNED_WORKSPACES: "${MAX_OWNED_WORKSPACES:-3}"
     ports:
       - "3001:3001"
     depends_on:
@@ -127,6 +130,7 @@ services:
       REQUIRE_EMAIL_VERIFICATION: "${REQUIRE_EMAIL_VERIFICATION:-false}"
       RESEND_API_KEY: "${RESEND_API_KEY:-}"
       EMAIL_FROM: "${EMAIL_FROM:-Vocalonix <hello@vocalonix.ai>}"
+      MAGIC_LINK_TTL_SECONDS: "${MAGIC_LINK_TTL_SECONDS:-300}"
       DOGRAH_INTERNAL_URL: "http://api:8000"
       DOGRAH_PUBLIC_API_URL: "${DOGRAH_PUBLIC_API_URL:-http://localhost:8000}"
       DOGRAH_WIDGET_URL: "${DOGRAH_WIDGET_URL:-http://localhost:3000}"
@@ -153,6 +157,8 @@ services:
       TELNYX_API_KEY: "${TELNYX_API_KEY:-}"
       TELNYX_CONNECTION_ID: "${TELNYX_CONNECTION_ID:-}"
       TELNYX_WEBHOOK_PUBLIC_KEY: "${TELNYX_WEBHOOK_PUBLIC_KEY:-}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      MAX_OWNED_WORKSPACES: "${MAX_OWNED_WORKSPACES:-3}"
     depends_on:
       vocalonix-api:
         condition: service_healthy
