@@ -40,18 +40,15 @@ jobs:
           ssh hetzner /bin/bash -s <<'EOF'
           set -eu
           cd /opt/vocalonix/repo/deploy/hetzner/vocalonix
-          # The stack may already be running under a different compose project
-          # name (e.g. from a manual deploy). Reuse it so existing containers
-          # and volumes (including the postgres data volume) are adopted
-          # instead of colliding on the fixed "caddy" container name.
-          project=$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' caddy 2>/dev/null || true)
-          if [ -z "$project" ]; then
-            # caddy is absent or unmanaged; remove any unmanaged leftover.
-            docker rm -f caddy 2>/dev/null || true
-            project=vocalonix
-          fi
-          echo "Using compose project: $project"
-          docker compose -p "$project" --env-file .env up -d --build --wait
+          # The project name is pinned. It must never be derived from whatever
+          # happens to own a container called "caddy" on the host: that reads a
+          # foreign project name off an unrelated stack and then recreates its
+          # shared containers with this stack's config. Pointing the deploy at
+          # the wrong server is what makes that reachable, and adopting the
+          # foreign name turns the mistake into an outage on the other service
+          # instead of an error here. Pinned, a wrong-host deploy fails loudly
+          # on the "caddy" container-name conflict and changes nothing.
+          docker compose -p vocalonix --env-file .env up -d --build --wait
           EOF
 
       - name: Verify deployment
