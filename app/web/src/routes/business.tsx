@@ -49,7 +49,9 @@ import {
   UsersIcon,
 } from "../icons";
 import { can, permissionRows, roles } from "../permissions";
+import type { PlatformStatus } from "../types";
 import { detectTimezone, timezoneOptions } from "../timezones";
+import { useVerticals, verticalOptions } from "../hooks/useVerticals";
 import { AccountContent } from "./account";
 
 const createBusinessSchema = z.object({
@@ -630,28 +632,8 @@ function WorkspaceFrame({
   );
 }
 
-function mapDemoVertical(slug: string): string {
-  switch (slug) {
-    case "spa":
-    case "mental_health":
-      return "Wellness";
-    case "medspa":
-      return "Med spa";
-    case "dental":
-    case "vet":
-    case "funeral":
-    case "home_services":
-      return "Other";
-    case "salon":
-    case "barber":
-    case "pmu":
-    case "nail_lash":
-    default:
-      return "Beauty";
-  }
-}
-
 export function CreateBusinessPage() {
+  const { verticals } = useVerticals();
   const createParams = new URLSearchParams(window.location.search);
   const demoBusiness = createParams.get("demoBusiness") ?? "";
   const demoCity = createParams.get("demoCity") ?? "";
@@ -666,11 +648,21 @@ export function CreateBusinessPage() {
       country: "US",
       // Start on the visitor's own zone rather than making them hunt for it.
       timezone: detectTimezone(),
-      vertical: demoVertical ? mapDemoVertical(demoVertical) : "Beauty",
+      // The demo already asked which trade this is; carrying the slug straight
+      // through means the published agent inherits that trade's rules.
+      vertical: demoVertical,
       locations: "1",
     },
   });
   const [notice, setNotice] = useState<string | null>(null);
+
+  // The catalogue arrives after first paint, so the select would otherwise sit
+  // showing its first option while the form value was still empty.
+  useEffect(() => {
+    if (verticals.length === 0) return;
+    if (form.getValues("vertical")) return;
+    form.setValue("vertical", verticals[0]!.slug);
+  }, [verticals, form]);
 
   return (
     <AuthShell width={560}>
@@ -754,14 +746,10 @@ export function CreateBusinessPage() {
               {...form.register("timezone")}
             />
             <SelectField
-              label="Vertical"
+              label="Kind of business"
+              helper="Your agent follows the rules that matter in this trade."
               error={form.formState.errors.vertical?.message}
-              options={[
-                { label: "Beauty", value: "Beauty" },
-                { label: "Med spa", value: "Med spa" },
-                { label: "Wellness", value: "Wellness" },
-                { label: "Other", value: "Other" },
-              ]}
+              options={verticalOptions(verticals, demoVertical)}
               {...form.register("vertical")}
             />
             <SelectField
@@ -805,6 +793,74 @@ function dispositionText(value: string | null): string {
     .split("_")
     .map((word) => word[0]?.toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+/**
+ * Tells the operator whether the platform can actually take a call.
+ *
+ * It stays out of the way once everything is green — the dashboard belongs to
+ * the business, not to setup. When a key is missing or was rejected it says
+ * exactly which environment variable fixes it, because the alternative is
+ * discovering it during a customer's first call.
+ */
+function PlatformReadiness() {
+  const [status, setStatus] = useState<PlatformStatus | null>(null);
+  const [rechecking, setRechecking] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    api.platform.status().then(setStatus).catch(() => setStatus(null));
+  }, []);
+
+  if (!status) return null;
+
+  const problems = status.checks.filter((check) => check.state === "attention");
+  if (problems.length === 0 && !open) return null;
+
+  const recheck = async () => {
+    setRechecking(true);
+    try {
+      setStatus(await api.platform.recheck());
+    } catch {
+      // The panel keeps showing the last known state; nothing to add.
+    } finally {
+      setRechecking(false);
+    }
+  };
+
+  return (
+    <Box padding="md" style={{ marginTop: 16 }}>
+      <div className="dash-header" style={{ marginTop: 0 }}>
+        <div>
+          <p className="eyebrow">Setup</p>
+          <h2 style={{ margin: 0 }}>
+            {status.callsReady
+              ? "Calls are working"
+              : "Calls are not working yet"}
+          </h2>
+        </div>
+        <div className="stack-row">
+          <Button variant="ghost" onClick={() => setOpen((value) => !value)}>
+            {open ? "Hide details" : "Show all checks"}
+          </Button>
+          <Button variant="ghost" loading={rechecking} onClick={recheck}>
+            Re-check
+          </Button>
+        </div>
+      </div>
+      <ul className="readiness-list" style={{ marginTop: 12 }}>
+        {(open ? status.checks : problems).map((check) => (
+          <li key={check.id} className="readiness-row">
+            <span className={`readiness-dot readiness-dot--${check.state}`} />
+            <div>
+              <span className="readiness-row__label">{check.label}</span>
+              <p className="readiness-row__detail">{check.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Box>
+  );
 }
 
 export function WorkspaceDashboardPage() {
@@ -896,6 +952,7 @@ export function WorkspaceDashboardPage() {
       {(business) => (
         <>
           {statsError ? <Alert variant="error">{statsError}</Alert> : null}
+          <PlatformReadiness />
 
           <div className="dash-header" style={{ marginTop: 16 }}>
             <div>

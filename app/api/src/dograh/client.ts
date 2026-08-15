@@ -3,6 +3,9 @@ import type {
   DograhDocumentList,
   DograhDocument,
   DograhEmbedToken,
+  DograhModelConfiguration,
+  DograhPhoneNumber,
+  DograhTelephonyConfiguration,
   DograhTool,
   DograhUpload,
   DograhWorkflow,
@@ -34,11 +37,34 @@ interface AuthResponse {
   token: string;
 }
 
+/**
+ * Model-configuration saves fail with a list of per-service verdicts
+ * (`[{model: "stt", message: "Invalid Deepgram API key..."}]`). That list is
+ * the operator's own key status and is exactly what the readiness panel has to
+ * show, so it is formatted rather than swallowed. Any other detail shape is
+ * still logged server-side only — it can carry internal payloads.
+ */
+function providerVerdicts(detail: unknown): string | null {
+  if (!Array.isArray(detail) || detail.length === 0) return null;
+  const lines: string[] = [];
+  for (const entry of detail) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+    const record = entry as Record<string, unknown>;
+    if (typeof record.model !== "string" || typeof record.message !== "string") {
+      return null;
+    }
+    lines.push(`${record.model}: ${record.message}`);
+  }
+  return lines.join(" ");
+}
+
 function errorDetail(value: unknown): string {
   if (typeof value === "string") return value;
   if (value && typeof value === "object" && "detail" in value) {
     const detail = (value as { detail: unknown }).detail;
     if (typeof detail === "string") return detail;
+    const verdicts = providerVerdicts(detail);
+    if (verdicts) return verdicts;
     console.error("Dograh error detail:", detail);
   }
   return "Dograh request failed";
@@ -90,6 +116,28 @@ export interface DograhManagementClient {
     toolUuid: string,
     body: Record<string, unknown>,
   ): Promise<DograhTool>;
+  saveModelConfiguration(
+    body: Record<string, unknown>,
+  ): Promise<DograhModelConfiguration>;
+  listTelephonyConfigurations(): Promise<DograhTelephonyConfiguration[]>;
+  createTelephonyConfiguration(
+    body: Record<string, unknown>,
+  ): Promise<{ id: number; name: string; provider: string }>;
+  updateTelephonyConfiguration(
+    configId: number,
+    body: Record<string, unknown>,
+  ): Promise<{ id: number; name: string; provider: string }>;
+  listPhoneNumbers(configId: number): Promise<DograhPhoneNumber[]>;
+  createPhoneNumber(
+    configId: number,
+    body: Record<string, unknown>,
+  ): Promise<DograhPhoneNumber>;
+  updatePhoneNumber(
+    configId: number,
+    phoneNumberId: number,
+    body: Record<string, unknown>,
+  ): Promise<DograhPhoneNumber>;
+  deletePhoneNumber(configId: number, phoneNumberId: number): Promise<void>;
 }
 
 export class DograhClient implements DograhManagementClient {
@@ -379,6 +427,83 @@ export class DograhClient implements DograhManagementClient {
     body: Record<string, unknown>,
   ): Promise<DograhTool> {
     return this.rawRequest(`/tools/${toolUuid}`, { method: "PUT", body });
+  }
+
+  getModelConfiguration(): Promise<DograhModelConfiguration> {
+    return this.rawRequest("/organizations/model-configurations/v2");
+  }
+
+  saveModelConfiguration(
+    body: Record<string, unknown>,
+  ): Promise<DograhModelConfiguration> {
+    return this.rawRequest("/organizations/model-configurations/v2", {
+      method: "PUT",
+      body,
+    });
+  }
+
+  async listTelephonyConfigurations(): Promise<DograhTelephonyConfiguration[]> {
+    const response = await this.rawRequest<{
+      configurations: DograhTelephonyConfiguration[];
+    }>("/organizations/telephony-configs");
+    return response.configurations ?? [];
+  }
+
+  createTelephonyConfiguration(
+    body: Record<string, unknown>,
+  ): Promise<{ id: number; name: string; provider: string }> {
+    return this.rawRequest("/organizations/telephony-configs", {
+      method: "POST",
+      body,
+    });
+  }
+
+  updateTelephonyConfiguration(
+    configId: number,
+    body: Record<string, unknown>,
+  ): Promise<{ id: number; name: string; provider: string }> {
+    return this.rawRequest(`/organizations/telephony-configs/${configId}`, {
+      method: "PUT",
+      body,
+    });
+  }
+
+  async listPhoneNumbers(configId: number): Promise<DograhPhoneNumber[]> {
+    const response = await this.rawRequest<{
+      phone_numbers: DograhPhoneNumber[];
+    }>(`/organizations/telephony-configs/${configId}/phone-numbers`);
+    return response.phone_numbers ?? [];
+  }
+
+  createPhoneNumber(
+    configId: number,
+    body: Record<string, unknown>,
+  ): Promise<DograhPhoneNumber> {
+    return this.rawRequest(
+      `/organizations/telephony-configs/${configId}/phone-numbers`,
+      { method: "POST", body },
+    );
+  }
+
+  updatePhoneNumber(
+    configId: number,
+    phoneNumberId: number,
+    body: Record<string, unknown>,
+  ): Promise<DograhPhoneNumber> {
+    return this.rawRequest(
+      `/organizations/telephony-configs/${configId}/phone-numbers/${phoneNumberId}`,
+      { method: "PUT", body },
+    );
+  }
+
+  async deletePhoneNumber(
+    configId: number,
+    phoneNumberId: number,
+  ): Promise<void> {
+    await this.rawRequest(
+      `/organizations/telephony-configs/${configId}/phone-numbers/${phoneNumberId}`,
+      { method: "DELETE" },
+    );
   }
 
   async uploadBytes(

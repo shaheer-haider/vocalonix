@@ -243,6 +243,12 @@ const workspaceHoursSettingsRoute = createRoute({
   component: () => <TenantSettingsPage section="hours" />,
 });
 
+const workspacePhoneSettingsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/settings/phone",
+  component: () => <TenantSettingsPage section="phone" />,
+});
+
 const workspaceWidgetSettingsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/settings/widget",
@@ -298,6 +304,7 @@ const routeTree = rootRoute.addChildren([
     workspaceAgentSettingsRoute,
     workspaceKnowledgeSettingsRoute,
     workspaceHoursSettingsRoute,
+    workspacePhoneSettingsRoute,
     workspaceWidgetSettingsRoute,
   ]),
   accountRoute,
@@ -331,6 +338,7 @@ const ROUTE_TITLES: Array<[RegExp, string]> = [
   [/^\/account/, "Account"],
   [/\/settings\/knowledge/, "Knowledge"],
   [/\/settings\/hours/, "Opening hours"],
+  [/\/settings\/phone/, "Phone"],
   [/\/settings\/widget/, "Widget"],
   [/\/settings\/agent/, "Agent"],
   [/\/settings\/history/, "History"],

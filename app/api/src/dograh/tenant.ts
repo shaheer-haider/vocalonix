@@ -9,10 +9,15 @@ import {
   businessAgentSettings,
   businessDograhMappings,
   businessKnowledge,
+  businessPhoneNumbers,
   businesses,
   outboxEvents,
 } from "../db/schema";
 import { env } from "../env";
+import { businessVoiceOverride } from "../platform/providers";
+import { syncPhoneNumberRouting } from "../platform/telephony";
+import { getVertical } from "../verticals";
+import { DEFAULT_VOICE_ID, resolveVoice } from "../voices";
 import { ensureBusinessAgentTools } from "./agent-tools";
 import type { DograhManagementClient } from "./client";
 import { dograh, DograhError } from "./client";
@@ -21,6 +26,7 @@ import {
   withAgentToolUuids,
   type TenantBookingProfile,
   type TenantBusinessProfile,
+  type TenantCapabilities,
 } from "./config";
 import {
   classifyDograhFailure,
@@ -56,6 +62,7 @@ function tenantSettings(
     voice: row.voice,
     allowInterrupt: row.allowInterrupt,
     escalationGuidance: row.escalationGuidance,
+    transferPhone: row.transferPhone,
     businessHours: row.businessHours,
     widgetButtonText: row.widgetButtonText,
     widgetColor: row.widgetColor,
@@ -110,7 +117,11 @@ async function loadTenantConfiguration(businessId: string) {
   };
 
   const agentServices = await db
-    .select({ name: bookingServices.name })
+    .select({
+      name: bookingServices.name,
+      durationMinutes: bookingServices.durationMinutes,
+      price: bookingServices.price,
+    })
     .from(bookingServices)
     .where(
       and(
@@ -131,14 +142,39 @@ async function loadTenantConfiguration(businessId: string) {
     .limit(1);
   const booking: TenantBookingProfile = {
     enabled: agentServices.length > 0 && activeResources.length > 0,
-    services: agentServices.map((service) => service.name),
+    services: agentServices,
+  };
+
+  const settings = tenantSettings(row.settings);
+  const claimedNumbers = await db
+    .select({ status: businessPhoneNumbers.status })
+    .from(businessPhoneNumbers)
+    .where(
+      and(
+        eq(businessPhoneNumbers.businessId, businessId),
+        ne(businessPhoneNumbers.status, "released"),
+      ),
+    );
+  const livePhoneNumber = claimedNumbers.some((row) => row.status === "active");
+
+  const capabilities: TenantCapabilities = {
+    telephony: livePhoneNumber,
+    // A warm transfer only works on a PSTN leg — a browser caller has no call
+    // to hand over — so the agent is only told it can transfer when both are
+    // true. Otherwise it takes a message, which it can always do.
+    transfer: Boolean(livePhoneNumber && settings.transferPhone.trim()),
+    takeMessage: true,
   };
 
   return {
     business,
-    settings: tenantSettings(row.settings),
+    settings,
     mapping: row.mapping,
     booking,
+    capabilities,
+    // A number stuck in `failed` still has to be re-pointed on the next sync,
+    // otherwise a provider hiccup during setup leaves it broken for good.
+    hasClaimedNumbers: claimedNumbers.length > 0,
     documentUuids: documents
       .map((document) => document.documentUuid)
       .filter((value): value is string => Boolean(value)),
@@ -218,11 +254,20 @@ export async function synchronizeBusiness(
   const documentUuids = options.extraDocumentUuid
     ? [...new Set([...loaded.documentUuids, options.extraDocumentUuid])]
     : loaded.documentUuids;
+  // Businesses on the platform default voice inherit the organisation model
+  // configuration. Only a business that picked something else needs its own
+  // override, which keeps the common case free of a per-workflow key check.
+  const voiceId = resolveVoice(loaded.settings.voice).id;
+  const voiceOverride =
+    voiceId === DEFAULT_VOICE_ID ? null : businessVoiceOverride(voiceId);
+
   const desired = tenantDesiredConfiguration({
     business: loaded.business,
     settings: loaded.settings,
     documentUuids,
     booking: loaded.booking,
+    capabilities: loaded.capabilities,
+    voiceOverride,
   });
   const decision = synchronizationDecision(
     loaded.mapping,
@@ -288,15 +333,21 @@ export async function synchronizeBusiness(
     let workflowUuid = loaded.mapping.workflowUuid;
 
     let workflowDefinition = desired.workflowDefinition;
-    if (loaded.booking.enabled) {
+    if (desired.toolKeys.length > 0) {
       const toolUuids = await ensureBusinessAgentTools(
         client,
-        businessId,
+        {
+          businessId,
+          transferPhone: loaded.capabilities.transfer
+            ? loaded.settings.transferPhone.trim()
+            : "",
+        },
         loaded.mapping.agentToolUuids,
       );
       workflowDefinition = withAgentToolUuids(
         desired.workflowDefinition,
-        Object.values(toolUuids),
+        desired.nodeToolKeys,
+        toolUuids,
       );
     }
 
@@ -377,6 +428,13 @@ export async function synchronizeBusiness(
         ),
       );
 
+    // A sync can create a fresh workflow (first publish, or recovery after the
+    // old one was archived). Inbound numbers must follow it, or callers keep
+    // reaching an agent that no longer exists.
+    if (loaded.hasClaimedNumbers) {
+      await syncPhoneNumberRouting(businessId, workflowId, client);
+    }
+
     return {
       hash: desired.hash,
       noOp: false,
@@ -390,13 +448,22 @@ export async function synchronizeBusiness(
   }
 }
 
-function widgetTokenSettings(settings: TenantAgentSettings): Record<string, unknown> {
+function widgetTokenSettings(
+  business: TenantBusinessProfile,
+  settings: TenantAgentSettings,
+): Record<string, unknown> {
+  const vertical = business.vertical ? getVertical(business.vertical) : undefined;
   return {
     embedMode: "floating",
     position: "bottom-right",
     buttonText: settings.widgetButtonText,
     buttonColor: settings.widgetColor,
-    callToActionText: `Start a browser voice conversation with ${settings.agentName}`,
+    agentName: settings.agentName,
+    businessName: business.name,
+    callToActionText: `Talk to ${settings.agentName} — no waiting, no hold music.`,
+    // Shown before the caller starts, so they know what this agent can help
+    // with instead of guessing at an empty microphone.
+    prompts: vertical?.suggestedCallerScripts?.slice(0, 3) ?? [],
     autoStart: false,
   };
 }
@@ -406,7 +473,7 @@ export function tenantWidgetScript(token: string): {
   snippet: string;
 } {
   const scriptUrl =
-    `${env.dograhWidgetUrl}/embed/dograh-widget.js` +
+    `${env.dograhWidgetUrl}/embed/vocalonix-widget.js` +
     `?token=${encodeURIComponent(token)}` +
     `&environment=${encodeURIComponent(env.nodeEnv)}` +
     `&apiEndpoint=${encodeURIComponent(env.dograhPublicApiUrl)}`;
@@ -431,7 +498,7 @@ export async function publishBusinessWidget(
   const loaded = await loadTenantConfiguration(businessId);
   const token = await client.createEmbedToken(
     sync.workflowId,
-    widgetTokenSettings(loaded.settings),
+    widgetTokenSettings(loaded.business, loaded.settings),
     loaded.settings.allowedDomains,
   );
   return {

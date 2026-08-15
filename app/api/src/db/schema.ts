@@ -328,6 +328,19 @@ export const outboxEvents = pgTable(
   ],
 );
 
+/**
+ * Small key/value store for platform-wide state the API owns but that has no
+ * natural home on a business row — currently the hash of the model
+ * configuration last pushed to Dograh and the provisioned telephony ids.
+ */
+export const platformSettings = pgTable("platform_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").$type<Record<string, unknown>>().notNull().default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const businessDograhMappings = pgTable(
   "business_dograh_mappings",
   {
@@ -366,6 +379,54 @@ export const businessDograhMappings = pgTable(
   ],
 );
 
+export const phoneNumberStatusEnum = pgEnum("phone_number_status", [
+  "pending",
+  "active",
+  "failed",
+  "released",
+]);
+
+/**
+ * A PSTN number pointed at a business's agent. Dograh owns the provider-side
+ * routing; this table is the tenant-scoped mirror so the workspace can show,
+ * label and release its numbers without the browser ever touching Dograh.
+ */
+export const businessPhoneNumbers = pgTable(
+  "business_phone_numbers",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    e164: text("e164").notNull(),
+    label: text("label").notNull().default(""),
+    countryCode: text("country_code"),
+    provider: text("provider").notNull().default("telnyx"),
+    dograhConfigId: integer("dograh_config_id"),
+    dograhPhoneNumberId: integer("dograh_phone_number_id"),
+    status: phoneNumberStatusEnum("status").notNull().default("pending"),
+    lastError: text("last_error"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("business_phone_numbers_business_idx").on(table.businessId),
+    // One live claim per number across the whole platform; released rows stay
+    // for history and must not block a later re-claim.
+    uniqueIndex("business_phone_numbers_e164_active_unique")
+      .on(table.e164)
+      .where(sql`${table.status} <> 'released'`),
+  ],
+);
+
 export const businessAgentSettings = pgTable("business_agent_settings", {
   businessId: text("business_id")
     .primaryKey()
@@ -381,11 +442,14 @@ export const businessAgentSettings = pgTable("business_agent_settings", {
     ),
   closing: text("closing").notNull().default("Thanks for visiting. Have a great day."),
   tone: text("tone").notNull().default("warm"),
-  voice: text("voice").notNull().default("natural"),
+  voice: text("voice").notNull().default("aria"),
   allowInterrupt: boolean("allow_interrupt").notNull().default(true),
   escalationGuidance: text("escalation_guidance")
     .notNull()
     .default("Offer to have a team member follow up when a request needs human help."),
+  // Warm-transfer target. Only usable on PSTN calls; browser callers always
+  // fall back to a message.
+  transferPhone: text("transfer_phone").notNull().default(""),
   businessHours: jsonb("business_hours")
     .$type<Record<string, { enabled: boolean; open: string; close: string }>>()
     .notNull()

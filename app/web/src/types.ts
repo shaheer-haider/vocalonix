@@ -35,13 +35,27 @@ export interface WidgetResponse {
   snippet: string;
 }
 
-export interface DograhWidget {
+/**
+ * `idle` before a call, `connecting` while the session and WebRTC come up, then
+ * `listening`/`speaking` alternating for the duration of the call.
+ */
+export type VoiceWidgetStatus =
+  | "idle"
+  | "connecting"
+  | "listening"
+  | "speaking"
+  | "ended"
+  | "failed";
+
+export interface VoiceWidget {
   start(): void;
   stop(): void;
   end(): void;
-  getState(): { connectionStatus: string };
+  open(): void;
+  close(): void;
+  getState(): { status: VoiceWidgetStatus; muted: boolean; open: boolean };
   onStatusChange(
-    callback: (status: string, text?: string, subtext?: string) => void,
+    callback: (event: { status: VoiceWidgetStatus; detail: string }) => void,
   ): void;
   onCallStart(callback: () => void): void;
   onCallConnected(callback: (info?: unknown) => void): void;
@@ -50,9 +64,17 @@ export interface DograhWidget {
   onError(callback: (error: unknown) => void): void;
 }
 
+export interface VoiceCatalogueEntry {
+  id: string;
+  label: string;
+  description: string;
+  gender: "female" | "male";
+  preview: string;
+}
+
 declare global {
   interface Window {
-    DograhWidget?: DograhWidget;
+    VocalonixWidget?: VoiceWidget;
   }
 }
 
@@ -108,4 +130,52 @@ export interface DemoStartResponse {
   durationSeconds: number;
   suggestedScripts: string[];
   agentName: string;
+}
+
+/** One line of the operator readiness panel. */
+export interface PlatformCheck {
+  id: string;
+  label: string;
+  state: "ready" | "attention" | "off";
+  detail: string;
+}
+
+export interface PlatformStatus {
+  callsReady: boolean;
+  checks: PlatformCheck[];
+  providers: {
+    configured: boolean;
+    mode: "pipeline" | "realtime" | null;
+    summary: string | null;
+    perBusinessVoice: boolean;
+    reason?: string;
+    missing?: string[];
+    lastError?: string;
+    lastSyncedAt?: string;
+  };
+  telephony: {
+    configured: boolean;
+    provider: "telnyx" | null;
+    configId: number | null;
+    reason?: string;
+    lastError?: string;
+  };
+}
+
+export interface BusinessPhoneNumber {
+  id: string;
+  e164: string;
+  label: string;
+  status: "pending" | "active" | "failed" | "released";
+  lastError: string | null;
+}
+
+export interface BusinessPhoneResponse {
+  numbers: BusinessPhoneNumber[];
+  transferPhone: string;
+  available: boolean;
+  unavailableReason: string | null;
+  voices: VoiceCatalogueEntry[];
+  voiceSelectable: boolean;
+  canManage: boolean;
 }
