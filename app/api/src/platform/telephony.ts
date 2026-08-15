@@ -272,9 +272,18 @@ export async function provisionPhoneNumber(input: {
       error instanceof TelnyxError
         ? error.message
         : "Telnyx could not sell that number.";
+    // Released, not failed: nothing was bought, so this attempt must not
+    // occupy the business's one slot. `failed` counts as live for both the
+    // limit check and the unique index, which would leave a customer whose
+    // purchase failed unable to ever try again.
     await db
       .update(businessPhoneNumbers)
-      .set({ status: "failed", lastError: message, updatedAt: new Date() })
+      .set({
+        status: "released",
+        lastError: message,
+        releasedAt: new Date(),
+        updatedAt: new Date(),
+      })
       .where(eq(businessPhoneNumbers.id, id));
     throw new ApiError(502, "PHONE_NUMBER_UNAVAILABLE", message);
   }
