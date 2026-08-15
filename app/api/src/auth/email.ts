@@ -38,23 +38,37 @@ export async function sendEmail(input: {
 }): Promise<void> {
   if (!env.resendApiKey) return;
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: env.emailFrom,
-      to: [input.to],
-      subject: input.subject,
-      text: input.text,
-      html: input.html,
-    }),
-  });
+  // A delivery failure must not fail the operation that triggered it. The
+  // caller's real work — issuing a sign-in link, recording an invitation — has
+  // already succeeded by this point, and an unconfigured provider is a no-op
+  // one line above, so a rejection is the same class of problem: worth logging
+  // loudly, never worth turning a working sign-in into a 500. This matters most
+  // with a sender that can only reach some recipients, where the reject is
+  // per-address and would otherwise lock out exactly the users who need in.
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: env.emailFrom,
+        to: [input.to],
+        subject: input.subject,
+        text: input.text,
+        html: input.html,
+      }),
+    });
 
-  if (!response.ok) {
-    throw new Error(`Email provider rejected the request (${response.status}).`);
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error(
+        `Email delivery failed (${response.status}) for ${input.to}: ${detail.slice(0, 500)}`,
+      );
+    }
+  } catch (error) {
+    console.error(`Email delivery failed for ${input.to}:`, error);
   }
 }
 
