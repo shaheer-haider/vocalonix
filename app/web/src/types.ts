@@ -178,4 +178,16 @@ export interface BusinessPhoneResponse {
   voices: VoiceCatalogueEntry[];
   voiceSelectable: boolean;
   canManage: boolean;
+  atNumberLimit: boolean;
+}
+
+/** A number on offer from the platform's provider account, not yet bought. */
+export interface AvailableNumber {
+  e164: string;
+  locality: string | null;
+  region: string | null;
+  countryCode: string;
+  monthlyCost: string | null;
+  upfrontCost: string | null;
+  currency: string | null;
 }

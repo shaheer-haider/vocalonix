@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "business_phone_numbers_one_live_per_business" ON "business_phone_numbers" USING btree ("business_id") WHERE "business_phone_numbers"."status" <> 'released';

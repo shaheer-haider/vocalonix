@@ -44,11 +44,12 @@ import {
 import { requirePermission, requireWorkspace } from "../workspace/context";
 import { can } from "../workspace/permissions";
 import {
-  attachPhoneNumber,
   listBusinessPhoneNumbers,
+  provisionPhoneNumber,
   releasePhoneNumber,
   telephonyStatus,
 } from "../platform/telephony";
+import { searchAvailableNumbers } from "../platform/telnyx";
 import { providerStatus } from "../platform/providers";
 import { resolveVoice, voiceCatalogue } from "../voices";
 
@@ -701,14 +702,42 @@ export const tenantRoutes = new Elysia()
       voices: voiceCatalogue(),
       voiceSelectable: providers.perBusinessVoice,
       canManage: can(workspace.role, "agent.edit"),
+      // A business gets one number; the picker hides itself once it has one.
+      atNumberLimit: numbers.length > 0,
     };
   })
+  /**
+   * Numbers the customer can buy, from our Telnyx account. Read-only and
+   * behind the workspace guard: the inventory is cheap to query but it is
+   * still our account's view, not public data.
+   */
+  .get(
+    "/api/b/:slug/phone/available",
+    async ({ params, query, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "agent.edit");
+      const numbers = await searchAvailableNumbers({
+        countryCode: query.country ?? "US",
+        areaCode: query.areaCode,
+        contains: query.contains,
+        limit: 20,
+      });
+      return { numbers };
+    },
+    {
+      query: t.Object({
+        country: t.Optional(t.String({ minLength: 2, maxLength: 2 })),
+        areaCode: t.Optional(t.String({ maxLength: 6 })),
+        contains: t.Optional(t.String({ maxLength: 10 })),
+      }),
+    },
+  )
   .post(
     "/api/b/:slug/phone",
     async ({ body, params, request }) => {
       const workspace = await requireWorkspace(request.headers, params.slug);
       requirePermission(workspace.role, "agent.edit");
-      const attached = await attachPhoneNumber({
+      const attached = await provisionPhoneNumber({
         businessId: workspace.business.id,
         raw: body.number,
         label: body.label ?? "",
@@ -718,7 +747,7 @@ export const tenantRoutes = new Elysia()
         id: randomUUID(),
         businessId: workspace.business.id,
         actorUserId: workspace.session.user.id,
-        action: "business.phone.attach",
+        action: "business.phone.purchase",
         targetType: "phone_number",
         targetId: attached.id,
         payload: { number: attached.e164 },

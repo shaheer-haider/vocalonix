@@ -424,6 +424,12 @@ export const businessPhoneNumbers = pgTable(
     uniqueIndex("business_phone_numbers_e164_active_unique")
       .on(table.e164)
       .where(sql`${table.status} <> 'released'`),
+    // One live number per business. Two concurrent purchases both pass the
+    // application check before either inserts, and the loser of that race would
+    // otherwise leave the business paying for a second number it never chose.
+    uniqueIndex("business_phone_numbers_one_live_per_business")
+      .on(table.businessId)
+      .where(sql`${table.status} <> 'released'`),
   ],
 );
 

@@ -2695,6 +2695,22 @@ p {
   font-size: 0.9375rem;
 }
 
+/* The buy flow: search controls, then the inventory that came back. Separated
+   from the claimed-number list above by a rule so the two are never read as one
+   list — the rows look alike but one is billed and the other is not. */
+.phone-picker {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.phone-list--available {
+  margin-top: 16px;
+  margin-bottom: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
 .plain-list {
   margin: 8px 0 0;
   padding-left: 18px;
