@@ -100,7 +100,10 @@ export function AppHomePage() {
   );
 }
 
-export function AccountContent() {
+// The standalone /account page is outside the workspace shell, so it is the
+// only place that needs a way back into the app. Inside WorkspaceAccountPage
+// the shell nav already provides one.
+export function AccountContent({ backToApp = false }: { backToApp?: boolean }) {
   const auth = useAuth();
   const [sessions, setSessions] = useState<AccountSession[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -191,6 +194,11 @@ export function AccountContent() {
       </section>
 
       <div className="stack-row">
+        {backToApp ? (
+          <Link className="ui-button" to="/app">
+            Back to app
+          </Link>
+        ) : null}
         <Button
           variant="ghost"
           loading={working === "logout"}
@@ -217,11 +225,8 @@ export function AccountPage() {
         <Link to="/" className="wordmark">
           harkbell
         </Link>
-        <Link className="ui-button" to="/app">
-          Back to app
-        </Link>
       </div>
-      <AccountContent />
+      <AccountContent backToApp />
     </AuthShell>
   );
 }
