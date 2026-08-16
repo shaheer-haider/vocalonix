@@ -2771,12 +2771,26 @@ p {
   overflow: hidden;
 }
 
+/*
+ * The fill is full width and slid behind the parent's clip rather than being
+ * resized, so the transition runs on the compositor instead of thrashing
+ * layout. scaleX would do the same but squashes the 999px caps on an 8px bar
+ * into ellipses; translating keeps them circular.
+ */
 .usage-meter__fill {
   display: block;
   height: 100%;
+  width: 100%;
   border-radius: 999px;
   background: var(--accent, #5b5bd6);
-  transition: width 240ms ease;
+  transform: translateX(-100%);
+  transition: transform 240ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usage-meter__fill {
+    transition: none;
+  }
 }
 
 .usage-meter__fill--over {
