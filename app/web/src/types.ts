@@ -191,3 +191,31 @@ export interface AvailableNumber {
   upfrontCost: string | null;
   currency: string | null;
 }
+
+/**
+ * A plan as the API describes it. `null` on a limit means unlimited, which
+ * keeps the wire format JSON-safe — Infinity has no representation there.
+ */
+export interface BillingPlan {
+  id: string;
+  name: string;
+  amountCents: number;
+  monthlyMinutes: number | null;
+  phoneNumbers: number | null;
+  seats: number | null;
+}
+
+export interface BillingStatus {
+  configured: boolean;
+  /** What the workspace is entitled to now, which is Free when a payment lapses. */
+  plan: BillingPlan;
+  status: string | null;
+  periodEnd: string | null;
+  usage: {
+    minutesUsed: number;
+    seatsUsed: number;
+    windowStart: string;
+  };
+  /** Plans that can actually be bought on this deployment. */
+  available: BillingPlan[];
+}

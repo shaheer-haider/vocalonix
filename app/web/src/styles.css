@@ -2759,3 +2759,26 @@ p {
   font-size: 0.9375rem;
   margin: 2px 0 0;
 }
+
+/* Plan usage meter. Sits on the billing panel under the minutes line. */
+.usage-meter {
+  height: 8px;
+  width: 100%;
+  max-width: 420px;
+  margin: 6px 0 10px;
+  border-radius: 999px;
+  background: var(--surface-sunken, rgba(0, 0, 0, 0.08));
+  overflow: hidden;
+}
+
+.usage-meter__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent, #5b5bd6);
+  transition: width 240ms ease;
+}
+
+.usage-meter__fill--over {
+  background: var(--danger, #c0392b);
+}
