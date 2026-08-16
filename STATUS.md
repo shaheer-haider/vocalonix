@@ -1,6 +1,6 @@
 # Vocalonix — Product Status & Roadmap
 
-_Last updated: 2026-08-15_
+_Last updated: 2026-08-16_
 
 ## Start here: making calls work
 
@@ -20,6 +20,15 @@ docker compose up -d --build --wait
 | Calls working *well* | `DEEPGRAM_API_KEY` + `OPENAI_API_KEY` |
 | A real phone number | `TELNYX_API_KEY` |
 | Real sign-in emails | `RESEND_API_KEY` + a verified sending domain |
+
+> **Production currently contradicts this section.** `VOICE_STACK=realtime` was
+> set on the Vocalonix box on 2026-08-16 to chase response latency, putting
+> production back on Gemini Live — the stack this document identifies below as
+> the top launch blocker. The first test call after the change showed the agent
+> truncated mid-sentence ("Is there anything") and the caller asking "Huh?",
+> which is consistent with the transcript problems described below. Either
+> re-qualify that stack with measurements or revert to `VOICE_STACK=auto`;
+> do not leave the decision resting on an unmeasured latency hunch.
 
 **Use the pipeline stack for launch.** With `DEEPGRAM_API_KEY` present,
 `VOICE_STACK=auto` runs Deepgram speech-to-text → an LLM → Deepgram speech-out.
@@ -60,9 +69,16 @@ conversations, contacts and knowledge gaps.
 - **Tools the agent can actually use.** Live availability, booking, and message
   taking (which creates a real callback task mid-call), plus warm transfer on
   phone calls when a transfer number is set.
-- **Phone numbers.** A workspace connects a number it owns in Telnyx; inbound
-  calls route to that business's agent and follow it when the workflow is
-  rebuilt.
+- **Phone numbers.** A workspace searches our Telnyx inventory, buys a number on
+  the platform account (one per business), and inbound calls route to that
+  business's agent and follow it when the workflow is rebuilt. Buying, binding
+  the number to the call control application, and registering the routing record
+  are three separate steps; all three are verified on purchase and re-asserted at
+  boot, because a gap in any one of them produces a number that bills monthly and
+  never rings.
+- **Outbound calling.** A callback task with a dialable number can be rung by the
+  agent, from that business's own number. Tasks report whether they can be
+  dialled at all, since a callback may legitimately hold an email address.
 - **Widget.** Vocalonix-owned, shadow-DOM isolated, with a call panel, live
   status and level meter, mute, keyboard and screen-reader support, mobile
   layout, and host-page theme matching.
@@ -72,8 +88,8 @@ conversations, contacts and knowledge gaps.
 - Knowledge uploads synced to the engine through an outbox worker with retry and
   stuck-event recovery.
 - Bookings with clash detection, callbacks, conversations with transcripts,
-  contacts, knowledge gaps, in-app notifications.
-- Docker Compose runtime, health endpoints, 81 unit tests, clean typecheck.
+  contacts, knowledge gaps.
+- Docker Compose runtime, health endpoints, 99 unit tests, clean typecheck.
 
 ## Deployment checklist (needs the operator)
 
@@ -91,16 +107,20 @@ conversations, contacts and knowledge gaps.
 
 ## What is left
 
-- [ ] **Integration tests** covering API routes end to end. Current tests are
-      unit-level; the telephony attach/route/release path and the provider
-      reconciler were verified against the running stack by hand.
-- [ ] **Outbound calling.** Callback tasks cannot yet dial out; the number is
-      inbound-only.
+- [ ] **Integration tests** covering API routes end to end. All 15 test files are
+      unit-level; not one exercises an HTTP route. This is the gap that let a
+      bought number reach production unable to receive a call — every individual
+      unit passed, and nothing tested the path they form. Highest priority.
+- [ ] **Notifications have no backend at all.** `notifications.tsx` is 305 lines
+      of local `useState` with zero API calls, no endpoints and no tables. The
+      inbox and the preference matrix are both mockups: nothing persists, and
+      nothing is ever sent. Treat the page as a design prototype, not a feature.
+- [ ] **Billing cannot charge anyone.** `billing/routes.ts` is 103 lines that
+      create a Stripe customer and open the portal. There are no products,
+      prices, subscriptions, checkout or plan gating, so the portal opens empty.
+      Call duration *is* recorded (`durationSeconds`), but nothing aggregates or
+      bills it.
 - [ ] **Held slots and a waitlist** on bookings.
-- [ ] **Notifications delivery.** The matrix UI exists; email/SMS/push sending
-      does not.
-- [ ] **Billing.** Stripe customer portal is wired; metered call minutes and
-      plan gating are not.
 - [ ] Rate limiting is in-memory only; move to a shared store when the API
       scales past one instance.
 - [ ] Retire the legacy single-workflow path in `dograh/workflow.ts` and its
@@ -108,11 +128,18 @@ conversations, contacts and knowledge gaps.
 
 ## Next, in order
 
-1. **Outbound calling** — a callback task that can be dialled turns the callback
-   queue from a to-do list into the product doing the work.
-2. **Calendar sync** (Google/Outlook) so bookings land where staff already look.
-3. **Usage-based billing** on call minutes, now that minutes are metered.
-4. **SMS confirmations** for bookings and callbacks, over the same Telnyx key.
+1. **Integration tests over the HTTP routes.** Not the most interesting item,
+   but it is first on evidence: the telephony break was invisible to a green
+   test suite, a clean typecheck and a successful deploy.
+2. **Decide the voice stack on measurement, not preference** — see the warning
+   above. Production is currently on the stack this document calls the top
+   launch blocker.
+3. **Billing that can take money** — products, prices, checkout and plan gating,
+   then meter the `durationSeconds` already being recorded.
+4. **Notifications for real** — tables, endpoints and delivery behind the
+   existing page, or remove the page until they exist.
+5. **Calendar sync** (Google/Outlook) so bookings land where staff already look.
+6. **SMS confirmations** for bookings and callbacks, over the same Telnyx key.
 
 ## How to run
 
