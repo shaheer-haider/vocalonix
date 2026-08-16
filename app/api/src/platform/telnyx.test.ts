@@ -2,6 +2,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 
 import { env } from "../env";
 import {
+  bindNumberToConnection,
+  fetchWebhookPublicKey,
+  findOwnedNumber,
   releaseOwnedNumber,
   searchAvailableNumbers,
   TelnyxError,
@@ -205,5 +208,114 @@ describe("releasing a number", () => {
     await expect(releaseOwnedNumber("+14155550123")).rejects.toBeInstanceOf(
       TelnyxError,
     );
+  });
+});
+
+describe("connection binding", () => {
+  test("reports an unbound number as bound to nothing", async () => {
+    withKey();
+    // Telnyx sends "" rather than omitting the field, and "" is exactly the
+    // state where a number is owned, billed, and silent.
+    stubFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "987",
+                phone_number: "+14155550123",
+                status: "active",
+                connection_id: "",
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const owned = await findOwnedNumber("+14155550123");
+
+    expect(owned?.status).toBe("active");
+    expect(owned?.connectionId).toBeNull();
+  });
+
+  test("surfaces the application a bound number delivers to", async () => {
+    withKey();
+    stubFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "987",
+                phone_number: "+14155550123",
+                status: "active",
+                connection_id: "3027614532156523665",
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const owned = await findOwnedNumber("+14155550123");
+
+    expect(owned?.connectionId).toBe("3027614532156523665");
+  });
+
+  test("binds by provider id, not by phone number", async () => {
+    withKey();
+    const calls = stubFetch(() => new Response(JSON.stringify({ data: {} })));
+
+    await bindNumberToConnection("987", "3027614532156523665");
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.url.pathname).toBe("/v2/phone_numbers/987");
+    expect(calls[0]!.init.method).toBe("PATCH");
+    expect(JSON.parse(String(calls[0]!.init.body))).toEqual({
+      connection_id: "3027614532156523665",
+    });
+  });
+
+  test("a rejected binding is an error rather than a silent no-op", async () => {
+    withKey();
+    stubFetch(
+      () =>
+        new Response(
+          JSON.stringify({ errors: [{ detail: "Connection not found" }] }),
+          { status: 422 },
+        ),
+    );
+
+    await expect(
+      bindNumberToConnection("987", "missing"),
+    ).rejects.toThrow("Connection not found");
+  });
+});
+
+describe("webhook public key", () => {
+  test("reads the account signing key Dograh needs to accept webhooks", async () => {
+    withKey();
+    const calls = stubFetch(
+      () =>
+        new Response(
+          JSON.stringify({ data: { public: "7xOpTqBUyWNkycDW==", record_type: "public_key" } }),
+          { status: 200 },
+        ),
+    );
+
+    await expect(fetchWebhookPublicKey()).resolves.toBe("7xOpTqBUyWNkycDW==");
+    expect(calls[0]!.url.pathname).toBe("/v2/public_key");
+  });
+
+  test("returns null when the account has no key, rather than an empty string", async () => {
+    withKey();
+    stubFetch(
+      () => new Response(JSON.stringify({ data: { public: "  " } }), { status: 200 }),
+    );
+
+    // An empty key must not be written into the configuration as if it were
+    // real: Dograh would accept it and reject every inbound webhook.
+    await expect(fetchWebhookPublicKey()).resolves.toBeNull();
   });
 });

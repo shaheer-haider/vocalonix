@@ -41,6 +41,12 @@ export interface OwnedNumber {
   id: string;
   e164: string;
   status: string;
+  /**
+   * The call control application this number delivers inbound calls to, or null
+   * when it is bound to nothing. Telnyx reports an unbound number as `active`,
+   * so ownership and reachability are genuinely separate questions.
+   */
+  connectionId: string | null;
 }
 
 interface TelnyxErrorBody {
@@ -226,7 +232,12 @@ export async function purchaseNumber(e164: string): Promise<void> {
 /** The number as our account sees it, or null when we do not own it. */
 export async function findOwnedNumber(e164: string): Promise<OwnedNumber | null> {
   const body = await telnyxRequest<{
-    data?: { id?: string; phone_number?: string; status?: string }[];
+    data?: {
+      id?: string;
+      phone_number?: string;
+      status?: string;
+      connection_id?: string;
+    }[];
   }>("/phone_numbers", {
     query: { "filter[phone_number]": e164 },
   });
@@ -237,7 +248,45 @@ export async function findOwnedNumber(e164: string): Promise<OwnedNumber | null>
     id: row.id,
     e164: row.phone_number ?? e164,
     status: row.status ?? "unknown",
+    // Telnyx returns "" rather than omitting the field when nothing is bound.
+    connectionId: row.connection_id?.trim() || null,
   };
+}
+
+/**
+ * Points a number at a call control application, which is what actually makes
+ * it ring.
+ *
+ * Buying a number and binding it are separate operations on Telnyx, and only
+ * the first is implied by the order. An unbound number is reported `active` and
+ * bills monthly, but Telnyx has no webhook to deliver the call to, so an
+ * inbound call is dropped at the edge — the caller hears nothing and no request
+ * ever reaches us. There is no error to observe anywhere; the number is simply
+ * silent.
+ */
+export async function bindNumberToConnection(
+  numberId: string,
+  connectionId: string,
+): Promise<void> {
+  await telnyxRequest(`/phone_numbers/${numberId}`, {
+    method: "PATCH",
+    body: { connection_id: connectionId },
+  });
+}
+
+/**
+ * The account's webhook signing key.
+ *
+ * Dograh verifies the Ed25519 signature on every inbound webhook and rejects
+ * the call when it cannot, so a number that is bound but whose configuration
+ * lacks this key still never reaches an agent. The key is derivable from the
+ * API key we already hold, which is why it is fetched rather than asked of the
+ * operator: a setup step nobody performs is a setup step that silently breaks
+ * every inbound call.
+ */
+export async function fetchWebhookPublicKey(): Promise<string | null> {
+  const body = await telnyxRequest<{ data?: { public?: string } }>("/public_key");
+  return body.data?.public?.trim() || null;
 }
 
 /**
