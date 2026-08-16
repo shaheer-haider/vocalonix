@@ -61,7 +61,13 @@ services:
       DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME}"
       DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME}"
       DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS}"
-      VOCALONIX_INTERNAL_URL: "http://vocalonix-api:3001"
+      # Must stay reachable from the *Dograh box*, which is a separate
+      # host: this URL is baked into the agent tools registered with the
+      # engine, and the engine is what calls it mid-conversation. A compose
+      # service name resolves only inside this box's network, so it is left
+      # empty here and falls back to API_PUBLIC_URL. Only pin it when the
+      # engine shares a Docker network with the API.
+      VOCALONIX_INTERNAL_URL: "${VOCALONIX_INTERNAL_URL:-}"
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
       GEMINI_EXTRACTION_MODEL: "${GEMINI_EXTRACTION_MODEL:-gemini-flash-latest}"
       VOICE_STACK: "${VOICE_STACK:-auto}"
@@ -119,7 +125,13 @@ services:
       DOGRAH_SERVICE_NAME: "${DOGRAH_SERVICE_NAME}"
       DOGRAH_WORKFLOW_NAME: "${DOGRAH_WORKFLOW_NAME}"
       DOGRAH_WIDGET_ALLOWED_DOMAINS: "${DOGRAH_WIDGET_ALLOWED_DOMAINS}"
-      VOCALONIX_INTERNAL_URL: "http://vocalonix-api:3001"
+      # Must stay reachable from the *Dograh box*, which is a separate
+      # host: this URL is baked into the agent tools registered with the
+      # engine, and the engine is what calls it mid-conversation. A compose
+      # service name resolves only inside this box's network, so it is left
+      # empty here and falls back to API_PUBLIC_URL. Only pin it when the
+      # engine shares a Docker network with the API.
+      VOCALONIX_INTERNAL_URL: "${VOCALONIX_INTERNAL_URL:-}"
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
       GEMINI_EXTRACTION_MODEL: "${GEMINI_EXTRACTION_MODEL:-gemini-flash-latest}"
       VOICE_STACK: "${VOICE_STACK:-auto}"
