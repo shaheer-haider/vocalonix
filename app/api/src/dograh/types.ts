@@ -89,6 +89,12 @@ export interface DograhWorkflowRun {
   recording_url?: string | null;
   transcript_public_url?: string | null;
   recording_public_url?: string | null;
+  /**
+   * Per-run token and duration accounting. This — not `cost_info` — is where
+   * the engine records `call_duration_seconds`; `cost_info` comes back as an
+   * empty object on real runs.
+   */
+  usage_info?: ({ call_duration_seconds?: number | null } & Record<string, unknown>) | null;
   cost_info?: { call_duration_seconds?: number | null } | null;
   /**
    * What the engine knew before the conversation started. For an inbound phone

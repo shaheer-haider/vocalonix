@@ -4,6 +4,7 @@ import {
   extractCaller,
   gapsFromContext,
   normalizeQuestion,
+  runDurationSeconds,
   withCallerId,
 } from "./ingest";
 import type { DograhWorkflowRun } from "./types";
@@ -188,5 +189,36 @@ describe("caller id fallback", () => {
     // Telnyx sends "anonymous" for a withheld number; storing that as a phone
     // would collide every withheld caller into one contact.
     expect(withCallerId(nobody, phoneRun(null, "anonymous")).phone).toBeNull();
+  });
+});
+
+describe("call duration", () => {
+  function withInfo(
+    usage: Record<string, unknown> | null,
+    cost: { call_duration_seconds?: number | null } | null,
+  ): DograhWorkflowRun {
+    return { ...run(null), usage_info: usage, cost_info: cost };
+  }
+
+  test("reads the field the engine actually populates", () => {
+    // Real runs carry duration in usage_info and an empty cost_info, so
+    // reading cost_info reported no duration on every call in the product.
+    expect(runDurationSeconds(withInfo({ call_duration_seconds: 130 }, {}))).toBe(130);
+  });
+
+  test("still reads older runs that carried it on cost_info", () => {
+    expect(runDurationSeconds(withInfo({}, { call_duration_seconds: 70 }))).toBe(70);
+  });
+
+  test("prefers usage_info when both are present", () => {
+    expect(
+      runDurationSeconds(withInfo({ call_duration_seconds: 130 }, { call_duration_seconds: 70 })),
+    ).toBe(130);
+  });
+
+  test("reports null rather than a bogus number when absent", () => {
+    expect(runDurationSeconds(withInfo({}, {}))).toBeNull();
+    expect(runDurationSeconds(withInfo(null, null))).toBeNull();
+    expect(runDurationSeconds(withInfo({ call_duration_seconds: null }, null))).toBeNull();
   });
 });
