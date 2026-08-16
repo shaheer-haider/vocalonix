@@ -144,6 +144,17 @@ resource "hcloud_server" "vocalonix" {
   labels = {
     role = "vocalonix"
   }
+
+  lifecycle {
+    # Hetzner injects `ssh_keys` through cloud-init at first boot and offers no
+    # API to attach a key to a running server, so this list describes how the
+    # box was built, not who can log into it today. Reconciling it against a
+    # live server is at best a no-op and at worst a replacement — which here
+    # means destroying a production box and its Postgres volume to change a
+    # line in a text file. Grant access by appending to
+    # /root/.ssh/authorized_keys instead.
+    ignore_changes = [ssh_keys]
+  }
 }
 
 resource "hcloud_server" "dograh" {
@@ -169,5 +180,11 @@ resource "hcloud_server" "dograh" {
 
   labels = {
     role = "dograh"
+  }
+
+  lifecycle {
+    # See the note on hcloud_server.vocalonix: ssh_keys is creation-only, and
+    # reconciling it against this running server risks replacing it.
+    ignore_changes = [ssh_keys]
   }
 }
