@@ -9,6 +9,9 @@ services:
       - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Cloudflare Origin Certificate, kept outside the repo checkout so a
+      # `git pull` during deploy cannot clobber or expose it.
+      - /opt/vocalonix/certs:/etc/caddy/certs:ro
       - caddy-data:/data
       - caddy-config:/config
     networks:

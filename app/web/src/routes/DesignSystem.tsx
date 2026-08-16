@@ -11,7 +11,7 @@ export function DesignSystemPage() {
     <PageShell>
       <section className="page-heading">
         <div>
-          <p className="eyebrow">Vocalonix kit</p>
+          <p className="eyebrow">Harkbell kit</p>
           <h1>Design system</h1>
           <p>Warm paper, ink-first primitives ported from AestheticsDesk.</p>
         </div>

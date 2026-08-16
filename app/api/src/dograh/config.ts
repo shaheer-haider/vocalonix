@@ -75,7 +75,7 @@ export function tenantWorkflowName(
   business: TenantBusinessProfile,
   settings: TenantAgentSettings,
 ): string {
-  return `[Vocalonix:${business.id}] ${settings.agentName} for ${business.name}`;
+  return `[Harkbell:${business.id}] ${settings.agentName} for ${business.name}`;
 }
 
 const DAY_ORDER = [

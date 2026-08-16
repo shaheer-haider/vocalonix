@@ -1,6 +1,17 @@
-# Vocalonix
+# Harkbell
 
-Vocalonix is a web-first voice-agent product powered by a self-hosted Dograh instance. This repository contains the core MVP plus real account authentication and multi-business workspaces: Dograh orchestration, a server-side integration layer, an embeddable browser-call widget, knowledge-base management, agent settings, memberships, roles, invitations, and database-backed user sessions.
+Harkbell is a web-first voice-agent product powered by a self-hosted Dograh instance. This repository contains the core MVP plus real account authentication and multi-business workspaces: Dograh orchestration, a server-side integration layer, an embeddable browser-call widget, knowledge-base management, agent settings, memberships, roles, invitations, and database-backed user sessions.
+
+> **Formerly Vocalonix.** The product was renamed to Harkbell before any public
+> release — Vocalonix was never launched, had no users, and no announcement was
+> made under that name. The rename covers everything customers see: the UI, the
+> transactional emails, and what the agent says on a call.
+>
+> Infrastructure identifiers deliberately still read `vocalonix` — the GitHub
+> repository, Docker container and image names, the Postgres database and role,
+> the `VOCALONIX_INTERNAL_URL` environment variable, the embed widget filename,
+> and the `window.VocalonixWidget` global. Renaming those is an outage risk with
+> no user-visible benefit, so they stay until there is a reason to touch them.
 
 ## Repository layout
 

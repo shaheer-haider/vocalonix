@@ -1,5 +1,5 @@
 /**
- * Vocalonix voice widget.
+ * Harkbell voice widget.
  *
  * Drops a call button onto a business's own website and runs a real WebRTC
  * conversation with that business's published agent. It speaks the Dograh
@@ -65,7 +65,7 @@
       try {
         handler(payload);
       } catch (error) {
-        console.error("Vocalonix widget: callback " + name + " threw", error);
+        console.error("Harkbell widget: callback " + name + " threw", error);
       }
     }
   }
@@ -160,14 +160,14 @@
 
     var script = currentScript();
     if (!script) {
-      console.error("Vocalonix widget: could not find its own script tag.");
+      console.error("Harkbell widget: could not find its own script tag.");
       return;
     }
 
     var scriptUrl = new URL(script.src);
     var token = scriptUrl.searchParams.get("token");
     if (!token) {
-      console.error("Vocalonix widget: the script URL is missing its token.");
+      console.error("Harkbell widget: the script URL is missing its token.");
       return;
     }
 
@@ -191,12 +191,12 @@
         { method: "GET", headers: { "Content-Type": "application/json" } },
       );
     } catch (error) {
-      console.error("Vocalonix widget: the voice service is unreachable.", error);
+      console.error("Harkbell widget: the voice service is unreachable.", error);
       return;
     }
     if (!response.ok) {
       console.error(
-        "Vocalonix widget: this embed token was rejected (" + response.status + ").",
+        "Harkbell widget: this embed token was rejected (" + response.status + ").",
       );
       return;
     }
@@ -237,7 +237,7 @@
     try {
       return JSON.parse(raw);
     } catch (error) {
-      console.warn("Vocalonix widget: data-vocalonix-context is not valid JSON.");
+      console.warn("Harkbell widget: data-vocalonix-context is not valid JSON.");
       return {};
     }
   }
@@ -795,7 +795,7 @@
       if (response.ok) state.turn = await response.json();
     } catch (error) {
       // STUN-only still works on many networks, so this is not fatal.
-      console.warn("Vocalonix widget: continuing without TURN.", error);
+      console.warn("Harkbell widget: continuing without TURN.", error);
     }
   }
 
@@ -931,7 +931,7 @@
       };
       socket.onmessage = function (event) {
         handleSignal(event).catch(function (error) {
-          console.error("Vocalonix widget: signalling error", error);
+          console.error("Harkbell widget: signalling error", error);
         });
       };
     });
@@ -956,7 +956,7 @@
           sdpMLineIndex: candidate.sdpMLineIndex,
         })
         .catch(function (error) {
-          console.warn("Vocalonix widget: rejected ICE candidate", error);
+          console.warn("Harkbell widget: rejected ICE candidate", error);
         });
       return;
     }

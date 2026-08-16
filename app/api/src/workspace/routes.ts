@@ -112,7 +112,7 @@ async function sendInvitationEmail(input: {
   const businessName = escapeHtml(input.businessName);
   await sendEmail({
     to: input.email,
-    subject: `You're invited to ${input.businessName} on Vocalonix`,
+    subject: `You're invited to ${input.businessName} on Harkbell`,
     text: `${input.inviterName} invited you to join ${input.businessName} as ${input.role}. Accept: ${link}`,
     html: `<p>${inviterName} invited you to join <strong>${businessName}</strong> as ${input.role}.</p><p><a href="${link}">Accept invitation</a></p>`,
   });

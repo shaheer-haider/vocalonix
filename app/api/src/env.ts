@@ -159,7 +159,7 @@ const parsed = schema.safeParse({
     process.env.REQUIRE_EMAIL_VERIFICATION ?? (isProduction ? "true" : "false"),
   RESEND_API_KEY: process.env.RESEND_API_KEY?.trim() || undefined,
   EMAIL_FROM:
-    process.env.EMAIL_FROM?.trim() || "Vocalonix <hello@vocalonix.ai>",
+    process.env.EMAIL_FROM?.trim() || "Harkbell <hello@harkbell.com>",
   MAGIC_LINK_TTL_SECONDS: process.env.MAGIC_LINK_TTL_SECONDS ?? "900",
   DOGRAH_INTERNAL_URL:
     process.env.DOGRAH_INTERNAL_URL ?? "http://localhost:8000",
@@ -171,12 +171,12 @@ const parsed = schema.safeParse({
     process.env.DOGRAH_STORAGE_INTERNAL_URL?.trim() || undefined,
   DOGRAH_API_KEY: process.env.DOGRAH_API_KEY?.trim() || undefined,
   DOGRAH_SERVICE_EMAIL:
-    process.env.DOGRAH_SERVICE_EMAIL ?? "vocalonix@vocalonix.ai",
+    process.env.DOGRAH_SERVICE_EMAIL ?? "harkbell@harkbell.com",
   DOGRAH_SERVICE_PASSWORD:
     process.env.DOGRAH_SERVICE_PASSWORD ?? "change-me-vocalonix",
-  DOGRAH_SERVICE_NAME: process.env.DOGRAH_SERVICE_NAME ?? "Vocalonix",
+  DOGRAH_SERVICE_NAME: process.env.DOGRAH_SERVICE_NAME ?? "Harkbell",
   DOGRAH_WORKFLOW_NAME:
-    process.env.DOGRAH_WORKFLOW_NAME ?? "Vocalonix Agent",
+    process.env.DOGRAH_WORKFLOW_NAME ?? "Harkbell Agent",
   DOGRAH_WIDGET_ALLOWED_DOMAINS:
     process.env.DOGRAH_WIDGET_ALLOWED_DOMAINS ?? "localhost,127.0.0.1",
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY?.trim() || undefined,

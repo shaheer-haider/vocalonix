@@ -381,7 +381,7 @@ function WorkspaceFrame({
     <div className="workspace-shell">
       <aside className="workspace-sidebar">
         <Link className="wordmark" to="/">
-          vocalonix
+          harkbell
         </Link>
         <label className="workspace-switcher">
           <span>Workspace</span>
@@ -668,7 +668,7 @@ export function CreateBusinessPage() {
     <AuthShell width={560}>
       <div className="auth-header">
         <Link to="/" className="wordmark">
-          vocalonix
+          harkbell
         </Link>
       </div>
       <form
@@ -1849,7 +1849,7 @@ export function InvitationPage() {
     <AuthShell width={520}>
       <div className="auth-header">
         <Link to="/" className="wordmark">
-          vocalonix
+          harkbell
         </Link>
       </div>
       <Box padding="lg" style={{ textAlign: "center" }}>
@@ -1896,7 +1896,7 @@ export function InvitationPage() {
           )
         ) : (
           <Link className="ui-button full-width" to="/app">
-            Return to Vocalonix
+            Return to Harkbell
           </Link>
         )}
       </Box>

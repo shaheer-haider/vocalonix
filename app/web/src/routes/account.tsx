@@ -51,7 +51,7 @@ export function AppHomePage() {
     <AuthShell width={620}>
       <div className="auth-header">
         <Link to="/" className="wordmark">
-          vocalonix
+          harkbell
         </Link>
       </div>
       <Box padding="lg">
@@ -215,7 +215,7 @@ export function AccountPage() {
     <AuthShell width={680}>
       <div className="auth-header">
         <Link to="/" className="wordmark">
-          vocalonix
+          harkbell
         </Link>
         <Link className="ui-button" to="/app">
           Back to app

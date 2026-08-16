@@ -31,7 +31,7 @@ export function OnboardingShell({
     <div className="onboarding-shell">
       <header className="onboarding-shell__header" style={{ gridColumn: "1 / -1" }}>
         <Link to="/" className="wordmark">
-          vocalonix
+          harkbell
         </Link>
         <Link to="/app" className="ui-button ui-button--ghost">
           Exit setup

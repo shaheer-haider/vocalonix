@@ -94,9 +94,9 @@ export async function deliverMagicLink(input: {
 
   await sendEmail({
     to: email,
-    subject: "Sign in to Vocalonix",
-    text: `Sign in to Vocalonix: ${link}`,
-    html: `<p>Sign in to Vocalonix:</p><p><a href="${link}">Continue to Vocalonix</a></p>`,
+    subject: "Sign in to Harkbell",
+    text: `Sign in to Harkbell: ${link}`,
+    html: `<p>Sign in to Harkbell:</p><p><a href="${link}">Continue to Harkbell</a></p>`,
   });
 }
 
@@ -115,8 +115,8 @@ export async function deliverVerificationLink(input: {
 
   await sendEmail({
     to: email,
-    subject: "Verify your Vocalonix email",
-    text: `Verify your Vocalonix email: ${link}`,
-    html: `<p>Verify your Vocalonix email:</p><p><a href="${link}">Verify email</a></p>`,
+    subject: "Verify your Harkbell email",
+    text: `Verify your Harkbell email: ${link}`,
+    html: `<p>Verify your Harkbell email:</p><p><a href="${link}">Verify email</a></p>`,
   });
 }

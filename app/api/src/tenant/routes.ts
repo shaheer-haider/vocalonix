@@ -1815,7 +1815,7 @@ export const tenantRoutes = new Elysia()
         }
         sourceText = [
           `Website reference: ${parsed.toString()}`,
-          "This URL is saved as reference text. Vocalonix has not crawled the site.",
+          "This URL is saved as reference text. Harkbell has not crawled the site.",
           body.text?.trim() || "",
         ]
           .filter(Boolean)

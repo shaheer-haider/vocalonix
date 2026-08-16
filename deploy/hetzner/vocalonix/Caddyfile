@@ -1,7 +1,26 @@
 {
-    email nobody@sslip.io
+    email hello@harkbell.com
 }
 
+# Behind the Cloudflare proxy (orange cloud). Cloudflare terminates the
+# browser's TLS; this Origin Certificate only secures the Cloudflare -> origin
+# hop and is trusted by Cloudflare alone, so these names must stay proxied.
+# Automatic ACME is deliberately not used here: Let's Encrypt's HTTP-01
+# challenge cannot reach this box through the proxy.
+harkbell.com {
+    tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+    reverse_proxy /api/* vocalonix-api:3001
+    reverse_proxy /* vocalonix-web:3000
+}
+
+www.harkbell.com {
+    tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+    redir https://harkbell.com{uri} permanent
+}
+
+# The hostname this box ran on before the domain existed. Reachable directly,
+# so normal ACME works. Kept so the box stays available during the cutover and
+# while any stale link still points here; drop it once things have settled.
 62-238-101-107.sslip.io {
     reverse_proxy /api/* vocalonix-api:3001
     reverse_proxy /* vocalonix-web:3000

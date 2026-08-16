@@ -22,7 +22,7 @@ export function RouteError({ error, reset }: RouteErrorProps) {
     <main className="route-error">
       <div className="route-error__card">
         <a className="wordmark" href="/">
-          vocalonix
+          harkbell
         </a>
         <h1>This page didn&apos;t load</h1>
         <p>
@@ -54,7 +54,7 @@ export function RouteNotFound() {
     <main className="route-error">
       <div className="route-error__card">
         <a className="wordmark" href="/">
-          vocalonix
+          harkbell
         </a>
         <h1>We couldn&apos;t find that page</h1>
         <p>The link may be out of date, or the address may have a typo in it.</p>
