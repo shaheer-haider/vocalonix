@@ -254,6 +254,56 @@ export async function findOwnedNumber(e164: string): Promise<OwnedNumber | null>
 }
 
 /**
+ * Every number on our account.
+ *
+ * This is what makes the parked-number pool possible without a table to keep in
+ * step: Telnyx is asked what we own each time the pool is read, so a number
+ * bought, released or reclaimed outside the app can never leave our own record
+ * saying something different. The cost is one provider round-trip per read,
+ * which is the right trade while the account holds tens of numbers rather than
+ * thousands.
+ */
+export async function listOwnedNumbers(): Promise<OwnedNumber[]> {
+  const numbers: OwnedNumber[] = [];
+  const pageSize = 250;
+
+  // Telnyx pages from 1 and reports the total, so the loop is bounded by the
+  // provider rather than by a guess. `MAX_PAGES` only stops a malformed
+  // response from spinning forever.
+  const MAX_PAGES = 40;
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const body = await telnyxRequest<{
+      data?: {
+        id?: string;
+        phone_number?: string;
+        status?: string;
+        connection_id?: string;
+      }[];
+      meta?: { total_pages?: number };
+    }>("/phone_numbers", {
+      query: { "page[number]": page, "page[size]": pageSize },
+    });
+
+    const rows = body.data ?? [];
+    for (const row of rows) {
+      if (!row.id || !row.phone_number) continue;
+      numbers.push({
+        id: row.id,
+        e164: row.phone_number,
+        status: row.status ?? "unknown",
+        connectionId: row.connection_id?.trim() || null,
+      });
+    }
+
+    const totalPages = body.meta?.total_pages;
+    if (rows.length < pageSize) break;
+    if (typeof totalPages === "number" && page >= totalPages) break;
+  }
+
+  return numbers;
+}
+
+/**
  * Points a number at a call control application, which is what actually makes
  * it ring.
  *

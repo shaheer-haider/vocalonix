@@ -12,6 +12,7 @@ import type {
   DocumentItem,
   DograhHealth,
   PlatformStatus,
+  PooledNumber,
   Vertical,
   VoiceCatalogueEntry,
   WidgetResponse,
@@ -593,12 +594,26 @@ export const api = {
       unwrap(await client.api.b[slug].phone.post(input)) as {
         number: BusinessPhoneNumber;
       },
-    releasePhone: async (slug: string, phoneNumberId: string) => {
+    pooledNumbers: async (slug: string): Promise<{ numbers: PooledNumber[] }> =>
+      unwrap(await client.api.b[slug].phone.pool.get()) as {
+        numbers: PooledNumber[];
+      },
+    releasePhone: async (
+      slug: string,
+      phoneNumberId: string,
+      password: string,
+    ) => {
       const phone = client.api.b[slug].phone as unknown as Record<string, unknown>;
       return unwrap(
         await (
-          phone[phoneNumberId] as { delete: () => Promise<ClientResult<unknown>> }
-        ).delete(),
+          phone[phoneNumberId] as {
+            release: {
+              post: (body: {
+                password: string;
+              }) => Promise<ClientResult<unknown>>;
+            };
+          }
+        ).release.post({ password }),
       );
     },
     updateHours: async (

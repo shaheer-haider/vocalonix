@@ -49,11 +49,13 @@ import { can } from "../workspace/permissions";
 import {
   isDialable,
   listBusinessPhoneNumbers,
+  listPooledNumbers,
   placeOutboundCall,
   provisionPhoneNumber,
   releasePhoneNumber,
   telephonyStatus,
 } from "../platform/telephony";
+import { requirePasswordConfirmation } from "../auth/password";
 import { searchAvailableNumbers } from "../platform/telnyx";
 import { providerStatus } from "../platform/providers";
 import { resolveVoice, voiceCatalogue } from "../voices";
@@ -788,23 +790,49 @@ export const tenantRoutes = new Elysia()
       }),
     },
   )
-  .delete("/api/b/:slug/phone/:phoneNumberId", async ({ params, request }) => {
+  /**
+   * Numbers we already pay for that no agent is answering on. Claiming one goes
+   * through the same purchase route as a fresh number — that path already skips
+   * the order when we own the number, so there is nothing separate to keep
+   * right.
+   */
+  .get("/api/b/:slug/phone/pool", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "agent.edit");
-    await releasePhoneNumber(workspace.business.id, params.phoneNumberId);
-    await db.insert(auditLogs).values({
-      id: randomUUID(),
-      businessId: workspace.business.id,
-      actorUserId: workspace.session.user.id,
-      action: "business.phone.release",
-      targetType: "phone_number",
-      targetId: params.phoneNumberId,
-    });
-    await db.transaction(async (tx) => {
-      await queueBusinessSync(tx, workspace.business.id);
-    });
-    return { ok: true };
+    return { numbers: await listPooledNumbers(workspace.business.id) };
   })
+  /**
+   * Releasing is a POST rather than a DELETE because it carries a password, and
+   * a body on DELETE is the kind of thing proxies drop.
+   *
+   * The number is parked, not handed back: it stays on our account and becomes
+   * claimable by any workspace, including this one again.
+   */
+  .post(
+    "/api/b/:slug/phone/:phoneNumberId/release",
+    async ({ body, params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "agent.edit");
+      await requirePasswordConfirmation(
+        workspace.session.user.id,
+        body.password,
+      );
+      await releasePhoneNumber(workspace.business.id, params.phoneNumberId);
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "business.phone.release",
+        targetType: "phone_number",
+        targetId: params.phoneNumberId,
+      });
+      await db.transaction(async (tx) => {
+        await queueBusinessSync(tx, workspace.business.id);
+      });
+      return { ok: true };
+    },
+    { body: t.Object({ password: t.String({ minLength: 1, maxLength: 128 }) }) },
+  )
   .get("/api/b/:slug/conversations", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     const page = Math.max(1, Number(query.page ?? 1) || 1);

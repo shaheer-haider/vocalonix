@@ -13,10 +13,11 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, ne } from "drizzle-orm";
 
 import { db } from "../db/client";
 import {
+  businesses,
   businessDograhMappings,
   businessPhoneNumbers,
   platformSettings,
@@ -29,6 +30,7 @@ import {
   bindNumberToConnection,
   fetchWebhookPublicKey,
   findOwnedNumber,
+  listOwnedNumbers,
   purchaseNumber,
   releaseOwnedNumber,
   TelnyxError,
@@ -534,10 +536,21 @@ export async function releasePhoneNumber(
       });
   }
 
-  // Stop the rental. Un-routing alone leaves us paying Telnyx every month for a
-  // number the customer has already given up.
-  await releaseOwnedNumber(row.e164);
-
+  // The number stays on our Telnyx account deliberately. Handing it back ends
+  // the rental but also loses the number for good — a business that releases by
+  // mistake, or one that moves workspaces, could never get the same number
+  // again, and customers print these on vans. Unbound from Dograh it rings
+  // nothing, and it shows up in the pool for the next business to claim.
+  //
+  // The standing cost of a parked number is the price of that: see
+  // `listPooledNumbers`, which is what surfaces them so they get reused rather
+  // than quietly accumulating.
+  //
+  // The number stays bound to the Telnyx connection, so an inbound call still
+  // reaches Dograh and is dropped there for having no workflow, rather than
+  // getting the carrier's "not in service". Callers hear a failed call either
+  // way; clearing the binding would be tidier and is worth doing once the
+  // provider's behaviour on an empty connection_id has been checked.
   await db
     .update(businessPhoneNumbers)
     .set({
@@ -732,6 +745,125 @@ export async function reconcileTelephonyConfiguration(
       );
     }
   }
+}
+
+export interface PooledNumber {
+  e164: string;
+  /**
+   * What to say about where this number has been. Deliberately not always the
+   * business name — see `listPooledNumbers`.
+   */
+  previousUse: "yours" | "other" | "unused";
+  previousBusinessName: string | null;
+  releasedAt: string | null;
+}
+
+export interface ReleaseHistoryRow {
+  e164: string;
+  businessId: string;
+  businessName: string | null;
+  releasedAt: Date | null;
+}
+
+/**
+ * Works out the pool from what we own, what is claimed, and who had what.
+ *
+ * Split out from the query so the rule that matters can be tested directly: a
+ * number is offered only when the provider says we hold it and no live row
+ * claims it, and the tenant who last had it is named only to themselves.
+ * `history` is expected newest-first.
+ */
+export function derivePool(input: {
+  owned: string[];
+  liveClaims: string[];
+  history: ReleaseHistoryRow[];
+  viewerBusinessId: string;
+}): PooledNumber[] {
+  const live = new Set(input.liveClaims);
+  const free = input.owned.filter((e164) => !live.has(e164));
+  if (free.length === 0) return [];
+
+  // History arrives newest-first, so the first row seen for a number is the
+  // most recent time it was given up — the tenancy worth reporting.
+  const lastUse = new Map<string, ReleaseHistoryRow>();
+  for (const row of input.history) {
+    if (!lastUse.has(row.e164)) lastUse.set(row.e164, row);
+  }
+
+  return free.map((e164) => {
+    const previous = lastUse.get(e164);
+    if (!previous) {
+      // We own it but no business ever held it here — bought straight from the
+      // provider, or claimed by an attempt that never got as far as a row.
+      return {
+        e164,
+        previousUse: "unused" as const,
+        previousBusinessName: null,
+        releasedAt: null,
+      };
+    }
+    const mine = previous.businessId === input.viewerBusinessId;
+    return {
+      e164,
+      previousUse: mine ? ("yours" as const) : ("other" as const),
+      previousBusinessName: mine ? previous.businessName : null,
+      releasedAt: previous.releasedAt?.toISOString() ?? null,
+    };
+  });
+}
+
+/**
+ * Numbers we pay for that no agent is answering on.
+ *
+ * Derived on every read rather than stored: the pool is whatever Telnyx says we
+ * own minus whatever a business currently claims. There is no pool table to
+ * drift out of step with the provider, so a number bought or released in the
+ * Telnyx console shows up here correctly without anything having to reconcile.
+ *
+ * The previous tenant is reported by name only to the workspace that had it.
+ * Every workspace can see that a number is parked and claim it, but naming the
+ * business that used to answer on it would tell one customer another customer's
+ * name and phone number, which is not theirs to learn.
+ */
+export async function listPooledNumbers(
+  viewerBusinessId: string,
+): Promise<PooledNumber[]> {
+  const owned = await listOwnedNumbers();
+  if (owned.length === 0) return [];
+
+  const claimed = await db
+    .select({ e164: businessPhoneNumbers.e164 })
+    .from(businessPhoneNumbers)
+    .where(ne(businessPhoneNumbers.status, "released"));
+
+  const free = owned
+    .map((number) => number.e164)
+    .filter((e164) => !claimed.some((row) => row.e164 === e164));
+  if (free.length === 0) return [];
+
+  const history = await db
+    .select({
+      e164: businessPhoneNumbers.e164,
+      businessId: businessPhoneNumbers.businessId,
+      businessName: businesses.name,
+      releasedAt: businessPhoneNumbers.releasedAt,
+    })
+    .from(businessPhoneNumbers)
+    .leftJoin(businesses, eq(businessPhoneNumbers.businessId, businesses.id))
+    .where(
+      and(
+        inArray(businessPhoneNumbers.e164, free),
+        isNotNull(businessPhoneNumbers.releasedAt),
+      ),
+    )
+    .orderBy(desc(businessPhoneNumbers.releasedAt));
+
+  return derivePool({
+    owned: owned.map((number) => number.e164),
+    liveClaims: claimed.map((row) => row.e164),
+    history,
+    viewerBusinessId,
+  });
 }
 
 export async function listBusinessPhoneNumbers(businessId: string) {

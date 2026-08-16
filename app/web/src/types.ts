@@ -181,6 +181,18 @@ export interface BusinessPhoneResponse {
   atNumberLimit: boolean;
 }
 
+/**
+ * A number the platform already pays for that no agent is answering on.
+ * `previousUse` is "yours" only for the workspace that released it — another
+ * workspace's name is not shown, so it reads as "other" there.
+ */
+export interface PooledNumber {
+  e164: string;
+  previousUse: "yours" | "other" | "unused";
+  previousBusinessName: string | null;
+  releasedAt: string | null;
+}
+
 /** A number on offer from the platform's provider account, not yet bought. */
 export interface AvailableNumber {
   e164: string;
