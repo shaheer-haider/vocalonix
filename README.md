@@ -1,105 +1,90 @@
 # Harkbell
 
-Harkbell is a web-first voice-agent product powered by a self-hosted Dograh instance. This repository contains the core MVP plus real account authentication and multi-business workspaces: Dograh orchestration, a server-side integration layer, an embeddable browser-call widget, knowledge-base management, agent settings, memberships, roles, invitations, and database-backed user sessions.
+A multi-tenant AI receptionist for small service businesses. A business signs
+up, configures its agent, and publishes. That agent then answers on the
+business's own website through an embeddable widget and, once a number is
+connected, on the phone — booking into the real diary, taking messages, and
+handing over to a person when it should.
 
-> **Formerly Vocalonix.** The product was renamed to Harkbell before any public
-> release — Vocalonix was never launched, had no users, and no announcement was
-> made under that name. The rename covers everything customers see: the UI, the
-> transactional emails, and what the agent says on a call.
->
-> Infrastructure identifiers deliberately still read `vocalonix` — the GitHub
-> repository, Docker container and image names, the Postgres database and role,
-> the `VOCALONIX_INTERNAL_URL` environment variable, the embed widget filename,
-> and the `window.VocalonixWidget` global. Renaming those is an outage risk with
-> no user-visible benefit, so they stay until there is a reason to touch them.
+Voice orchestration runs on a self-hosted [Dograh](https://github.com/dograh-hq/dograh)
+instance, vendored as a git submodule. Harkbell generates and owns each tenant's
+workflow on that engine; the browser never receives Dograh credentials.
 
-## Repository layout
+> **Formerly Vocalonix.** Renamed before any public release — no users, no
+> announcement under the old name. Everything a customer sees says Harkbell.
+> Infrastructure identifiers (this repository, container and image names, the
+> Postgres database and role, `VOCALONIX_*` variables, the widget global) still
+> read `vocalonix` deliberately: renaming them is an outage risk with no
+> user-visible benefit.
 
-```text
-.
-├── app/
-│   ├── api/          # Vocalonix backend; the browser never receives Dograh credentials
-│   └── web/          # MVP dashboard
-├── dograh/           # Dograh v1.41.0 git submodule
-├── docker-compose.yml
-└── scripts/
-```
+## Quick start
 
-## Full stack with Docker
-
-Requirements: Git, Docker, and Docker Compose v2.
+Requirements: Git, Docker, Docker Compose v2. Bun 1.1.45 for the app-only mode.
 
 ```bash
 git clone --recurse-submodules https://github.com/shaheer-haider/vocalonix.git
 cd vocalonix
-./scripts/start.sh
+./scripts/setup.sh
+docker compose up -d --build --wait
 ```
 
-Open:
+| | |
+|---|---|
+| Web app | http://localhost:3000 |
+| API health | http://localhost:3001/api/health |
+| Dograh engine | http://localhost:8000 |
+| Dograh dashboard | http://localhost:3010 |
 
-- Test Agent: http://localhost:3000/secret/test-agent
-- Knowledge Base: http://localhost:3000/secret/knowledge-base
-- Agent Settings: http://localhost:3000/secret/agent-settings
-- Sign up: http://localhost:3000/signup
-- Log in: http://localhost:3000/login
-- Workspaces: http://localhost:3000/app
-- Create workspace: http://localhost:3000/app/onboarding/create
-- Account: http://localhost:3000/account
-- Vocalonix API: http://localhost:3001/api/health
-- Dograh dashboard: http://localhost:3010
+First boot pulls the Dograh images and takes a few minutes. `setup.sh` generates
+every local secret; provider keys stay empty for you to fill in.
 
-The first request from Vocalonix creates a local Dograh service account and a managed workflow. Dograh may take a few minutes to pull images and become healthy on the first run.
+To make real calls work, put at least one speech key in `.env` and restart the
+API — the dashboard's **Setup** panel reports what was accepted and names the
+variable that fixes each gap.
 
-The `/secret/*` routes are an intentionally unprotected MVP workspace. The prefix organizes the current control UI; it is not an authentication boundary. Account and `/app/*` routes use real cookie-backed sessions. Workspace creation persists a pending one-business-to-one-Dograh mapping, but the existing Dograh management screens remain single-workflow until tenant-scoped synchronization lands.
+| What you want | What to set |
+|---|---|
+| Calls working at all | `GEMINI_API_KEY` |
+| Calls working *well* | `DEEPGRAM_API_KEY` + `OPENAI_API_KEY` |
+| A real phone number | `TELNYX_API_KEY` |
+| Real sign-in emails | `RESEND_API_KEY` + a verified sending domain |
 
-Local magic-link requests return a preview link in the UI instead of pretending an email was sent. Production requires `RESEND_API_KEY`, `EMAIL_FROM`, secure cookies, and email verification.
+Stop with `docker compose down`.
 
-### Configure AI providers
+### App only
 
-Before placing a browser call, open the Dograh dashboard at http://localhost:3010 and sign in with the local service-account email and password from `.env`. In Dograh's AI model configuration, select BYOK realtime mode and configure:
-
-- Realtime: Google AI Studio, `gemini-3.1-flash-live-preview`
-- Conversation LLM: Google, `gemini-2.5-flash`
-- Embeddings: OpenAI, `text-embedding-3-small`
-
-Keep provider keys in Dograh's server-side configuration. Do not add them to the Vocalonix frontend or commit them to this repository.
-
-Stop the stack:
-
-```bash
-docker compose down
-```
-
-## Run only the app
-
-Use this mode when Dograh is already running locally or remotely.
-
-1. Install Bun 1.1.45.
-2. Copy `.env.example` to `.env`.
-3. Set `DATABASE_URL`, a strong `AUTH_SECRET`, `DOGRAH_INTERNAL_URL`, `DOGRAH_PUBLIC_API_URL`, `DOGRAH_WIDGET_URL`, and either:
-   - `DOGRAH_API_KEY`; or
-   - `DOGRAH_SERVICE_EMAIL` and `DOGRAH_SERVICE_PASSWORD`.
-4. For production, also set `NODE_ENV=production`, `API_PUBLIC_URL`, `APP_ORIGIN`, `RESEND_API_KEY`, `EMAIL_FROM`, and `REQUIRE_EMAIL_VERIFICATION=true`.
-5. Run:
+When Dograh is already running somewhere:
 
 ```bash
 bun install
 ./scripts/dev-app.sh
 ```
 
-The backend is the only component that calls authenticated Dograh APIs. The browser only loads Dograh's public widget script using an embed token generated by the backend.
+## Layout
 
-## MVP capabilities
+```
+app/api/     Bun + Elysia + Drizzle + better-auth. The only component that
+             holds Dograh credentials.
+app/web/     React 19 + Vite + TanStack Router. Static SPA.
+dograh/      Dograh v1.41.0 submodule. Not modified here.
+scripts/     setup.sh, start.sh, dev-app.sh
+deploy/      Hetzner production compose, Caddy, runbook
+terraform/   OpenTofu infrastructure
+docs/        Technical documentation
+```
 
-- **Accounts** (`/signup`, `/login`, `/magic`): password and magic-link authentication with HTTP-only cookie sessions.
-- **Session security** (`/account`): restore, refresh, logout, and logout-everywhere against the Vocalonix database.
-- **Business workspaces** (`/app`): create and switch between real tenant-scoped businesses.
-- **Team and invitations** (`/app/:businessSlug/team`, `/invite/:token`): manage roles, pending invitations, resend/revoke actions, and email-bound acceptance.
-- **Test Agent** (`/secret/test-agent`): place a WebRTC call from the browser.
-- **Knowledge Base** (`/secret/knowledge-base`): upload, process, list, and delete documents.
-- **Agent Settings** (`/secret/agent-settings`): change the agent identity, prompts, greeting, closing, interruption behavior, and widget appearance.
-- **Website snippet**: copy the generated inline widget snippet into another website.
+## Checks
 
-The widget asset remains public at `/embed/dograh-widget.js` so generated snippets can run on allowed third-party websites. Dograh management credentials remain server-only.
+```bash
+bun install --frozen-lockfile && bun run typecheck && bun run test
+```
 
-Tenant-scoped Dograh synchronization, onboarding settings, and billing are planned next. The `/secret/*` workspace remains intentionally unguarded.
+## Documentation
+
+| | |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | The working agreement — read first, human or agent |
+| [`docs/`](docs/README.md) | Architecture, data model, API reference, frontend, voice engine, operations, testing |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | The engineering standard |
+| [`STATUS.md`](STATUS.md) | What is built, what is not, what is next |
+| [`deploy/hetzner/README.md`](deploy/hetzner/README.md) | Deploy and key rotation |

@@ -1,6 +1,12 @@
-# Vocalonix — Product Status & Roadmap
+# Harkbell — Product Status & Roadmap
 
 _Last updated: 2026-08-16_
+
+> This file answers **what is built and what is next**. For how any of it works,
+> see [`docs/`](docs/README.md); for the rules of changing it, see
+> [`CLAUDE.md`](CLAUDE.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md). Keep this
+> file honest — it is the one document allowed to talk about the future, and a
+> claim here that the code contradicts is a bug in this file.
 
 ## Start here: making calls work
 
@@ -22,7 +28,7 @@ docker compose up -d --build --wait
 | Real sign-in emails | `RESEND_API_KEY` + a verified sending domain |
 
 > **Production currently contradicts this section.** `VOICE_STACK=realtime` was
-> set on the Vocalonix box on 2026-08-16 to chase response latency, putting
+> set on the Harkbell box on 2026-08-16 to chase response latency, putting
 > production back on Gemini Live — the stack this document identifies below as
 > the top launch blocker. The first test call after the change showed the agent
 > truncated mid-sentence ("Is there anything") and the caller asking "Huh?",
@@ -40,7 +46,7 @@ its own voice.
 
 Keys are validated on save. Deepgram, OpenAI and ElevenLabs keys are checked
 against the real provider APIs and a rejection is shown verbatim in the setup
-panel. Google keys are not checked by the engine, so Vocalonix verifies
+panel. Google keys are not checked by the engine, so Harkbell verifies
 `GEMINI_API_KEY` itself against the Generative Language API.
 
 ## What the product is
@@ -79,7 +85,7 @@ conversations, contacts and knowledge gaps.
 - **Outbound calling.** A callback task with a dialable number can be rung by the
   agent, from that business's own number. Tasks report whether they can be
   dialled at all, since a callback may legitimately hold an email address.
-- **Widget.** Vocalonix-owned, shadow-DOM isolated, with a call panel, live
+- **Widget.** Harkbell-owned, shadow-DOM isolated, with a call panel, live
   status and level meter, mute, keyboard and screen-reader support, mobile
   layout, and host-page theme matching.
 - **Try your agent.** Owners can call their own published agent from the
@@ -89,7 +95,7 @@ conversations, contacts and knowledge gaps.
   stuck-event recovery.
 - Bookings with clash detection, callbacks, conversations with transcripts,
   contacts, knowledge gaps.
-- Docker Compose runtime, health endpoints, 99 unit tests, clean typecheck.
+- Docker Compose runtime, health endpoints, 147 unit tests, clean typecheck.
 
 ## Deployment checklist (needs the operator)
 
@@ -107,7 +113,7 @@ conversations, contacts and knowledge gaps.
 
 ## What is left
 
-- [ ] **Integration tests** covering API routes end to end. All 15 test files are
+- [ ] **Integration tests** covering API routes end to end. All 17 test files are
       unit-level; not one exercises an HTTP route. This is the gap that let a
       bought number reach production unable to receive a call — every individual
       unit passed, and nothing tested the path they form. Highest priority.
@@ -115,11 +121,13 @@ conversations, contacts and knowledge gaps.
       of local `useState` with zero API calls, no endpoints and no tables. The
       inbox and the preference matrix are both mockups: nothing persists, and
       nothing is ever sent. Treat the page as a design prototype, not a feature.
-- [ ] **Billing cannot charge anyone.** `billing/routes.ts` is 103 lines that
-      create a Stripe customer and open the portal. There are no products,
-      prices, subscriptions, checkout or plan gating, so the portal opens empty.
-      Call duration *is* recorded (`durationSeconds`), but nothing aggregates or
-      bills it.
+- [ ] **Billing is not proven against real money.** Plans, Stripe Checkout, the
+      signature-verified webhook, plan gating on seats and phone numbers, and
+      usage metered from `call_records.durationSeconds` all landed in #68. What
+      has *not* happened is an end-to-end run in Stripe test mode — checkout,
+      webhook delivery, entitlement change, downgrade — and no test covers the
+      webhook against a real payload. Treat billing as built but unverified
+      until that pass is done and recorded.
 - [ ] **Held slots and a waitlist** on bookings.
 - [ ] Rate limiting is in-memory only; move to a shared store when the API
       scales past one instance.
@@ -134,8 +142,9 @@ conversations, contacts and knowledge gaps.
 2. **Decide the voice stack on measurement, not preference** — see the warning
    above. Production is currently on the stack this document calls the top
    launch blocker.
-3. **Billing that can take money** — products, prices, checkout and plan gating,
-   then meter the `durationSeconds` already being recorded.
+3. **Prove billing in Stripe test mode** — checkout, webhook delivery,
+   entitlement change and downgrade, end to end, plus a test over the webhook
+   handler. The code exists; the evidence does not.
 4. **Notifications for real** — tables, endpoints and delivery behind the
    existing page, or remove the page until they exist.
 5. **Calendar sync** (Google/Outlook) so bookings land where staff already look.

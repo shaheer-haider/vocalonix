@@ -3,8 +3,13 @@
   "configurations": [
     {
       "name": "web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "app/web"],
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "app/web", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "compose-web",
+      "url": "http://localhost:3000",
       "port": 3000
     }
   ]
