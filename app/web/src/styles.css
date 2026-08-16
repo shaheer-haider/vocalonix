@@ -2711,6 +2711,19 @@ p {
   overflow-y: auto;
 }
 
+/* Numbers already paid for, offered above the search. Set apart from the buy
+   flow below it, because the difference that matters to the reader is that
+   these cost nothing more — not that they look like the rows underneath. */
+.phone-pool {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.phone-pool > h3 {
+  margin: 0 0 4px;
+}
+
 .plain-list {
   margin: 8px 0 0;
   padding-left: 18px;

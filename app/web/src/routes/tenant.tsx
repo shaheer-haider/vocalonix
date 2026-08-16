@@ -40,7 +40,9 @@ import { CopyIcon } from "../icons";
 import { useVerticals, verticalOptions } from "../hooks/useVerticals";
 import type {
   AvailableNumber,
+  BusinessPhoneNumber,
   BusinessPhoneResponse,
+  PooledNumber,
   VoiceCatalogueEntry,
   VoiceWidgetStatus,
 } from "../types";
@@ -2458,6 +2460,92 @@ function HistoryTab({
   );
 }
 
+function releasedOn(iso: string | null): string {
+  if (!iso) return "";
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return "";
+  return when.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/**
+ * Numbers the platform already holds that nobody is answering on.
+ *
+ * Offered above the search because reconnecting one costs nothing extra and is
+ * instant, where buying adds another line to the bill. A workspace sees its own
+ * released numbers by name and date; other workspaces' numbers are offered
+ * without saying whose they were.
+ */
+function PooledNumbers({
+  claiming,
+  label,
+  loading,
+  numbers,
+  onClaim,
+  onLoad,
+}: {
+  claiming: string | null;
+  label: string;
+  loading: boolean;
+  numbers: PooledNumber[] | null;
+  onClaim: (e164: string) => Promise<void>;
+  onLoad: () => Promise<void>;
+}) {
+  useEffect(() => {
+    if (numbers === null && !loading) void onLoad();
+  }, [numbers, loading, onLoad]);
+
+  if (loading && numbers === null) {
+    return <LoadingState label="Checking for numbers you already have…" />;
+  }
+  // Nothing parked is the normal case, and an empty box explaining that would
+  // only be in the way of buying one.
+  if (!numbers || numbers.length === 0) return null;
+
+  return (
+    <div className="phone-pool">
+      <h3>Numbers you can reconnect</h3>
+      <p className="ui-field-message">
+        Already paid for. Connecting one is instant and adds nothing to your
+        bill.
+      </p>
+      <ul className="phone-list phone-list--available">
+        {numbers.map((row) => (
+          <li key={row.e164} className="phone-row">
+            <div>
+              <strong className="phone-row__number">{row.e164}</strong>
+              <div className="ui-field-message">
+                {row.previousUse === "yours"
+                  ? `You released this${
+                      releasedOn(row.releasedAt)
+                        ? ` on ${releasedOn(row.releasedAt)}`
+                        : ""
+                    }.`
+                  : row.previousUse === "other"
+                    ? "Previously used by another business."
+                    : "Never connected to an agent."}
+              </div>
+            </div>
+            <Button
+              variant="accent"
+              loading={claiming === row.e164}
+              disabled={claiming !== null && claiming !== row.e164}
+              onClick={() => {
+                void onClaim(row.e164);
+              }}
+            >
+              {label.trim() ? "Connect this number" : "Connect"}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * Connects a real phone number to this agent.
  *
@@ -2483,7 +2571,13 @@ function PhoneTab({
   const [searching, setSearching] = useState(false);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [releasing, setReleasing] = useState<string | null>(null);
+  const [releasing, setReleasing] = useState(false);
+  const [releaseTarget, setReleaseTarget] =
+    useState<BusinessPhoneNumber | null>(null);
+  const [releasePassword, setReleasePassword] = useState("");
+  const [releaseError, setReleaseError] = useState<string | null>(null);
+  const [pool, setPool] = useState<PooledNumber[] | null>(null);
+  const [poolLoading, setPoolLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -2493,6 +2587,23 @@ function PhoneTab({
       setNotice(fail(caught, "Could not load phone numbers."));
     } finally {
       setLoading(false);
+    }
+  }, [slug]);
+
+  /**
+   * The pool is a live provider read, so it is fetched only when the picker is
+   * actually on screen rather than with the rest of the tab.
+   */
+  const loadPool = useCallback(async () => {
+    setPoolLoading(true);
+    try {
+      setPool((await api.businesses.pooledNumbers(slug)).numbers);
+    } catch {
+      // A pool that will not load must not break buying a new number, which is
+      // the path that always works. It simply stays hidden.
+      setPool([]);
+    } finally {
+      setPoolLoading(false);
     }
   }, [slug]);
 
@@ -2552,19 +2663,11 @@ function PhoneTab({
                   {canEdit ? (
                     <Button
                       variant="ghost"
-                      loading={releasing === row.id}
-                      onClick={async () => {
-                        setReleasing(row.id);
+                      onClick={() => {
+                        setReleaseTarget(row);
+                        setReleasePassword("");
+                        setReleaseError(null);
                         setNotice(null);
-                        try {
-                          await api.businesses.releasePhone(slug, row.id);
-                          await load();
-                          setNotice(ok("Number released."));
-                        } catch (caught) {
-                          setNotice(fail(caught, "Could not release the number."));
-                        } finally {
-                          setReleasing(null);
-                        }
                       }}
                     >
                       Release
@@ -2583,6 +2686,29 @@ function PhoneTab({
 
         {canEdit && phone?.available && published && !phone.atNumberLimit ? (
           <div className="phone-picker">
+            <PooledNumbers
+              claiming={claiming}
+              label={label}
+              loading={poolLoading}
+              numbers={pool}
+              onLoad={loadPool}
+              onClaim={async (e164) => {
+                setClaiming(e164);
+                setNotice(null);
+                try {
+                  await api.businesses.attachPhone(slug, { number: e164, label });
+                  setResults(null);
+                  setPool(null);
+                  setLabel("");
+                  await load();
+                  setNotice(ok("Number is yours. Give it a call."));
+                } catch (caught) {
+                  setNotice(fail(caught, "Could not connect that number."));
+                } finally {
+                  setClaiming(null);
+                }
+              }}
+            />
             <form
               onSubmit={async (event) => {
                 event.preventDefault();
@@ -2694,6 +2820,87 @@ function PhoneTab({
           </p>
         ) : null}
       </Box>
+
+      <Modal
+        open={releaseTarget !== null}
+        onClose={() => setReleaseTarget(null)}
+        titleId="release-number-title"
+        descriptionId="release-number-copy"
+      >
+        <h2 id="release-number-title">
+          Release {releaseTarget?.e164}?
+        </h2>
+        <div id="release-number-copy">
+          <p>
+            {data.settings.agentName} stops answering on this number
+            straight away. Callers who dial it will not reach you.
+          </p>
+          <ul className="plain-list">
+            <li>
+              The number stays reserved for you — nobody outside Harkbell can
+              take it, and you can connect it again later.
+            </li>
+            <li>Calls already logged in Conversations are kept.</li>
+          </ul>
+        </div>
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!releaseTarget) return;
+            setReleasing(true);
+            setReleaseError(null);
+            try {
+              await api.businesses.releasePhone(
+                slug,
+                releaseTarget.id,
+                releasePassword,
+              );
+              setReleaseTarget(null);
+              setReleasePassword("");
+              setPool(null);
+              await load();
+              setNotice(ok("Number released. You can connect it again any time."));
+            } catch (caught) {
+              // Shown inside the modal, not as a page notice: the person is
+              // still in the dialog and the fix is right there.
+              setReleaseError(
+                caught instanceof Error
+                  ? caught.message
+                  : "Could not release the number.",
+              );
+            } finally {
+              setReleasing(false);
+            }
+          }}
+        >
+          <TextField
+            label="Confirm your password"
+            type="password"
+            autoComplete="current-password"
+            helper="Releasing a number cannot be undone from here."
+            value={releasePassword}
+            onChange={(event) => setReleasePassword(event.target.value)}
+          />
+          {releaseError ? <Alert variant="error">{releaseError}</Alert> : null}
+          <div className="stack-row">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setReleaseTarget(null)}
+            >
+              Keep the number
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              loading={releasing}
+              disabled={releasePassword.length === 0}
+            >
+              Release number
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       <Box padding="md">
         <h3>What changes on a phone call</h3>

@@ -5,6 +5,7 @@ import {
   bindNumberToConnection,
   fetchWebhookPublicKey,
   findOwnedNumber,
+  listOwnedNumbers,
   releaseOwnedNumber,
   searchAvailableNumbers,
   TelnyxError,
@@ -317,5 +318,106 @@ describe("webhook public key", () => {
     // An empty key must not be written into the configuration as if it were
     // real: Dograh would accept it and reject every inbound webhook.
     await expect(fetchWebhookPublicKey()).resolves.toBeNull();
+  });
+});
+
+describe("listing every number we own", () => {
+  test("follows the pages until the provider runs out", async () => {
+    withKey();
+    const calls = stubFetch((url) => {
+      const page = Number(url.searchParams.get("page[number]"));
+      // 250 rows means "there may be more"; a short page ends the walk.
+      const rows =
+        page === 1
+          ? Array.from({ length: 250 }, (_, index) => ({
+              id: `id-${index}`,
+              phone_number: `+1415555${String(index).padStart(4, "0")}`,
+            }))
+          : [{ id: "id-last", phone_number: "+14155559999" }];
+      return new Response(
+        JSON.stringify({ data: rows, meta: { total_pages: 2 } }),
+        { status: 200 },
+      );
+    });
+
+    const owned = await listOwnedNumbers();
+
+    expect(calls).toHaveLength(2);
+    expect(owned).toHaveLength(251);
+    expect(owned.at(-1)?.e164).toBe("+14155559999");
+  });
+
+  test("stops on a short first page without asking for a second", async () => {
+    withKey();
+    const calls = stubFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            data: [{ id: "id-1", phone_number: "+14155550100" }],
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const owned = await listOwnedNumbers();
+
+    expect(calls).toHaveLength(1);
+    expect(owned).toEqual([
+      {
+        id: "id-1",
+        e164: "+14155550100",
+        status: "unknown",
+        connectionId: null,
+      },
+    ]);
+  });
+
+  test("reports an unbound number as bound to nothing", async () => {
+    // Telnyx sends "" rather than omitting the field, and an unbound number
+    // bills monthly while dropping every inbound call — so the distinction has
+    // to survive into the pool rather than reading as a connection id.
+    withKey();
+    stubFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "id-1",
+                phone_number: "+14155550100",
+                status: "active",
+                connection_id: "  ",
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const owned = await listOwnedNumbers();
+
+    expect(owned[0]?.connectionId).toBeNull();
+    expect(owned[0]?.status).toBe("active");
+  });
+
+  test("skips rows the provider returns without an id or a number", async () => {
+    withKey();
+    stubFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            data: [
+              { phone_number: "+14155550100" },
+              { id: "id-2" },
+              { id: "id-3", phone_number: "+14155550103" },
+            ],
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const owned = await listOwnedNumbers();
+
+    expect(owned.map((row) => row.e164)).toEqual(["+14155550103"]);
   });
 });
