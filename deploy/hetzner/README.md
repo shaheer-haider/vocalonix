@@ -12,7 +12,9 @@ Two-server Docker deployment for Vocalonix and Dograh on Hetzner Cloud.
 
 - **Dograh server** (`cx33`, 4 vCPU / 8 GB, Helsinki): Postgres, Redis, MinIO, Dograh API/UI, coturn (TURN), Caddy reverse proxy.
 - **Vocalonix server** (`cx23`, 2 vCPU / 4 GB, Helsinki): Postgres, Vocalonix API, worker, web, Caddy reverse proxy.
-- Both servers get automatic Let’s Encrypt certificates via `sslip.io`.
+- `harkbell.com` is proxied by Cloudflare, which terminates the browser's TLS;
+  Caddy serves a Cloudflare Origin Certificate on that hop. `voice.harkbell.com`
+  points straight at the Dograh box and gets a normal Let’s Encrypt certificate.
 
 ## First deploy
 
@@ -150,9 +152,15 @@ checks `/api/health`, `/api/dograh/health`, and the served bundle.
 It needs two things configured once in the GitHub repo:
 
 1. An environment named `hetzner` (Settings → Environments) with two secrets:
-   - `HETZNER_HOST` — the Vocalonix host, e.g. `62-238-101-107.sslip.io`
-     (a hostname with a valid certificate, not a bare IP, so the health
-     checks can use HTTPS).
+   - `HETZNER_HOST` — the SSH target: the Vocalonix box's own address, e.g.
+     `62.238.101.107`. It must reach the box directly, so it cannot be
+     `harkbell.com` — that name resolves to Cloudflare, which proxies HTTP(S)
+     only and will not carry SSH.
+   - `HETZNER_PUBLIC_ORIGIN` — the public origin the health checks run
+     against, including the scheme, e.g. `https://harkbell.com`. This has to
+     be the proxied name rather than the box's address: the origin
+     certificate Caddy serves is trusted by Cloudflare alone, so `curl`
+     against the IP fails validation.
    - `HETZNER_SSH_KEY` — a private key whose public half is in the server's
      `~/.ssh/authorized_keys`. Prefer a **dedicated CI keypair** over the
      operator key in `terraform/.ssh/`:

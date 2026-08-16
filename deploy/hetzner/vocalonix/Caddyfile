@@ -17,11 +17,3 @@ www.harkbell.com {
     tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
     redir https://harkbell.com{uri} permanent
 }
-
-# The hostname this box ran on before the domain existed. Reachable directly,
-# so normal ACME works. Kept so the box stays available during the cutover and
-# while any stale link still points here; drop it once things have settled.
-62-238-101-107.sslip.io {
-    reverse_proxy /api/* vocalonix-api:3001
-    reverse_proxy /* vocalonix-web:3000
-}
