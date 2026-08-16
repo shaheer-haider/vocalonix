@@ -240,6 +240,19 @@ function parseOrigins(value: string): string[] {
 
 const appOrigins = parseOrigins(parsed.data.APP_ORIGIN);
 
+// Outside production this pair is unvalidated, and getting it wrong is silent:
+// verification gates sign-in on a link that no configured sender can deliver,
+// so the account is created and then permanently unreachable. Production
+// already rejects the same combination above.
+if (
+  parsed.data.REQUIRE_EMAIL_VERIFICATION === "true" &&
+  !parsed.data.RESEND_API_KEY
+) {
+  console.warn(
+    "REQUIRE_EMAIL_VERIFICATION is true but RESEND_API_KEY is unset — verification emails will not be sent and new accounts cannot sign in.",
+  );
+}
+
 export const env = {
   nodeEnv: parsed.data.NODE_ENV,
   isProduction,

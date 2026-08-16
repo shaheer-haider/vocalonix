@@ -154,7 +154,7 @@ capability flag and lets the widget request TURN credentials.
 
 ## End-to-end testing guide
 
-Use this guide to walk through the full public → demo → signup → onboarding → dashboard flow. Test both locally (`http://localhost:3000`) and on Hetzner (`https://62-238-101-107.sslip.io`).
+Use this guide to walk through the full public → demo → signup → onboarding → dashboard flow. Test both locally (`http://localhost:3000`) and on Hetzner (`https://harkbell.com`).
 
 ### 1. Landing page
 

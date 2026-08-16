@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: VOCALONIX_IP=... DOGRAH_IP=... bash generate-env.sh
+# Usage: ROOT_DOMAIN=... DOGRAH_IP=... bash generate-env.sh
 # Defaults use the Hetzner outputs from the terraform run.
 #
 # ⚠️  THIS SCRIPT MINTS FRESH SECRETS ON EVERY RUN. It is for standing up a NEW
@@ -10,24 +10,18 @@ set -euo pipefail
 # and DOGRAH_SERVICE_PASSWORD (breaking the Dograh service login). To change a
 # hostname on a running deployment, edit that box's .env in place instead.
 
-VOCALONIX_IP="${VOCALONIX_IP:-62.238.101.107}"
+# Only the Dograh public IP is still needed, for coturn's external address.
 DOGRAH_IP="${DOGRAH_IP:-62.238.109.55}"
 VOCALONIX_PRIVATE_IP="${VOCALONIX_PRIVATE_IP:-10.0.1.2}"
 DOGRAH_PRIVATE_IP="${DOGRAH_PRIVATE_IP:-10.0.1.3}"
 
-# Public hostnames. These used to be derived from the IPs via sslip.io, which is
-# what the boxes ran on before the domain existed. Set ROOT_DOMAIN= (empty) to
-# get that behaviour back — useful for a throwaway box with no DNS.
-ROOT_DOMAIN="${ROOT_DOMAIN-harkbell.com}"
-if [ -n "$ROOT_DOMAIN" ]; then
-  VOCALONIX_HOST="${VOCALONIX_HOST:-$ROOT_DOMAIN}"
-  DOGRAH_HOST="${DOGRAH_HOST:-voice.$ROOT_DOMAIN}"
-  ACME_EMAIL="${ACME_EMAIL:-hello@$ROOT_DOMAIN}"
-else
-  VOCALONIX_HOST="${VOCALONIX_HOST:-$(echo "$VOCALONIX_IP" | tr '.' '-').sslip.io}"
-  DOGRAH_HOST="${DOGRAH_HOST:-$(echo "$DOGRAH_IP" | tr '.' '-').sslip.io}"
-  ACME_EMAIL="${ACME_EMAIL:-nobody@sslip.io}"
-fi
+# Public hostnames. A deployment needs real DNS: both boxes are addressed by
+# name everywhere downstream — certificates, APP_ORIGIN, the widget's allowed
+# domains — so ROOT_DOMAIN must be set to a domain pointed at these IPs.
+ROOT_DOMAIN="${ROOT_DOMAIN:-harkbell.com}"
+VOCALONIX_HOST="${VOCALONIX_HOST:-$ROOT_DOMAIN}"
+DOGRAH_HOST="${DOGRAH_HOST:-voice.$ROOT_DOMAIN}"
+ACME_EMAIL="${ACME_EMAIL:-hello@$ROOT_DOMAIN}"
 
 # The API refuses to boot when NODE_ENV=production and email verification is
 # off (see app/api/src/env.ts). Deriving one from the other keeps a generated
@@ -37,6 +31,12 @@ if [ "$NODE_ENV_VALUE" = "production" ]; then
   REQUIRE_EMAIL_VERIFICATION_VALUE=true
 else
   REQUIRE_EMAIL_VERIFICATION_VALUE="${REQUIRE_EMAIL_VERIFICATION:-false}"
+fi
+
+# Same reasoning one step further: verification without a sender creates accounts
+# that can never sign in, and in production env.ts rejects the pair outright.
+if [ "$REQUIRE_EMAIL_VERIFICATION_VALUE" = "true" ] && [ -z "${RESEND_API_KEY:-}" ]; then
+  echo "warning: REQUIRE_EMAIL_VERIFICATION=true but RESEND_API_KEY is unset; set it before starting the stack." >&2
 fi
 
 AUTH_SECRET=$(openssl rand -hex 32)
@@ -88,8 +88,8 @@ VOCALONIX_API_PUBLIC_URL=https://$VOCALONIX_HOST
 
 AUTH_SECRET=$AUTH_SECRET
 REQUIRE_EMAIL_VERIFICATION=$REQUIRE_EMAIL_VERIFICATION_VALUE
-RESEND_API_KEY=
-EMAIL_FROM=Harkbell <hello@$ROOT_DOMAIN>
+RESEND_API_KEY=${RESEND_API_KEY:-}
+EMAIL_FROM="${EMAIL_FROM:-Harkbell <hello@$ROOT_DOMAIN>}"
 MAGIC_LINK_TTL_SECONDS=300
 
 DOGRAH_INTERNAL_URL=http://$DOGRAH_PRIVATE_IP:8000

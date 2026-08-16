@@ -14,11 +14,34 @@ jobs:
     runs-on: ubuntu-latest
     environment: hetzner
     env:
+      # Two values, because one name can no longer do both jobs. harkbell.com
+      # resolves to Cloudflare, not to the box, so it cannot be an SSH target;
+      # the box's own address cannot serve the health checks, because the origin
+      # certificate behind the proxy is trusted by Cloudflare alone and Caddy
+      # has no site block matching a bare IP. SSH goes direct, HTTP goes public.
       HOST: ${{ secrets.HETZNER_HOST }}
+      PUBLIC_ORIGIN: ${{ secrets.HETZNER_PUBLIC_ORIGIN }}
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Check deploy secrets
+        run: |
+          : "${HOST:?HETZNER_HOST is not set on the hetzner environment}"
+          : "${PUBLIC_ORIGIN:?HETZNER_PUBLIC_ORIGIN is not set on the hetzner environment}"
+          case "$PUBLIC_ORIGIN" in
+            https://*) ;;
+            *) echo "HETZNER_PUBLIC_ORIGIN must include the scheme, e.g. https://harkbell.com" >&2; exit 1 ;;
+          esac
+          # An IP literal sends no SNI, so Caddy matches no site block and kills
+          # the handshake with "tlsv1 alert internal error" — identical on every
+          # attempt, so the retry loop below burns its full five minutes and
+          # reports a timeout for what is really a misconfigured secret.
+          case "${PUBLIC_ORIGIN#https://}" in
+            *[!0-9.]*) ;;
+            *) echo "HETZNER_PUBLIC_ORIGIN must be a hostname, not an IP: TLS needs SNI to match a site." >&2; exit 1 ;;
+          esac
 
       - name: Set up SSH
         run: |
@@ -55,7 +78,7 @@ jobs:
         run: |
           sha=$(git rev-parse HEAD)
           for attempt in $(seq 1 30); do
-            if curl -fsS -o /dev/null "https://$HOST/api/health"; then
+            if curl -fsS -o /dev/null "$PUBLIC_ORIGIN/api/health"; then
               break
             fi
             if [ "$attempt" -eq 30 ]; then
@@ -65,7 +88,7 @@ jobs:
             echo "Waiting for TLS/health (attempt $attempt)..."
             sleep 10
           done
-          curl -fsS "https://$HOST/api/health"
-          curl -fsS "https://$HOST/api/dograh/health"
-          bundle=$(curl -fsS "https://$HOST/" | grep -o 'assets/index-[^"]*\.js' | head -1)
+          curl -fsS "$PUBLIC_ORIGIN/api/health"
+          curl -fsS "$PUBLIC_ORIGIN/api/dograh/health"
+          bundle=$(curl -fsS "$PUBLIC_ORIGIN/" | grep -o 'assets/index-[^"]*\.js' | head -1)
           echo "Serving bundle: $bundle (commit $sha)"
