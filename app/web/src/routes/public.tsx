@@ -93,7 +93,7 @@ export function LandingPage() {
     <div className="landing-page">
       <header className="landing-nav">
         <Link to="/" className="wordmark">
-          vocalonix
+          harkbell
         </Link>
         <nav className="landing-nav__links">
           {turnEnabled ? (
@@ -118,7 +118,7 @@ export function LandingPage() {
         <Pill variant="accent">For appointment businesses</Pill>
         <h1>Never lose another booking to a missed call.</h1>
         <p>
-          Vocalonix answers out loud, 24/7 — quoting your real prices, reading
+          Harkbell answers out loud, 24/7 — quoting your real prices, reading
           your real knowledge, booking into your real diary, and passing the
           caller to you when it matters. Set it up once; it answers on your
           website and on your phone line.
@@ -168,7 +168,7 @@ export function LandingPage() {
             </ol>
           </Box>
           <Box padding="md">
-            <p className="eyebrow">With Vocalonix</p>
+            <p className="eyebrow">With Harkbell</p>
             <ol>
               <li>Answered in two rings, by name, with your prices.</li>
               <li>The caller hears real answers from your knowledge.</li>
@@ -197,7 +197,7 @@ export function LandingPage() {
       </section>
 
       <footer className="landing-footer">
-        <span>© 2026 Vocalonix</span>
+        <span>© 2026 Harkbell</span>
         {turnEnabled ? <Link to="/demo">Hear it now</Link> : null}
       </footer>
     </div>
@@ -538,7 +538,7 @@ function MagicLinkCallback({ token }: { token: string }) {
             className="ui-button ui-button--primary full-width"
             href={intendedRoute()}
           >
-            Continue to Vocalonix →
+            Continue to Harkbell →
           </a>
         ) : (
           <Link className="ui-button full-width" to="/magic">
@@ -596,7 +596,7 @@ export function VerifyEmailPage() {
           className="ui-button ui-button--primary full-width"
           href={state.success ? intendedRoute() : "/login"}
         >
-          {state.success ? "Continue to Vocalonix →" : "Return to login"}
+          {state.success ? "Continue to Harkbell →" : "Return to login"}
         </a>
       </Box>
     </AuthShell>
@@ -607,7 +607,7 @@ function AuthHeader({ tagline }: { tagline?: string }) {
   return (
     <div className="auth-header">
       <Link to="/" className="wordmark">
-        vocalonix
+        harkbell
       </Link>
       {tagline ? <p>{tagline}</p> : null}
     </div>

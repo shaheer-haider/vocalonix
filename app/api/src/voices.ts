@@ -1,7 +1,7 @@
 /**
  * The voice catalogue every business picks from.
  *
- * A voice is a Vocalonix-level identity ("Aria, warm and caring"), not a
+ * A voice is a Harkbell-level identity ("Aria, warm and caring"), not a
  * provider voice id. Each entry carries the closest equivalent on every voice
  * provider we can drive, so a business keeps the same voice when the operator
  * switches the platform from, say, Gemini realtime to a Deepgram pipeline.

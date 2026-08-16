@@ -3,8 +3,26 @@ import { dograh } from "./client";
 import { tenantWorkflowConfigurations } from "./config";
 import type { AgentSettings, DograhDocument, DograhWorkflow } from "./types";
 
-const WORKFLOW_PREFIX = "[Vocalonix]";
-const TENANT_WORKFLOW_PREFIX = "[Vocalonix:";
+const WORKFLOW_PREFIX = "[Harkbell]";
+const TENANT_WORKFLOW_PREFIX = "[Harkbell:";
+// Workflows created before the Harkbell rename still carry the old prefix in
+// Dograh, and `ensureWorkflow` finds the live one by name. Matching the legacy
+// prefixes too keeps those discoverable; dropping them would strand the
+// production workflow and mint a duplicate with default settings.
+const LEGACY_WORKFLOW_PREFIXES = ["[Vocalonix]"];
+const LEGACY_TENANT_WORKFLOW_PREFIXES = ["[Vocalonix:"];
+
+function isManagedWorkflowName(name: string): boolean {
+  return [WORKFLOW_PREFIX, ...LEGACY_WORKFLOW_PREFIXES].some((prefix) =>
+    name.startsWith(prefix),
+  );
+}
+
+function isTenantWorkflowName(name: string): boolean {
+  return [TENANT_WORKFLOW_PREFIX, ...LEGACY_TENANT_WORKFLOW_PREFIXES].some(
+    (prefix) => name.startsWith(prefix),
+  );
+}
 
 export const defaultAgentSettings: AgentSettings = {
   agentName: "Nova",
@@ -190,8 +208,8 @@ export async function ensureWorkflow(): Promise<DograhWorkflow> {
   const workflows = await dograh.listWorkflows();
   const managed = workflows.find(
     (workflow) =>
-      workflow.name.startsWith(WORKFLOW_PREFIX) &&
-      !workflow.name.startsWith(TENANT_WORKFLOW_PREFIX),
+      isManagedWorkflowName(workflow.name) &&
+      !isTenantWorkflowName(workflow.name),
   );
   if (managed) return dograh.getWorkflow(managed.id);
 

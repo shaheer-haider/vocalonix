@@ -77,7 +77,7 @@ export function buildDemoAgentSettings(input: DemoWorkflowInput): TenantAgentSet
     agentName,
     greeting,
     prompt: buildDemoPrompt(input),
-    closing: "Thanks for trying Vocalonix. If you'd like this answering your website too, just sign up and we can publish it in a few minutes.",
+    closing: "Thanks for trying Harkbell. If you'd like this answering your website too, just sign up and we can publish it in a few minutes.",
     tone,
     voice: resolveVoice(input.voice).id,
     allowInterrupt: true,

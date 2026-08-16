@@ -356,7 +356,7 @@ export async function synchronizeBusiness(
         const current = await client.getWorkflow(workflowId);
         if (workflowBusinessId(current.workflow_definition) !== businessId) {
           throw new DograhError(
-            "The mapped workflow belongs to another Vocalonix business.",
+            "The mapped workflow belongs to another Harkbell business.",
             409,
           );
         }

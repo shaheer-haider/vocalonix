@@ -10,8 +10,8 @@ export function TopNav() {
 
   return (
     <header className="public-nav">
-      <Link to="/" className="wordmark" aria-label="Vocalonix home">
-        vocalonix
+      <Link to="/" className="wordmark" aria-label="Harkbell home">
+        harkbell
       </Link>
       <nav aria-label="Public navigation">
         <a href="/#how-it-works">How it works</a>

@@ -322,11 +322,11 @@ export const router = createRouter({
 });
 
 /**
- * Every route rendered the same "Vocalonix" title, which makes browser history and
+ * Every route rendered the same "Harkbell" title, which makes browser history and
  * multi-tab use ambiguous. Titles are derived from the matched path.
  */
 const ROUTE_TITLES: Array<[RegExp, string]> = [
-  [/^\/$/, "Vocalonix — never lose another booking to a missed call"],
+  [/^\/$/, "Harkbell — never lose another booking to a missed call"],
   [/^\/demo/, "Hear it now"],
   [/^\/login/, "Log in"],
   [/^\/signup/, "Create your account"],
@@ -355,8 +355,8 @@ const ROUTE_TITLES: Array<[RegExp, string]> = [
 
 function titleFor(pathname: string) {
   const match = ROUTE_TITLES.find(([pattern]) => pattern.test(pathname));
-  if (!match) return "Vocalonix";
-  return match[1].startsWith("Vocalonix") ? match[1] : `${match[1]} · Vocalonix`;
+  if (!match) return "Harkbell";
+  return match[1].startsWith("Harkbell") ? match[1] : `${match[1]} · Harkbell`;
 }
 
 router.subscribe("onResolved", () => {
