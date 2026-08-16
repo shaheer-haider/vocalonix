@@ -334,3 +334,17 @@ export async function ingestAllBusinessRuns(): Promise<number> {
   }
   return ingested;
 }
+
+/**
+ * How long a call lasted, in seconds.
+ *
+ * The engine reports this under `usage_info`. `cost_info` is read as a fallback
+ * only because older runs may carry it there — on current runs it comes back as
+ * an empty object, which is why every call in the product showed no duration at
+ * all until this was corrected.
+ */
+export function runDurationSeconds(run: DograhWorkflowRun): number | null {
+  const value =
+    run.usage_info?.call_duration_seconds ?? run.cost_info?.call_duration_seconds;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}

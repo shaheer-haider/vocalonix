@@ -31,6 +31,7 @@ import {
   tenantWidgetScript,
 } from "../dograh/tenant";
 import { dograh } from "../dograh/client";
+import { runDurationSeconds } from "../dograh/ingest";
 import type { DograhWorkflowRun } from "../dograh/types";
 import { ApiError } from "../errors";
 import { paginate, parseListQuery } from "../pagination";
@@ -315,7 +316,7 @@ function conversationSummary(run: DograhWorkflowRun) {
     startedAt: run.created_at,
     mode: run.mode,
     completed: run.is_completed,
-    durationSeconds: run.cost_info?.call_duration_seconds ?? null,
+    durationSeconds: runDurationSeconds(run),
     disposition:
       run.gathered_context?.mapped_call_disposition ??
       run.gathered_context?.call_disposition ??
@@ -852,7 +853,7 @@ export const tenantRoutes = new Elysia()
     }
 
     const durations = runs
-      .map((run) => run.cost_info?.call_duration_seconds)
+      .map((run) => runDurationSeconds(run))
       .filter((value): value is number => typeof value === "number");
     const totalSeconds = durations.reduce((sum, value) => sum + value, 0);
     const hourly = new Array<number>(24).fill(0);
