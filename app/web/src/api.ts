@@ -15,6 +15,7 @@ import type {
   Vertical,
   VoiceCatalogueEntry,
   WidgetResponse,
+  BillingStatus,
 } from "./types";
 
 const API_BASE_URL =
@@ -515,12 +516,12 @@ export const api = {
       unwrap(await client.api.auth.email.verify.post({ token })),
   },
   billing: {
-    status: async (
-      slug: string,
-    ): Promise<{ configured: boolean; plan: string }> =>
+    status: async (slug: string): Promise<BillingStatus> =>
       unwrap(await client.api.b[slug].billing.get()),
     portal: async (slug: string): Promise<{ url: string }> =>
       unwrap(await client.api.b[slug].billing.portal.post()),
+    checkout: async (slug: string, planId: string): Promise<{ url: string }> =>
+      unwrap(await client.api.b[slug].billing.checkout.post({ planId })),
   },
   businesses: {
     list: async (): Promise<BusinessListResponse> => {

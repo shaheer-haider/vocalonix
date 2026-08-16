@@ -26,6 +26,7 @@ import {
   requireWorkspace,
 } from "./context";
 import { canManageRole } from "./permissions";
+import { assertCanAddSeat } from "../billing/limits";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const invitationTtlMs = 7 * 24 * 60 * 60 * 1000;
@@ -401,6 +402,9 @@ export const workspaceRoutes = new Elysia()
           "You cannot invite someone into that role.",
         );
       }
+      // Counted against active members rather than pending invitations, so a
+      // stale invite that was never accepted does not consume a seat forever.
+      await assertCanAddSeat(workspace.business);
 
       const email = normalizeEmail(body.email);
       const [activeMember] = await db

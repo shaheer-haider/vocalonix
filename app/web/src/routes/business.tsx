@@ -49,7 +49,7 @@ import {
   UsersIcon,
 } from "../icons";
 import { can, permissionRows, roles } from "../permissions";
-import type { PlatformStatus } from "../types";
+import type { BillingStatus, PlatformStatus } from "../types";
 import { detectTimezone, timezoneOptions } from "../timezones";
 import { useVerticals, verticalOptions } from "../hooks/useVerticals";
 import { AccountContent } from "./account";
@@ -1230,15 +1230,57 @@ export function WorkspaceDashboardPage() {
   );
 }
 
-function WorkspaceBilling({ slug }: { slug: string }) {
-  const [status, setStatus] = useState<{
-    configured: boolean;
-    plan: string;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [opening, setOpening] = useState(false);
+function money(cents: number): string {
+  return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+}
 
+/** `null` on a limit means unlimited; the API cannot send Infinity over JSON. */
+function limitLabel(value: number | null, noun: string): string {
+  return value === null ? `Unlimited ${noun}` : `${value} ${noun}`;
+}
+
+function statusTone(status: string | null): {
+  variant: "good" | "warn" | "default";
+  label: string;
+} | null {
+  switch (status) {
+    case "active":
+      return { variant: "good", label: "Active" };
+    case "trialing":
+      return { variant: "good", label: "Trial" };
+    case "past_due":
+      return { variant: "warn", label: "Payment failed" };
+    case "incomplete":
+      return { variant: "warn", label: "Incomplete" };
+    case "canceled":
+      return { variant: "default", label: "Cancelled" };
+    default:
+      return null;
+  }
+}
+
+function WorkspaceBilling({ slug }: { slug: string }) {
+  const [status, setStatus] = useState<BillingStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
+  const [buying, setBuying] = useState<string | null>(null);
+
+  // Stripe sends the customer back here after Checkout. The webhook is what
+  // actually grants the plan, and it can land after the redirect, so this only
+  // acknowledges the return rather than claiming the upgrade is live.
   useEffect(() => {
+    const outcome = new URLSearchParams(window.location.search).get("checkout");
+    if (outcome === "success") {
+      setNotice(
+        "Payment received. Your new plan appears here as soon as Stripe confirms it — usually a few seconds.",
+      );
+    } else if (outcome === "cancelled") {
+      setNotice("Checkout was cancelled. Nothing has been charged.");
+    }
+  }, []);
+
+  const load = useCallback(() => {
     let cancelled = false;
     void api.billing
       .status(slug)
@@ -1259,6 +1301,8 @@ function WorkspaceBilling({ slug }: { slug: string }) {
     };
   }, [slug]);
 
+  useEffect(() => load(), [load]);
+
   async function openPortal() {
     setError(null);
     setOpening(true);
@@ -1275,41 +1319,143 @@ function WorkspaceBilling({ slug }: { slug: string }) {
     }
   }
 
+  async function startCheckout(planId: string) {
+    setError(null);
+    setBuying(planId);
+    try {
+      const { url } = await api.billing.checkout(slug, planId);
+      window.location.assign(url);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to start checkout.",
+      );
+      setBuying(null);
+    }
+  }
+
+  const tone = status ? statusTone(status.status) : null;
+  const included = status?.plan.monthlyMinutes ?? null;
+  const used = status?.usage.minutesUsed ?? 0;
+  const pct =
+    included && included > 0
+      ? Math.min(100, Math.round((used / included) * 100))
+      : 0;
+  const overLimit = included !== null && used >= included;
+
   return (
     <section className="account-section">
       <div className="account-section__heading">
         <div>
           <h2>Plan &amp; billing</h2>
           <p>
-            Manage your plan, payment method, and invoices in the secure
-            billing portal.
+            Change your plan here. Payment method, invoices, and cancellation
+            live in the secure Stripe portal.
           </p>
         </div>
       </div>
+
+      {notice ? <Alert variant="info">{notice}</Alert> : null}
       {error ? <Alert variant="error">{error}</Alert> : null}
+
       {status === null && !error ? (
         <LoadingState label="Loading billing details…" />
       ) : status ? (
-        <Box className="dash-surface" style={{ padding: 20 }}>
-          <p className="eyebrow">Current plan</p>
-          <h2>{status.plan}</h2>
-          <div className="stack-row">
-            <Button
-              variant="primary"
-              loading={opening}
-              disabled={!status.configured}
-              onClick={() => void openPortal()}
-            >
-              Manage billing &amp; subscription
-            </Button>
-          </div>
-          {!status.configured ? (
+        <>
+          <Box className="dash-surface" style={{ padding: 20 }}>
+            <p className="eyebrow">Current plan</p>
+            <div className="account-section__heading">
+              <h2>{status.plan.name}</h2>
+              {tone ? <Pill variant={tone.variant}>{tone.label}</Pill> : null}
+            </div>
+
+            {status.status === "past_due" ? (
+              <Alert variant="error">
+                Your last payment failed. Update your card in the billing portal
+                to keep the agent answering.
+              </Alert>
+            ) : null}
+
             <p className="auth-card-copy">
-              Online billing isn&apos;t enabled for this workspace yet. Contact
-              support to change your plan.
+              {included === null
+                ? `${used} minutes used — unlimited on this plan.`
+                : `${used} of ${included} minutes used${
+                    overLimit ? " — limit reached." : "."
+                  }`}
             </p>
+            {included !== null ? (
+              <div
+                className="usage-meter"
+                role="progressbar"
+                aria-valuenow={used}
+                aria-valuemin={0}
+                aria-valuemax={included}
+                aria-label="Call minutes used this period"
+              >
+                <span
+                  className={`usage-meter__fill${overLimit ? " usage-meter__fill--over" : ""}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            ) : null}
+
+            {status.periodEnd ? (
+              <p className="auth-card-copy">
+                Renews {new Date(status.periodEnd).toLocaleDateString()}.
+              </p>
+            ) : null}
+
+            <div className="stack-row">
+              <Button
+                loading={opening}
+                disabled={!status.configured}
+                onClick={() => void openPortal()}
+              >
+                Payment method &amp; invoices
+              </Button>
+            </div>
+
+            {!status.configured ? (
+              <p className="auth-card-copy">
+                Online billing isn&apos;t enabled for this workspace yet.
+                Contact support to change your plan.
+              </p>
+            ) : null}
+          </Box>
+
+          {status.configured && status.available.length > 0 ? (
+            <div className="feature-grid feature-grid--four">
+              {status.available.map((plan) => {
+                const current = plan.id === status.plan.id;
+                return (
+                  <Box key={plan.id} padding="md">
+                    <div className="account-section__heading">
+                      <h3>{plan.name}</h3>
+                      {current ? <Pill variant="good">Current</Pill> : null}
+                    </div>
+                    <p className="eyebrow">
+                      {money(plan.amountCents)} / month
+                    </p>
+                    <ul>
+                      <li>{limitLabel(plan.monthlyMinutes, "minutes")}</li>
+                      <li>{limitLabel(plan.phoneNumbers, "phone numbers")}</li>
+                      <li>{limitLabel(plan.seats, "team members")}</li>
+                    </ul>
+                    <Button
+                      variant={current ? undefined : "primary"}
+                      disabled={current}
+                      loading={buying === plan.id}
+                      onClick={() => void startCheckout(plan.id)}
+                    >
+                      {current ? "Current plan" : `Choose ${plan.name}`}
+                    </Button>
+                  </Box>
+                );
+              })}
+            </div>
           ) : null}
-        </Box>
+        </>
       ) : null}
     </section>
   );

@@ -192,7 +192,17 @@ export const businesses = pgTable(
     vertical: text("vertical"),
     locations: text("locations"),
     stripeCustomerId: text("stripe_customer_id"),
+    /** Plan id from the catalogue in billing/plans.ts, not a display name. */
     planName: text("plan_name"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    /**
+     * Mirrors Stripe's subscription status. Kept locally so an entitlement
+     * check is a column read rather than a call to Stripe on every request,
+     * and so the product keeps working when Stripe is briefly unreachable.
+     * The webhook is what keeps it honest.
+     */
+    planStatus: text("plan_status"),
+    planPeriodEnd: timestamp("plan_period_end", { withTimezone: true }),
     createdBy: text("created_by")
       .notNull()
       .references(() => users.id),

@@ -43,6 +43,7 @@ import {
   isAllowedDocumentFilename,
   matchesDocumentSignature,
 } from "../uploads";
+import { assertCanAddPhoneNumber } from "../billing/limits";
 import { requirePermission, requireWorkspace } from "../workspace/context";
 import { can } from "../workspace/permissions";
 import {
@@ -755,6 +756,9 @@ export const tenantRoutes = new Elysia()
     async ({ body, params, request }) => {
       const workspace = await requireWorkspace(request.headers, params.slug);
       requirePermission(workspace.role, "agent.edit");
+      // Checked before provisioning, not after: a number ordered from the
+      // carrier starts costing money the moment it exists.
+      await assertCanAddPhoneNumber(workspace.business);
       const attached = await provisionPhoneNumber({
         businessId: workspace.business.id,
         raw: body.number,
