@@ -29,9 +29,11 @@ ds-bundle/
 .design-sync/node_modules
 app/web/types/
 
-# Agent tooling. The impeccable skill is tracked under .agents/skills/ and
-# .claude/skills/, since each tool resolves its own copy. Further per-tool
-# mirrors of the same install, and machine-local state, stay out.
+# Agent tooling. Claude Code is the only agent this repo targets, so .claude/ is
+# the single tracked home for skills and shared settings. Per-tool mirrors of the
+# same install (.agents/ for Devin/Codex used to exist and drifted) stay out, as
+# does machine-local state.
+.agents/
 .codex/
 .opencode/
 .impeccable/
