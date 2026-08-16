@@ -288,7 +288,7 @@ export async function synchronizeBusiness(
       category: "rejected",
       message:
         loaded.mapping.lastError ??
-        "Dograh rejected this configuration. Change it or retry manually.",
+        "The voice engine rejected this configuration. Change it or retry manually.",
       retryable: false,
     });
   }

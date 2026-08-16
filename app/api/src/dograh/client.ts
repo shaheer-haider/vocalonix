@@ -60,16 +60,26 @@ function providerVerdicts(detail: unknown): string | null {
   return lines.join(" ");
 }
 
+/**
+ * The engine names itself in its own error text, and `index.ts` returns a
+ * DograhError's message to the browser unedited. That makes this the last point
+ * where the vendor's name can be taken out before a caller reads it, so it is
+ * taken out here rather than at each of the call sites that formats a message.
+ */
+function withoutVendorName(detail: string): string {
+  return detail.replaceAll(/dograh/gi, "the voice engine");
+}
+
 function errorDetail(value: unknown): string {
-  if (typeof value === "string") return value;
+  if (typeof value === "string") return withoutVendorName(value);
   if (value && typeof value === "object" && "detail" in value) {
     const detail = (value as { detail: unknown }).detail;
-    if (typeof detail === "string") return detail;
+    if (typeof detail === "string") return withoutVendorName(detail);
     const verdicts = providerVerdicts(detail);
-    if (verdicts) return verdicts;
+    if (verdicts) return withoutVendorName(verdicts);
     console.error("Dograh error detail:", detail);
   }
-  return "Dograh request failed";
+  return "The voice engine request failed";
 }
 
 export interface DograhManagementClient {
@@ -234,8 +244,8 @@ export class DograhClient implements DograhManagementClient {
     } catch (error) {
       const message =
         error instanceof Error && error.name === "AbortError"
-          ? "Dograh request timed out"
-          : "Dograh is unreachable";
+          ? "The voice engine request timed out"
+          : "The voice engine is unreachable";
       throw new DograhError(message, 503);
     } finally {
       clearTimeout(timeout);
@@ -549,7 +559,7 @@ export class DograhClient implements DograhManagementClient {
 
     if (!response.ok) {
       throw new DograhError(
-        "Failed to upload the document to Dograh storage",
+        "Failed to upload the document to voice engine storage",
         response.status,
       );
     }
@@ -565,7 +575,7 @@ export class DograhClient implements DograhManagementClient {
 
     if (!response.ok) {
       throw new DograhError(
-        "Failed to upload the document to Dograh storage",
+        "Failed to upload the document to voice engine storage",
         response.status,
       );
     }

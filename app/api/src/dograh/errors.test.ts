@@ -8,7 +8,7 @@ describe("Dograh failure classification", () => {
     expect(classifyDograhFailure(new DograhError("timeout", 503))).toEqual({
       category: "unreachable",
       message:
-        "Dograh is temporarily unavailable. Harkbell saved the local changes and will retry.",
+        "The voice engine is temporarily unavailable. Harkbell saved the local changes and will retry.",
       retryable: true,
     });
   });
@@ -33,8 +33,19 @@ describe("Dograh failure classification", () => {
     );
     expect(failure.category).toBe("rejected");
     expect(failure.retryable).toBe(false);
-    expect(failure.message).toContain("Dograh rejected this configuration");
+    expect(failure.message).toContain("The voice engine rejected this configuration");
     expect(failure.message).not.toContain("dograh.internal");
     expect(failure.message).not.toContain("secret-value");
+  });
+
+  // The rejection branch is the one path that quotes the engine's own words
+  // back to the user, so it is the one that can leak the vendor's name into
+  // the UI however carefully the surrounding sentences are written.
+  test("the engine's name never reaches a message the UI shows", () => {
+    const failure = classifyDograhFailure(
+      new DograhError("Dograh could not parse the workflow sent by DOGRAH", 400),
+    );
+    expect(failure.message).not.toMatch(/dograh/i);
+    expect(failure.message).toContain("the voice engine");
   });
 });

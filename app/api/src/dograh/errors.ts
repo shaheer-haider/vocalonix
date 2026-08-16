@@ -17,6 +17,11 @@ function sanitizedDetail(message: string): string {
   return message
     .replaceAll(/https?:\/\/\S+/gi, "[remote service]")
     .replaceAll(/(?:bearer|api[_ -]?key|password|token)\s*[:=]\s*\S+/gi, "[credential removed]")
+    // This detail is the engine's own error text, pasted into a message the UI
+    // shows unedited. Every message here names "the voice engine" rather than
+    // the vendor; without this, the vendor's name leaks through the one path
+    // that quotes it verbatim.
+    .replaceAll(/dograh/gi, "the voice engine")
     .replaceAll(/\s+/g, " ")
     .trim()
     .slice(0, 600);
@@ -26,7 +31,7 @@ export function classifyDograhFailure(error: unknown): ClassifiedDograhFailure {
   if (!(error instanceof DograhError)) {
     return {
       category: "unknown",
-      message: "Dograh synchronization failed unexpectedly. Retry or contact support.",
+      message: "Voice engine synchronization failed unexpectedly. Retry or contact support.",
       retryable: true,
     };
   }
@@ -34,21 +39,22 @@ export function classifyDograhFailure(error: unknown): ClassifiedDograhFailure {
   if (error.status === 401 || error.status === 403) {
     return {
       category: "unauthorized",
-      message: "Dograh rejected the server credentials. Check the server-side integration.",
+      message: "The voice engine rejected the server credentials. Check the server-side integration.",
       retryable: false,
     };
   }
   if (error.status === 404) {
     return {
       category: "not_found",
-      message: "The mapped Dograh resource no longer exists. Retry to reconcile it.",
+      message: "The mapped voice engine resource no longer exists. Retry to reconcile it.",
       retryable: false,
     };
   }
   if (error.status === 408 || error.status === 429 || error.status >= 500) {
     return {
       category: "unreachable",
-      message: "Dograh is temporarily unavailable. Harkbell saved the local changes and will retry.",
+      message:
+        "The voice engine is temporarily unavailable. Harkbell saved the local changes and will retry.",
       retryable: true,
     };
   }
@@ -57,14 +63,14 @@ export function classifyDograhFailure(error: unknown): ClassifiedDograhFailure {
     return {
       category: "rejected",
       message: detail
-        ? `Dograh rejected this configuration: ${detail}`
-        : "Dograh rejected this configuration. Review the saved values before retrying.",
+        ? `The voice engine rejected this configuration: ${detail}`
+        : "The voice engine rejected this configuration. Review the saved values before retrying.",
       retryable: false,
     };
   }
   return {
     category: "unknown",
-    message: "Dograh synchronization failed unexpectedly. Retry or contact support.",
+    message: "Voice engine synchronization failed unexpectedly. Retry or contact support.",
     retryable: true,
   };
 }

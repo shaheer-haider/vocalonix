@@ -37,8 +37,8 @@ async function readiness(): Promise<{
     label: "Voice engine",
     state: engine.ok ? "ready" : "attention",
     detail: engine.ok
-      ? "The Dograh voice engine is reachable."
-      : "The Dograh voice engine is not reachable. Check DOGRAH_INTERNAL_URL and that the engine is running.",
+      ? "The voice engine is reachable."
+      : "The voice engine is not reachable. Check DOGRAH_INTERNAL_URL and that the engine is running.",
   });
 
   const webrtc = Boolean(

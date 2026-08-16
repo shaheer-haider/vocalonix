@@ -693,7 +693,7 @@ export const tenantRoutes = new Elysia()
       throw new ApiError(
         404,
         "DOGRAH_MAPPING_NOT_FOUND",
-        "Dograh mapping was not found.",
+        "The voice engine mapping was not found.",
       );
     }
     return { dograh: mapping };

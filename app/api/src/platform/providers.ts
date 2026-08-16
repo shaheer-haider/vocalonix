@@ -156,7 +156,7 @@ export async function reconcileProviderConfiguration(
     const message =
       error instanceof DograhError
         ? error.message
-        : "Dograh rejected the provider configuration.";
+        : "The voice engine rejected the provider configuration.";
     // Keep the old hash: the next attempt should still be treated as a change.
     await writeState({ ...state, lastError: message });
     console.error("Provider configuration push failed:", message);
