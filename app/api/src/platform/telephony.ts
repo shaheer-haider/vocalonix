@@ -181,6 +181,51 @@ async function bindForDelivery(
 }
 
 /**
+ * Makes Dograh route `e164` to `workflowId`, creating the record or re-pointing
+ * one it already holds.
+ *
+ * Dograh resolves an inbound call by joining the telephony configuration to an
+ * *active* phone-number row carrying that address. A number missing from that
+ * table, left inactive, or stored under a different address is unreachable no
+ * matter how correctly Telnyx is bound — the dispatcher answers
+ * `PHONE_NUMBER_NOT_CONFIGURED` and the caller hears ringing that never ends.
+ */
+async function ensureDograhRouting(input: {
+  configId: number;
+  e164: string;
+  label: string;
+  workflowId: number;
+  client: DograhManagementClient;
+}): Promise<{ id: number; syncWarning: string | null }> {
+  const remote = await input.client.listPhoneNumbers(input.configId);
+  const existingRemote = remote.find(
+    (row) => row.address_normalized === input.e164 || row.address === input.e164,
+  );
+
+  const saved = existingRemote
+    ? await input.client.updatePhoneNumber(input.configId, existingRemote.id, {
+        label: input.label || undefined,
+        inbound_workflow_id: input.workflowId,
+        is_active: true,
+      })
+    : await input.client.createPhoneNumber(input.configId, {
+        address: input.e164,
+        label: input.label || undefined,
+        inbound_workflow_id: input.workflowId,
+        is_active: true,
+      });
+
+  return {
+    id: saved.id,
+    syncWarning:
+      saved.provider_sync && saved.provider_sync.ok === false
+        ? saved.provider_sync.message ??
+          "Telnyx did not accept the inbound webhook for this number."
+        : null,
+  };
+}
+
+/**
  * Returns the Dograh telephony configuration id, creating or updating it so it
  * always carries the current key. Adopts a configuration that already exists
  * under our name rather than creating a duplicate on every redeploy.
@@ -408,29 +453,14 @@ export async function provisionPhoneNumber(input: {
     // one that cannot be routed, and both are released below.
     await bindForDelivery(e164, configId, client);
 
-    const remote = await client.listPhoneNumbers(configId);
-    const existingRemote = remote.find(
-      (row) => row.address_normalized === e164 || row.address === e164,
-    );
-
-    const saved = existingRemote
-      ? await client.updatePhoneNumber(configId, existingRemote.id, {
-          label: input.label.trim() || undefined,
-          inbound_workflow_id: workflowId,
-          is_active: true,
-        })
-      : await client.createPhoneNumber(configId, {
-          address: e164,
-          label: input.label.trim() || undefined,
-          inbound_workflow_id: workflowId,
-          is_active: true,
-        });
-
-    const syncWarning =
-      saved.provider_sync && saved.provider_sync.ok === false
-        ? saved.provider_sync.message ??
-          "Telnyx did not accept the inbound webhook for this number."
-        : null;
+    const saved = await ensureDograhRouting({
+      configId,
+      e164,
+      label: input.label.trim(),
+      workflowId,
+      client,
+    });
+    const syncWarning = saved.syncWarning;
 
     await db
       .update(businessPhoneNumbers)
@@ -628,15 +658,17 @@ export async function placeOutboundCall(input: {
  * Brings the telephony configuration and every live number back in line with
  * Telnyx on the way up.
  *
- * Two states drift silently and neither raises an error anywhere: a
+ * Three states drift silently and none raises an error anywhere: a
  * configuration saved before the webhook public key was fetched rejects every
- * inbound webhook, and a number bought before binding existed is attached to no
- * call control application. In both cases the product shows an active number
- * and the phone never rings, so they are repaired at boot rather than waiting
- * for a customer to report silence.
+ * inbound webhook, a number bought before binding existed is attached to no
+ * call control application, and a number missing from Dograh's routing table
+ * resolves to no workflow. In every case the product shows an active number
+ * and the phone never rings — the third is worst, because the caller hears
+ * ringing that is never answered — so all three are repaired at boot rather
+ * than waiting for a customer to report silence.
  *
- * Failures are logged and skipped: a number we cannot reach Telnyx about should
- * not stop the API from starting.
+ * Failures are logged and skipped: one number we cannot reconcile should not
+ * stop the API from starting, or block the numbers after it.
  */
 export async function reconcileTelephonyConfiguration(
   client: DograhManagementClient = dograh,
@@ -653,21 +685,49 @@ export async function reconcileTelephonyConfiguration(
   }
 
   const rows = await db
-    .select({ e164: businessPhoneNumbers.e164 })
+    .select({
+      id: businessPhoneNumbers.id,
+      businessId: businessPhoneNumbers.businessId,
+      e164: businessPhoneNumbers.e164,
+      label: businessPhoneNumbers.label,
+    })
     .from(businessPhoneNumbers)
     .where(ne(businessPhoneNumbers.status, "released"));
 
   for (const row of rows) {
     try {
       const owned = await findOwnedNumber(row.e164);
-      if (!owned || owned.connectionId === connectionId) continue;
-      await bindNumberToConnection(owned.id, connectionId);
-      console.log(
-        `Telephony reconciliation: bound ${row.e164} to connection ${connectionId}.`,
-      );
+      if (owned && owned.connectionId !== connectionId) {
+        await bindNumberToConnection(owned.id, connectionId);
+        console.log(
+          `Telephony reconciliation: bound ${row.e164} to connection ${connectionId}.`,
+        );
+      }
+
+      // Re-assert the routing record even when the binding was already right:
+      // Telnyx delivering the call is no use if Dograh cannot resolve a
+      // workflow for the number it was delivered to.
+      const workflowId = await workflowIdFor(row.businessId);
+      const saved = await ensureDograhRouting({
+        configId,
+        e164: row.e164,
+        label: row.label,
+        workflowId,
+        client,
+      });
+
+      await db
+        .update(businessPhoneNumbers)
+        .set({
+          dograhPhoneNumberId: saved.id,
+          status: saved.syncWarning ? "failed" : "active",
+          lastError: saved.syncWarning,
+          updatedAt: new Date(),
+        })
+        .where(eq(businessPhoneNumbers.id, row.id));
     } catch (error) {
       console.error(
-        `Telephony reconciliation: could not bind ${row.e164}:`,
+        `Telephony reconciliation: could not reconcile ${row.e164}:`,
         error,
       );
     }
