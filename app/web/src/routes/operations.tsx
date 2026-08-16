@@ -1073,6 +1073,26 @@ function CallbacksPage({ slug }: { slug: string }) {
     }
   };
 
+  /**
+   * Hands the callback to the agent rather than to a person. The engine only
+   * acknowledges the dial, so this reports "ringing" — the outcome arrives in
+   * Conversations once the call ends, and the task stays open until somebody
+   * closes it.
+   */
+  const handleAgentCall = async () => {
+    if (!selected || busy) return;
+    setBusy(true);
+    try {
+      const result = await api.businesses.callCallback(slug, selected.id);
+      if (result.callback) applyUpdate(result.callback);
+      say(`Ringing ${selected.contactName} from ${result.from}`);
+    } catch (caught: unknown) {
+      say(caught instanceof Error ? caught.message : "Could not place that call.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleNoAnswer = () => {
     if (!selected) return;
     const nextDue = new Date(Date.now() + 45 * 60000);
@@ -1479,6 +1499,13 @@ function CallbacksPage({ slug }: { slug: string }) {
               {canManage &&
                 (!selected.closed ? (
                   <div className="callbacks-actions">
+                    <Button
+                      variant="accent"
+                      disabled={busy}
+                      onClick={() => void handleAgentCall()}
+                    >
+                      Let the agent call them
+                    </Button>
                     <Button
                       variant="primary"
                       disabled={busy}

@@ -3,6 +3,7 @@ import type {
   DograhDocumentList,
   DograhDocument,
   DograhEmbedToken,
+  DograhInitiatedCall,
   DograhModelConfiguration,
   DograhPhoneNumber,
   DograhTelephonyConfiguration,
@@ -138,6 +139,12 @@ export interface DograhManagementClient {
     body: Record<string, unknown>,
   ): Promise<DograhPhoneNumber>;
   deletePhoneNumber(configId: number, phoneNumberId: number): Promise<void>;
+  initiateCall(body: {
+    workflow_id: number;
+    phone_number: string;
+    telephony_configuration_id?: number;
+    from_phone_number_id?: number;
+  }): Promise<DograhInitiatedCall>;
 }
 
 export class DograhClient implements DograhManagementClient {
@@ -504,6 +511,18 @@ export class DograhClient implements DograhManagementClient {
       `/organizations/telephony-configs/${configId}/phone-numbers/${phoneNumberId}`,
       { method: "DELETE" },
     );
+  }
+
+  initiateCall(body: {
+    workflow_id: number;
+    phone_number: string;
+    telephony_configuration_id?: number;
+    from_phone_number_id?: number;
+  }): Promise<DograhInitiatedCall> {
+    return this.rawRequest("/telephony/initiate-call", {
+      method: "POST",
+      body,
+    });
   }
 
   async uploadBytes(

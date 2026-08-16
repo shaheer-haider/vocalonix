@@ -45,6 +45,7 @@ import { requirePermission, requireWorkspace } from "../workspace/context";
 import { can } from "../workspace/permissions";
 import {
   listBusinessPhoneNumbers,
+  placeOutboundCall,
   provisionPhoneNumber,
   releasePhoneNumber,
   telephonyStatus,
@@ -1120,6 +1121,80 @@ export const tenantRoutes = new Elysia()
         ),
         attemptNote: t.Optional(t.String({ minLength: 1, maxLength: 500 })),
       }),
+    },
+  )
+  /**
+   * Dials the person this callback promised to ring, with the business's own
+   * agent. The attempt is recorded whether or not anyone answers, because the
+   * engine acknowledges the dial and reports the outcome out of band — the log
+   * has to say "we called", not "we spoke".
+   */
+  .post(
+    "/api/b/:slug/callbacks/:callbackId/call",
+    async ({ params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "callbacks.manage");
+      const [existing] = await db
+        .select()
+        .from(callbackTasks)
+        .where(
+          and(
+            eq(callbackTasks.id, params.callbackId),
+            eq(callbackTasks.businessId, workspace.business.id),
+          ),
+        )
+        .limit(1);
+      if (!existing) {
+        throw new ApiError(
+          404,
+          "CALLBACK_NOT_FOUND",
+          "Callback was not found for this business.",
+        );
+      }
+
+      const placed = await placeOutboundCall({
+        businessId: workspace.business.id,
+        toNumber: existing.contactChannel,
+      });
+
+      const now = new Date();
+      const [updated] = await db
+        .update(callbackTasks)
+        .set({
+          attempts: existing.attempts.concat([
+            {
+              at: now.toISOString(),
+              note: `Agent called from ${placed.from}.`,
+            },
+          ]),
+          updatedAt: now,
+        })
+        .where(eq(callbackTasks.id, existing.id))
+        .returning();
+
+      await db.insert(auditLogs).values({
+        id: randomUUID(),
+        businessId: workspace.business.id,
+        actorUserId: workspace.session.user.id,
+        action: "callback.call",
+        targetType: "callback_task",
+        targetId: existing.id,
+        payload: { to: existing.contactChannel, from: placed.from },
+      });
+
+      const assigneeName = updated?.assignedTo
+        ? ((
+            await db
+              .select({ name: users.name })
+              .from(users)
+              .where(eq(users.id, updated.assignedTo))
+              .limit(1)
+          )[0]?.name ?? null)
+        : null;
+      return {
+        callback: updated ? callbackView(updated, assigneeName) : null,
+        from: placed.from,
+      };
     },
   )
   .get("/api/b/:slug/contacts", async ({ params, query, request }) => {
