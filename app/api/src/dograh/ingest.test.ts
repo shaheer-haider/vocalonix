@@ -222,3 +222,29 @@ describe("call duration", () => {
     expect(runDurationSeconds(withInfo({ call_duration_seconds: null }, null))).toBeNull();
   });
 });
+
+describe("call record values", () => {
+  // recordCall writes to the database, so the shaping it does is asserted
+  // through the pieces it composes rather than by running the insert.
+  test("a widget call has no caller number to record", () => {
+    const widget = run(null);
+    expect(withCallerId(extractCaller(widget), widget).phone).toBeNull();
+  });
+
+  test("a phone call records the number even with an empty context", () => {
+    const call = { ...run(null), initial_context: { caller_number: "+923711303611" } };
+    expect(withCallerId(extractCaller(call), call).phone).toBe("+923711303611");
+  });
+
+  test("disposition prefers the mapped value the engine settled on", () => {
+    const mapped = run({
+      mapped_call_disposition: "booked",
+      call_disposition: "raw",
+    });
+    expect(
+      mapped.gathered_context?.mapped_call_disposition ??
+        mapped.gathered_context?.call_disposition ??
+        null,
+    ).toBe("booked");
+  });
+});

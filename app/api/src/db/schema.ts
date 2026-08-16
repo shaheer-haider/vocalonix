@@ -844,4 +844,69 @@ export const demoSessions = pgTable(
   ],
 );
 
+/**
+ * One row per completed call, copied out of the engine as it is ingested.
+ *
+ * The engine remains the system of record for what was *said* — transcripts and
+ * recordings are large, rarely read, and fetched for a single conversation on
+ * demand. What a call *was* belongs here: the list, the dashboard and any
+ * metered plan all need to count, filter and sum across every call a business
+ * has ever taken, and none of that is answerable by paging a remote service.
+ *
+ * Before this table the dashboard fetched a hundred runs on every load and
+ * aggregated them in memory, which made a "last 30 days" figure silently mean
+ * "whichever of the last hundred calls fall in 30 days".
+ */
+export const callRecords = pgTable(
+  "call_records",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    /** The engine's run id — the join back to transcripts and recordings. */
+    runId: integer("run_id").notNull(),
+    workflowId: integer("workflow_id"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    durationSeconds: integer("duration_seconds"),
+    completed: boolean("completed").notNull().default(false),
+    /** "voice", "text", and whatever the engine adds later. */
+    mode: text("mode"),
+    disposition: text("disposition"),
+    /** Which workflow steps the call passed through; the list searches on it. */
+    nodesVisited: jsonb("nodes_visited").$type<string[]>().notNull().default([]),
+    /**
+     * Whether the engine holds a transcript or recording for this call. Stored
+     * so the list can say what exists without a round trip; the artefacts
+     * themselves stay in the engine and are fetched when one is opened.
+     */
+    hasTranscript: boolean("has_transcript").notNull().default(false),
+    hasRecording: boolean("has_recording").notNull().default(false),
+    /** Caller ID for a phone call; null for a widget call, which has none. */
+    callerNumber: text("caller_number"),
+    contactId: text("contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // Ingest is re-runnable and a backfill may overlap it. Counting one call
+    // twice would overstate a dashboard and overcharge a metered invoice, so
+    // uniqueness is enforced here rather than trusted to the caller.
+    uniqueIndex("call_records_business_run_unique").on(
+      table.businessId,
+      table.runId,
+    ),
+    index("call_records_business_started_idx").on(
+      table.businessId,
+      table.startedAt,
+    ),
+  ],
+);
+
 export type Role = (typeof roleEnum.enumValues)[number];

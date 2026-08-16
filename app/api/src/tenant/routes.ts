@@ -18,6 +18,7 @@ import {
   bookingServices,
   bookings,
   callbackTasks,
+  callRecords,
   contacts,
   knowledgeGaps,
   memberships,
@@ -327,13 +328,23 @@ function conversationSummary(run: DograhWorkflowRun) {
   };
 }
 
-function hourInTimezone(value: string, timezone: string): number {
-  const formatted = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    hour: "numeric",
-    hourCycle: "h23",
-  }).format(new Date(value));
-  return Number(formatted);
+/**
+ * The same shape `conversationSummary` produces, built from our own row rather
+ * than a live run, so the list and dashboard read identically to the client
+ * whichever side they came from.
+ */
+function callRecordSummary(row: typeof callRecords.$inferSelect) {
+  return {
+    id: row.runId,
+    startedAt: row.startedAt.toISOString(),
+    mode: row.mode ?? "",
+    completed: row.completed,
+    durationSeconds: row.durationSeconds,
+    disposition: row.disposition,
+    nodesVisited: row.nodesVisited,
+    hasTranscript: row.hasTranscript,
+    hasRecording: row.hasRecording,
+  };
 }
 
 function startOfDayInTimezone(now: Date, timezone: string): number {
@@ -792,15 +803,34 @@ export const tenantRoutes = new Elysia()
   })
   .get("/api/b/:slug/conversations", async ({ params, query, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
-    const workflowId = await requireTenantWorkflowId(workspace.business.id);
     const page = Math.max(1, Number(query.page ?? 1) || 1);
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 25) || 25));
-    const result = await dograh.listWorkflowRuns(workflowId, page, limit);
+
+    // Served from our own rows. The engine stays the system of record for what
+    // was said — the transcript and recording are fetched when a conversation
+    // is opened — but the list itself is ours, so it can be paged, counted and
+    // later filtered without a cross-service call on every page turn.
+    const scope = eq(callRecords.businessId, workspace.business.id);
+    const [rows, [counted]] = await Promise.all([
+      db
+        .select()
+        .from(callRecords)
+        .where(scope)
+        .orderBy(desc(callRecords.startedAt))
+        .limit(limit)
+        .offset((page - 1) * limit),
+      db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(callRecords)
+        .where(scope),
+    ]);
+
+    const totalCount = counted?.total ?? 0;
     return {
-      conversations: result.runs.map(conversationSummary),
-      totalCount: result.total_count,
-      page: result.page,
-      totalPages: result.total_pages,
+      conversations: rows.map(callRecordSummary),
+      totalCount,
+      page,
+      totalPages: Math.max(1, Math.ceil(totalCount / limit)),
     };
   })
   .get("/api/b/:slug/conversations/:runId", async ({ params, request }) => {
@@ -837,40 +867,65 @@ export const tenantRoutes = new Elysia()
         ? startOfDayInTimezone(now, timezone)
         : now.getTime() - (range === "7d" ? 7 : 30) * 24 * 60 * 60 * 1000;
 
-    let runs: DograhWorkflowRun[] = [];
-    try {
-      const workflowId = await requireTenantWorkflowId(workspace.business.id);
-      const result = await dograh.listWorkflowRuns(workflowId, 1, 100);
-      runs = result.runs.filter(
-        (run) => Date.parse(run.created_at) >= cutoff,
-      );
-    } catch (error) {
-      if (
-        !(error instanceof ApiError && error.code === "DOGRAH_WORKFLOW_NOT_FOUND")
-      ) {
-        throw error;
-      }
-    }
+    // Aggregated in SQL over every call in the window. This used to fetch a
+    // hundred runs from the engine on each load and reduce them in memory,
+    // which quietly redefined "last 30 days" as "whichever of the last hundred
+    // calls fall inside 30 days" — wrong for exactly the busy businesses that
+    // care about the number.
+    const since = new Date(cutoff);
+    const scope = and(
+      eq(callRecords.businessId, workspace.business.id),
+      gte(callRecords.startedAt, since),
+    );
 
-    const durations = runs
-      .map((run) => runDurationSeconds(run))
-      .filter((value): value is number => typeof value === "number");
-    const totalSeconds = durations.reduce((sum, value) => sum + value, 0);
+    const [totals, hourlyRows, recent] = await Promise.all([
+      db
+        .select({
+          callsAnswered: sql<number>`count(*)::int`,
+          completedCalls: sql<number>`count(*) filter (where ${callRecords.completed})::int`,
+          totalSeconds: sql<number>`coalesce(sum(${callRecords.durationSeconds}), 0)::int`,
+          timedCalls: sql<number>`count(${callRecords.durationSeconds})::int`,
+        })
+        .from(callRecords)
+        .where(scope),
+      db
+        .select({
+          hour: sql<number>`extract(hour from ${callRecords.startedAt} at time zone ${timezone})::int`,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(callRecords)
+        .where(scope)
+        .groupBy(sql`1`),
+      db
+        .select()
+        .from(callRecords)
+        .where(scope)
+        .orderBy(desc(callRecords.startedAt))
+        .limit(8),
+    ]);
+
+    const summary = totals[0] ?? {
+      callsAnswered: 0,
+      completedCalls: 0,
+      totalSeconds: 0,
+      timedCalls: 0,
+    };
     const hourly = new Array<number>(24).fill(0);
-    for (const run of runs) {
-      const hour = hourInTimezone(run.created_at, timezone);
-      if (hour >= 0 && hour < 24) hourly[hour] = (hourly[hour] ?? 0) + 1;
+    for (const row of hourlyRows) {
+      if (row.hour >= 0 && row.hour < 24) hourly[row.hour] = row.count;
     }
 
     return {
       range,
-      callsAnswered: runs.length,
-      completedCalls: runs.filter((run) => run.is_completed).length,
-      totalSeconds,
+      callsAnswered: summary.callsAnswered,
+      completedCalls: summary.completedCalls,
+      totalSeconds: summary.totalSeconds,
       averageSeconds:
-        durations.length > 0 ? Math.round(totalSeconds / durations.length) : 0,
+        summary.timedCalls > 0
+          ? Math.round(summary.totalSeconds / summary.timedCalls)
+          : 0,
       hourly,
-      recent: runs.slice(0, 8).map(conversationSummary),
+      recent: recent.map(callRecordSummary),
     };
   })
   .get("/api/b/:slug/callbacks", async ({ params, query, request }) => {

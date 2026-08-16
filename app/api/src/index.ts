@@ -27,6 +27,7 @@ import { workspaceRoutes } from "./workspace/routes";
 import { agentToolRoutes } from "./agent/routes";
 import { platformRoutes } from "./platform/routes";
 import { reconcileProviderConfiguration } from "./platform/providers";
+import { backfillCallRecords } from "./dograh/ingest";
 import { reconcileTelephonyConfiguration } from "./platform/telephony";
 import { tenantRoutes } from "./tenant/routes";
 import { demoRoutes } from "./demo/routes";
@@ -269,4 +270,14 @@ if (import.meta.main) {
   void reconcileTelephonyConfiguration().catch((error: unknown) => {
     console.error("Telephony reconciliation failed at boot:", error);
   });
+  // Calls taken before `call_records` existed are invisible to the list and
+  // the dashboard until they are copied across. Upserts, so re-running is
+  // harmless, and not awaited for the same reason as the reconcilers above.
+  void backfillCallRecords()
+    .then((count) => {
+      if (count > 0) console.log(`Backfilled ${count} call records.`);
+    })
+    .catch((error: unknown) => {
+      console.error("Call record backfill failed at boot:", error);
+    });
 }
