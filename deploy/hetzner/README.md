@@ -151,7 +151,7 @@ checks `/api/health`, `/api/dograh/health`, and the served bundle.
 
 It needs two things configured once in the GitHub repo:
 
-1. An environment named `hetzner` (Settings → Environments) with two secrets:
+1. An environment named `hetzner` (Settings → Environments) with these secrets:
    - `HETZNER_HOST` — the SSH target: the Vocalonix box's own address, e.g.
      `62.238.101.107`. It must reach the box directly, so it cannot be
      `harkbell.com` — that name resolves to Cloudflare, which proxies HTTP(S)
@@ -171,9 +171,46 @@ It needs two things configured once in the GitHub repo:
        "printf '%s\n' '$(cat ci_deploy_key.pub)' >> ~/.ssh/authorized_keys"
      # paste ci_deploy_key into the HETZNER_SSH_KEY secret, then delete both files
      ```
+   - `VOCALONIX_ENV` — the entire contents of the Vocalonix server's `.env`,
+     as one secret. The deploy writes it to the box before starting the stack,
+     which makes GitHub the one place that configuration is edited. See
+     [Server configuration](#server-configuration) below.
 
-The pipeline never touches the server's `.env` files or the Dograh server; use
-the manual steps below for those.
+The pipeline does not touch the Dograh server; use the manual steps below for it.
+
+## Server configuration
+
+The Vocalonix box's `.env` comes from the `VOCALONIX_ENV` secret. The deploy
+installs it before starting the stack, so **edit the secret, not the file on the
+box** — a hand-edit is undone by the next deploy, and while it survives it is
+invisible to everyone else. The `--exclude 'deploy/hetzner/*/.env'` in the rsync
+still stands and guards the other direction: an operator's laptop `.env` must
+never reach a server.
+
+Seed the secret from the **server's** current file, never from a local checkout.
+Those two have diverged before — a local copy still said `NODE_ENV=development`
+with no mail sender long after the box had been moved to production — and
+seeding from the wrong one silently rolls production back:
+
+```bash
+ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
+  'cat /opt/vocalonix/repo/deploy/hetzner/vocalonix/.env' | pbcopy
+# paste into the VOCALONIX_ENV secret on the hetzner environment
+```
+
+Keep a copy somewhere you can read it back: GitHub secrets are write-only, so
+once it is pasted the only readable copy is the file on the box. If you would
+rather have configuration that is diffable and reviewable in git, the upgrade
+path is [SOPS](https://github.com/getsops/sops) with an `age` key — the
+encrypted `.env` lives in the repo and only the key sits in GitHub.
+
+Before the secret exists the deploy logs a warning and leaves the box's file
+alone, so nothing breaks in the meantime. It refuses to install a file that is
+missing `AUTH_SECRET`, `APP_ORIGIN`, `API_PUBLIC_URL` or `EMAIL_FROM`, rather
+than replacing a working configuration with one that cannot boot.
+
+The Dograh box's `.env` is still managed by hand — the pipeline never deploys
+that server.
 
 ## Redeploying a change
 
@@ -188,6 +225,24 @@ ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
 Compose recreates only the services whose image actually changed, so a CSS or
 frontend change replaces `vocalonix-web` and leaves `vocalonix-api`, the worker,
 the database, and Caddy running — no API downtime.
+
+**A Caddyfile change is the exception, and it fails silently.** The file is
+bind-mounted on its own (`./Caddyfile:/etc/caddy/Caddyfile`), so the mount is
+pinned to an inode, and rsync replaces the file rather than editing it. After a
+deploy the host path is a new inode while the container still serves the old
+one; nothing in the container spec changed, so compose leaves it running, and
+`caddy reload` re-reads the container's stale copy rather than the new file. The
+edit deploys green and does nothing. The automatic deploy now recreates Caddy on
+every run for this reason; after a manual rsync, do it yourself:
+
+```bash
+ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
+  'cd /opt/vocalonix/repo/deploy/hetzner/vocalonix && docker compose -p vocalonix --env-file .env up -d --force-recreate --wait caddy'
+```
+
+Confirm the change actually took, rather than trusting the reload: request a
+hostname the new config should no longer serve and expect the connection to
+fail, not to answer.
 
 Verify afterwards, and assert on the built asset rather than trusting a healthy
 container, because a stale image still reports healthy:

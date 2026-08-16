@@ -50,6 +50,42 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf 'Host hetzner\n  HostName %s\n  User root\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$HOST" >> ~/.ssh/config
 
+      # The server's .env is the deployment's real configuration, and hand-editing
+      # it on the box is how it silently diverged from every other copy: the
+      # checked-out mirror said one thing, the running box another, and a
+      # diagnosis built on the wrong one cost hours. GitHub holds it now and the
+      # deploy installs it, so there is one place to change it and no drift.
+      #
+      # The rsync exclude below still stands. It guards the opposite direction —
+      # an operator's laptop .env must never reach the box — and that is exactly
+      # why this step writes from the secret rather than from the checkout.
+      - name: Install server environment
+        env:
+          VOCALONIX_ENV: ${{ secrets.VOCALONIX_ENV }}
+        run: |
+          if [ -z "${VOCALONIX_ENV:-}" ]; then
+            echo "::warning::VOCALONIX_ENV is not set; leaving the server's .env untouched." \
+                 "Seed it from the SERVER's current file (see deploy/hetzner/README.md) — never from a laptop copy."
+            exit 0
+          fi
+          # A truncated or half-populated secret would overwrite a working
+          # configuration with one that cannot boot, and the deploy would report
+          # it as a health-check timeout several minutes later. Check the file
+          # looks like the real thing before it goes anywhere near the server.
+          for key in AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM; do
+            if ! printf '%s\n' "$VOCALONIX_ENV" | grep -q "^${key}="; then
+              echo "VOCALONIX_ENV has no ${key}= line; refusing to install a partial environment." >&2
+              exit 1
+            fi
+          done
+          # Truncate in place rather than replacing the file. A rename would give
+          # it a fresh inode, and anything bind-mounting it would keep serving the
+          # old one — the trap that made Caddyfile edits invisible for a day.
+          # The remote script is an argument, not a heredoc: ssh's stdin has to
+          # stay free to carry the file itself.
+          printf '%s\n' "$VOCALONIX_ENV" | ssh hetzner \
+            'set -eu; f=/opt/vocalonix/repo/deploy/hetzner/vocalonix/.env; umask 077; cat > "$f"; chmod 600 "$f"'
+
       - name: Sync repo to server
         run: |
           rsync -az \
@@ -72,6 +108,16 @@ jobs:
           # instead of an error here. Pinned, a wrong-host deploy fails loudly
           # on the "caddy" container-name conflict and changes nothing.
           docker compose -p vocalonix --env-file .env up -d --build --wait
+          # Caddy is recreated unconditionally because compose cannot tell that
+          # it needs to be. The Caddyfile is bind-mounted as a single file, which
+          # pins the mount to an inode, and rsync replaces rather than edits — so
+          # after a deploy the host path is a new inode while the container still
+          # serves the old one. Nothing in the container spec changed, so compose
+          # leaves it running, and `caddy reload` re-reads the same stale file:
+          # a Caddyfile edit deploys green and changes nothing until the
+          # container is rebound. Recreating costs about a second of proxy
+          # downtime, which is cheaper than a silently ignored config.
+          docker compose -p vocalonix --env-file .env up -d --force-recreate --wait caddy
           EOF
 
       - name: Verify deployment
