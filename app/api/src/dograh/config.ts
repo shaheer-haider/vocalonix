@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { env } from "../env";
 import { getVertical, verticalAgentRules } from "../verticals";
 import { resolveVoice } from "../voices";
 import type { AgentToolKey } from "./agent-tools";
@@ -875,6 +876,13 @@ export function tenantDesiredConfiguration(
       nodeToolKeys: built.nodeToolKeys,
       workflowConfigurations,
       voice: resolveVoice(input.settings.voice).id,
+      // The address the engine calls our tools on is baked into each tool at
+      // registration time, so it is part of the configuration even though no
+      // business chose it. Left out, a deployment that moves the API produces
+      // an unchanged hash, every sync decides "no-op", and every agent keeps
+      // calling an address that no longer resolves — able to talk, unable to
+      // check availability or book anything, with nothing reported as wrong.
+      toolBaseUrl: env.vocalonixInternalUrl,
     }),
     name,
     workflowDefinition: built.workflowDefinition,
