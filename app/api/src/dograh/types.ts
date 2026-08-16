@@ -90,6 +90,12 @@ export interface DograhWorkflowRun {
   transcript_public_url?: string | null;
   recording_public_url?: string | null;
   cost_info?: { call_duration_seconds?: number | null } | null;
+  /**
+   * What the engine knew before the conversation started. For an inbound phone
+   * call this carries `caller_number` — the caller ID — which is the only
+   * identity available for a caller who never says who they are.
+   */
+  initial_context?: ({ caller_number?: string | null } & Record<string, unknown>) | null;
   gathered_context?:
     | ({
         nodes_visited?: string[] | null;

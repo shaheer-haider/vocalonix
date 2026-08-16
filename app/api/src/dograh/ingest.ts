@@ -133,6 +133,29 @@ export function extractCaller(run: DograhWorkflowRun): ExtractedCaller {
   return callerFromContext(run.gathered_context ?? {});
 }
 
+/**
+ * Falls back to the caller ID for a caller who never gave a number.
+ *
+ * Applied last, and only to fill a gap. What someone tells the agent wins over
+ * what the network says, because a caller may ask to be reached on a different
+ * number and that is the one worth storing. But the caller ID is the only
+ * identity a caller who says nothing at all ever has — without it an inbound
+ * call produces no contact whatsoever, which is why phone calls were leaving
+ * no trace in the contact list.
+ *
+ * Deliberately not folded into `extractCaller`: that would make every phone
+ * call look like it had caller detail already, and suppress the transcript
+ * extraction that recovers the name and email.
+ */
+export function withCallerId(
+  caller: ExtractedCaller,
+  run: DograhWorkflowRun,
+): ExtractedCaller {
+  if (caller.phone) return caller;
+  const callerId = sanitizedPhone(run.initial_context?.caller_number);
+  return callerId ? { ...caller, phone: callerId } : caller;
+}
+
 export function hasCallerSignal(caller: ExtractedCaller): boolean {
   return Boolean(
     caller.name || caller.phone || caller.email || caller.callbackRequested,
@@ -159,11 +182,13 @@ async function extractRunInsights(
   const variables = transcript
     ? await extractVariablesFromTranscript(transcript)
     : null;
+  const stated =
+    hasCallerSignal(contextCaller) || !variables
+      ? contextCaller
+      : callerFromContext(variables);
+
   return {
-    caller:
-      hasCallerSignal(contextCaller) || !variables
-        ? contextCaller
-        : callerFromContext(variables),
+    caller: withCallerId(stated, run),
     gaps: variables ? gapsFromContext(variables) : [],
   };
 }
