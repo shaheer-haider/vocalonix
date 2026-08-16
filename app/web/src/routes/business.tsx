@@ -1395,7 +1395,7 @@ function WorkspaceBilling({ slug }: { slug: string }) {
               >
                 <span
                   className={`usage-meter__fill${overLimit ? " usage-meter__fill--over" : ""}`}
-                  style={{ width: `${pct}%` }}
+                  style={{ transform: `translateX(${pct - 100}%)` }}
                 />
               </div>
             ) : null}
