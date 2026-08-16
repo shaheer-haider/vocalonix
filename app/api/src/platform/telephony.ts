@@ -167,6 +167,20 @@ async function workflowIdFor(businessId: string): Promise<number> {
   return workflowId;
 }
 
+/**
+ * Whether `raw` could be dialled at all. Callers use this to decide what to
+ * offer rather than to validate input: a callback may legitimately hold an
+ * email address or a local number somebody will ring by hand.
+ */
+export function isDialable(raw: string): boolean {
+  try {
+    normalizeE164(raw);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** E.164 is the only shape Dograh routes reliably, so normalise before storing. */
 export function normalizeE164(raw: string): string {
   const trimmed = raw.trim().replace(/[\s\-().]/g, "");

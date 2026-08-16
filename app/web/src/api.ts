@@ -325,6 +325,8 @@ export interface CallbackTask {
   attempts: { at: string; note: string }[];
   createdAt: string;
   closedAt: string | null;
+  /** False when the channel is an email or a number without a dial code. */
+  dialable: boolean;
 }
 
 export interface CallbacksResponse {

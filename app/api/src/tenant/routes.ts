@@ -44,6 +44,7 @@ import {
 import { requirePermission, requireWorkspace } from "../workspace/context";
 import { can } from "../workspace/permissions";
 import {
+  isDialable,
   listBusinessPhoneNumbers,
   placeOutboundCall,
   provisionPhoneNumber,
@@ -276,6 +277,10 @@ function callbackView(
     attempts: task.attempts,
     createdAt: task.createdAt.toISOString(),
     closedAt: task.closedAt?.toISOString() ?? null,
+    // The channel is free text and may hold an email or a local number, so
+    // whether the agent can dial it is a property of the task, not something
+    // the UI should guess from the string.
+    dialable: isDialable(task.contactChannel),
   };
 }
 
