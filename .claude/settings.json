@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "description": "Shared Claude Code settings for Harkbell. Machine-local overrides belong in .claude/settings.local.json, which is gitignored.",
+  "permissions": {
+    "allow": [
+      "Bash(bun install:*)",
+      "Bash(bun run typecheck:*)",
+      "Bash(bun run test:*)",
+      "Bash(bun run build:*)",
+      "Bash(bun run db:generate:*)",
+      "Bash(bun test:*)",
+      "Bash(bun x tsc:*)",
+      "Bash(docker compose ps:*)",
+      "Bash(docker compose config:*)",
+      "Bash(docker compose logs:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git submodule status:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(curl -fsS http://localhost:3001/api/health)",
+      "Bash(curl -fsS http://localhost:3001/api/dograh/health)",
+      "Bash(curl -sS http://localhost:3000/)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)"
+    ],
+    "ask": [
+      "Bash(bun run db:migrate:*)",
+      "Bash(docker compose up:*)",
+      "Bash(docker compose down:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.secrets)",
+      "Read(./deploy/hetzner/*/.env)",
+      "Read(./terraform/.ssh/**)",
+      "Read(./terraform/*.tfstate*)",
+      "Bash(tofu apply:*)",
+      "Bash(terraform apply:*)"
+    ]
+  }
+}
