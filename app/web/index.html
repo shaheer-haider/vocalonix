@@ -8,6 +8,22 @@
       name="description"
       content="Harkbell answers your website out loud, 24/7 — quoting your real prices, reading your real knowledge, and passing the caller to you when it matters."
     />
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Relative, because the public host is only known at deploy time
+         (ROOT_DOMAIN in deploy/hetzner/generate-env.sh). Every scraper we care
+         about resolves it against the page URL. -->
+    <meta property="og:title" content="Harkbell" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta
+      property="og:description"
+      content="Harkbell answers your website out loud, 24/7 — quoting your real prices, reading your real knowledge, and passing the caller to you when it matters."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
