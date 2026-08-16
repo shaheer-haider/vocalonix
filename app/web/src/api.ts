@@ -707,6 +707,13 @@ export const api = {
       unwrap(
         await client.api.b[slug].callbacks[callbackId].patch(update),
       ) as unknown as { callback: CallbackTask },
+    callCallback: async (
+      slug: string,
+      callbackId: string,
+    ): Promise<{ callback: CallbackTask | null; from: string }> =>
+      unwrap(
+        await client.api.b[slug].callbacks[callbackId].call.post(),
+      ) as unknown as { callback: CallbackTask | null; from: string },
     conversations: async (
       slug: string,
       page = 1,

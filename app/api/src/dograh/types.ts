@@ -133,6 +133,15 @@ export interface DograhPhoneNumber {
   provider_sync?: { ok: boolean; message?: string | null } | null;
 }
 
+/**
+ * The engine acknowledges the dial and names the run it created; the call
+ * itself then progresses out of band. There is no call id to hold onto, so an
+ * accepted response means "dialling", never "answered".
+ */
+export interface DograhInitiatedCall {
+  message: string;
+}
+
 export interface DograhEmbedToken {
   token: string;
   is_active: boolean;

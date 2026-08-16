@@ -443,6 +443,66 @@ export async function syncPhoneNumberRouting(
   }
 }
 
+/**
+ * Dials `toNumber` with this business's agent, from this business's own number.
+ *
+ * The caller ID is not cosmetic: without it the engine picks whichever number
+ * the shared configuration offers first, so one tenant's callback would show
+ * another tenant's number. A business that has not bought a number therefore
+ * cannot dial out at all, which is the correct answer rather than a fallback.
+ */
+export async function placeOutboundCall(input: {
+  businessId: string;
+  toNumber: string;
+  client?: DograhManagementClient;
+}): Promise<{ from: string }> {
+  const client = input.client ?? dograh;
+  const to = normalizeE164(input.toNumber);
+  const workflowId = await workflowIdFor(input.businessId);
+
+  const [caller] = await db
+    .select({
+      e164: businessPhoneNumbers.e164,
+      configId: businessPhoneNumbers.dograhConfigId,
+      phoneNumberId: businessPhoneNumbers.dograhPhoneNumberId,
+    })
+    .from(businessPhoneNumbers)
+    .where(
+      and(
+        eq(businessPhoneNumbers.businessId, input.businessId),
+        eq(businessPhoneNumbers.status, "active"),
+      ),
+    )
+    .limit(1);
+
+  if (!caller?.configId || !caller.phoneNumberId) {
+    throw new ApiError(
+      409,
+      "OUTBOUND_NEEDS_NUMBER",
+      "Get a phone number for this agent before calling people back — outbound calls are made from your own number.",
+    );
+  }
+
+  try {
+    await client.initiateCall({
+      workflow_id: workflowId,
+      phone_number: to,
+      telephony_configuration_id: caller.configId,
+      from_phone_number_id: caller.phoneNumberId,
+    });
+  } catch (error) {
+    throw new ApiError(
+      502,
+      "OUTBOUND_CALL_FAILED",
+      error instanceof DograhError
+        ? error.message
+        : "The telephony provider would not place that call.",
+    );
+  }
+
+  return { from: caller.e164 };
+}
+
 export async function listBusinessPhoneNumbers(businessId: string) {
   return db
     .select({
