@@ -127,6 +127,13 @@
       "when": 1786827330964,
       "tag": "0017_dusty_big_bertha",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786873493335,
+      "tag": "0018_strong_praxagora",
+      "breakpoints": true
     }
   ]
 }

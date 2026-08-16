@@ -6,6 +6,7 @@ import { db } from "../db/client";
 import {
   businessDograhMappings,
   callbackTasks,
+  callRecords,
   knowledgeGaps,
 } from "../db/schema";
 import { linkContact } from "../tenant/contactLink";
@@ -200,6 +201,64 @@ async function upsertCallContact(
   return linkContact(businessId, caller, "call");
 }
 
+/**
+ * Copies what a call *was* into our own store, so the list, the dashboard and
+ * any metered plan can count and filter without paging the engine.
+ *
+ * Upserted rather than inserted: ingest is re-runnable and a backfill may
+ * overlap it, and a call counted twice overstates a dashboard and overcharges
+ * an invoice. The disposition and duration are refreshed on conflict because a
+ * run's accounting can settle after it first appears as complete.
+ */
+export async function recordCall(
+  businessId: string,
+  run: DograhWorkflowRun,
+  caller: ExtractedCaller,
+  contactId: string | null,
+): Promise<void> {
+  const startedAt = new Date(run.created_at);
+  if (Number.isNaN(startedAt.getTime())) return;
+
+  const values = {
+    id: randomUUID(),
+    businessId,
+    runId: run.id,
+    workflowId: run.workflow_id,
+    startedAt,
+    durationSeconds: runDurationSeconds(run),
+    completed: run.is_completed,
+    mode: run.mode ?? null,
+    disposition:
+      run.gathered_context?.mapped_call_disposition ??
+      run.gathered_context?.call_disposition ??
+      null,
+    nodesVisited: (run.gathered_context?.nodes_visited ?? []).filter(
+      (node): node is string => typeof node === "string",
+    ),
+    hasTranscript: Boolean(run.transcript_url),
+    hasRecording: Boolean(run.recording_url),
+    callerNumber: sanitizedPhone(run.initial_context?.caller_number) ?? caller.phone,
+    contactId,
+  };
+
+  await db
+    .insert(callRecords)
+    .values(values)
+    .onConflictDoUpdate({
+      target: [callRecords.businessId, callRecords.runId],
+      set: {
+        durationSeconds: values.durationSeconds,
+        completed: values.completed,
+        disposition: values.disposition,
+        nodesVisited: values.nodesVisited,
+        hasTranscript: values.hasTranscript,
+        hasRecording: values.hasRecording,
+        contactId: values.contactId,
+        updatedAt: new Date(),
+      },
+    });
+}
+
 async function createCallCallback(
   businessId: string,
   run: DograhWorkflowRun,
@@ -293,6 +352,7 @@ export async function ingestBusinessRuns(
   for (const run of fresh) {
     const { caller, gaps } = await extractRunInsights(run);
     const contactId = await upsertCallContact(businessId, caller);
+    await recordCall(businessId, run, caller, contactId);
     await createCallCallback(businessId, run, caller, contactId);
     await recordKnowledgeGaps(businessId, run, gaps);
     highest = run.id;
@@ -304,6 +364,53 @@ export async function ingestBusinessRuns(
       .where(eq(businessDograhMappings.businessId, businessId));
   }
   return fresh.length;
+}
+
+const BACKFILL_MAX_PAGES = 20;
+
+/**
+ * Copies calls the engine already knows about into `call_records`.
+ *
+ * Normal ingest only looks at runs newer than `lastIngestedRunId`, so every
+ * call taken before this table existed would otherwise be invisible to the
+ * list and the dashboard — the history would appear to start the day it
+ * shipped. Writes are upserts, so this is safe to run alongside ingest and
+ * safe to run repeatedly.
+ *
+ * Deliberately does not fetch transcripts: the caller is read from context the
+ * engine already returned. Backfilling would otherwise mean an LLM extraction
+ * per historical call, and contacts and callbacks were already derived from
+ * those runs when they were first ingested.
+ */
+export async function backfillCallRecords(): Promise<number> {
+  const mappings = await db
+    .select({
+      businessId: businessDograhMappings.businessId,
+      workflowId: businessDograhMappings.workflowId,
+    })
+    .from(businessDograhMappings);
+
+  let written = 0;
+  for (const mapping of mappings) {
+    const workflowId = Number(mapping.workflowId);
+    if (!Number.isFinite(workflowId)) continue;
+
+    for (let page = 1; page <= BACKFILL_MAX_PAGES; page += 1) {
+      const result = await dograh.listWorkflowRuns(
+        workflowId,
+        page,
+        RUNS_PAGE_LIMIT,
+      );
+      const runs = result.runs.filter((run) => run.is_completed);
+      for (const run of runs) {
+        const caller = withCallerId(extractCaller(run), run);
+        await recordCall(mapping.businessId, run, caller, null);
+        written += 1;
+      }
+      if (page >= result.total_pages || result.runs.length === 0) break;
+    }
+  }
+  return written;
 }
 
 export async function ingestAllBusinessRuns(): Promise<number> {
