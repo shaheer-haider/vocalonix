@@ -121,6 +121,17 @@ export interface DograhTelephonyConfiguration {
   phone_number_count?: number;
 }
 
+/**
+ * A single configuration including its stored credentials. Secrets come back
+ * masked, but `connection_id` is not a secret and survives — which matters,
+ * because Dograh generates the call control application itself and this is the
+ * only way to learn which one our numbers must be bound to.
+ */
+export interface DograhTelephonyConfigurationDetail
+  extends DograhTelephonyConfiguration {
+  credentials: Record<string, unknown>;
+}
+
 export interface DograhPhoneNumber {
   id: number;
   telephony_configuration_id: number;

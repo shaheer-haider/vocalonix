@@ -26,6 +26,8 @@ import type { DograhManagementClient } from "../dograh/client";
 import { env } from "../env";
 import { ApiError } from "../errors";
 import {
+  bindNumberToConnection,
+  fetchWebhookPublicKey,
   findOwnedNumber,
   purchaseNumber,
   releaseOwnedNumber,
@@ -76,15 +78,106 @@ async function writeState(state: StoredState): Promise<void> {
     });
 }
 
-function credentials(): Record<string, unknown> {
+/**
+ * Credentials for the Dograh telephony configuration.
+ *
+ * The webhook public key is fetched from Telnyx when the operator has not
+ * supplied one. Dograh verifies the signature on every inbound webhook and
+ * rejects the call outright when it cannot, so leaving this key to manual
+ * configuration means a correctly bought and correctly routed number still
+ * never rings, with nothing in the product to explain why. It is derivable
+ * from the API key we already hold, so it is derived.
+ *
+ * `connection_id` stays absent only on first save: Dograh then creates a call
+ * control application pointed at its own inbound dispatcher and stores the id
+ * on the configuration, which is the arrangement we want. On every later save
+ * the current value must be sent back, because Dograh only preserves omitted
+ * fields that are marked sensitive — and `connection_id` is not one. An update
+ * without it mints a second application and silently repoints the
+ * configuration at it, orphaning every number bound to the first.
+ */
+async function credentials(
+  currentConnectionId: string | null = null,
+): Promise<Record<string, unknown>> {
+  const supplied = env.telnyxWebhookPublicKey;
+  // A failure here must not block provisioning — it costs inbound signature
+  // verification, which `telephonyStatus` reports, not the purchase itself.
+  const webhookPublicKey =
+    supplied ?? (await fetchWebhookPublicKey().catch(() => null));
+
+  const connectionId = env.telnyxConnectionId ?? currentConnectionId;
+
   return {
     provider: "telnyx",
     api_key: env.telnyxApiKey,
-    ...(env.telnyxConnectionId ? { connection_id: env.telnyxConnectionId } : {}),
-    ...(env.telnyxWebhookPublicKey
-      ? { webhook_public_key: env.telnyxWebhookPublicKey }
-      : {}),
+    ...(connectionId ? { connection_id: connectionId } : {}),
+    ...(webhookPublicKey ? { webhook_public_key: webhookPublicKey } : {}),
   };
+}
+
+/**
+ * The call control application this configuration delivers inbound calls to.
+ *
+ * Dograh creates the application on first save and stores its id in the
+ * configuration's credentials, where it survives masking because it is not a
+ * secret. Reading it back is the only way to learn which application our
+ * numbers have to be bound to.
+ */
+async function connectionIdFor(
+  configId: number,
+  client: DograhManagementClient,
+): Promise<string | null> {
+  const detail = await client.getTelephonyConfiguration(configId);
+  const raw = detail.credentials?.connection_id;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+}
+
+/**
+ * Binds `e164` to the configuration's call control application, which is what
+ * actually makes it ring.
+ *
+ * Owning a number, telling Dograh about it, and having Telnyx deliver its calls
+ * are three separate things, and buying only establishes the first. An unbound
+ * number reports `active` on Telnyx, appears correctly routed in Dograh, and
+ * bills every month, but Telnyx holds no webhook for it and drops inbound calls
+ * at the edge — silence, with no error raised anywhere. The binding is verified
+ * by re-reading the number rather than trusting the write, because this is
+ * exactly the failure that otherwise reports success at every step.
+ */
+async function bindForDelivery(
+  e164: string,
+  configId: number,
+  client: DograhManagementClient,
+): Promise<void> {
+  const connectionId = await connectionIdFor(configId, client);
+  if (!connectionId) {
+    throw new ApiError(
+      502,
+      "PHONE_NUMBER_UNROUTABLE",
+      "The telephony configuration has no call control application, so calls to this number could not be delivered.",
+    );
+  }
+
+  const owned = await findOwnedNumber(e164);
+  if (!owned) {
+    throw new ApiError(
+      502,
+      "PHONE_NUMBER_UNROUTABLE",
+      "Telnyx does not report this number as ours, so it could not be connected.",
+    );
+  }
+  if (owned.connectionId === connectionId) return;
+
+  await bindNumberToConnection(owned.id, connectionId);
+
+  const confirmed = await findOwnedNumber(e164);
+  if (confirmed?.connectionId !== connectionId) {
+    throw new ApiError(
+      502,
+      "PHONE_NUMBER_UNROUTABLE",
+      "Telnyx did not connect this number to the agent, so incoming calls would not have reached it.",
+    );
+  }
 }
 
 /**
@@ -112,9 +205,12 @@ export async function ensureTelephonyConfiguration(
     existing.find((row) => row.provider === "telnyx" && row.name === CONFIG_NAME);
 
   if (adopted) {
-    // Refresh credentials so a rotated key takes effect without manual work.
+    // Refresh credentials so a rotated key takes effect without manual work,
+    // carrying the existing call control application forward — Dograh would
+    // otherwise create a new one and strand the numbers bound to this one.
+    const currentConnectionId = await connectionIdFor(adopted.id, client);
     await client.updateTelephonyConfiguration(adopted.id, {
-      config: credentials(),
+      config: await credentials(currentConnectionId),
     });
     if (state.configId !== adopted.id || state.lastError) {
       await writeState({ configId: adopted.id, lastError: null });
@@ -122,10 +218,12 @@ export async function ensureTelephonyConfiguration(
     return adopted.id;
   }
 
+  // No connection to carry forward on first save: Dograh creates the call
+  // control application and stores its id on the configuration.
   const created = await client.createTelephonyConfiguration({
     name: CONFIG_NAME,
     is_default_outbound: true,
-    config: credentials(),
+    config: await credentials(),
   });
   await writeState({ configId: created.id, lastError: null });
   return created.id;
@@ -305,6 +403,11 @@ export async function provisionPhoneNumber(input: {
   // Dograh may already know the number from an earlier attempt; re-point it
   // rather than failing on the provider's uniqueness check.
   try {
+    // Before Dograh is told about the number, make sure Telnyx can actually
+    // deliver its calls. A number that cannot be bound is worth no more than
+    // one that cannot be routed, and both are released below.
+    await bindForDelivery(e164, configId, client);
+
     const remote = await client.listPhoneNumbers(configId);
     const existingRemote = remote.find(
       (row) => row.address_normalized === e164 || row.address === e164,
@@ -346,8 +449,12 @@ export async function provisionPhoneNumber(input: {
       status: syncWarning ? "failed" : "active",
     };
   } catch (error) {
+    // Telnyx and binding failures already carry customer-facing wording; only
+    // an unrecognised error needs a generic stand-in.
     const message =
-      error instanceof DograhError
+      error instanceof DograhError ||
+      error instanceof TelnyxError ||
+      error instanceof ApiError
         ? error.message
         : "The telephony provider rejected this number.";
     // Hand back what we just bought; keeping it would bill us for a line no
@@ -515,6 +622,56 @@ export async function placeOutboundCall(input: {
   }
 
   return { from: caller.e164 };
+}
+
+/**
+ * Brings the telephony configuration and every live number back in line with
+ * Telnyx on the way up.
+ *
+ * Two states drift silently and neither raises an error anywhere: a
+ * configuration saved before the webhook public key was fetched rejects every
+ * inbound webhook, and a number bought before binding existed is attached to no
+ * call control application. In both cases the product shows an active number
+ * and the phone never rings, so they are repaired at boot rather than waiting
+ * for a customer to report silence.
+ *
+ * Failures are logged and skipped: a number we cannot reach Telnyx about should
+ * not stop the API from starting.
+ */
+export async function reconcileTelephonyConfiguration(
+  client: DograhManagementClient = dograh,
+): Promise<void> {
+  if (!env.telnyxApiKey) return;
+
+  const configId = await ensureTelephonyConfiguration(client);
+  const connectionId = await connectionIdFor(configId, client);
+  if (!connectionId) {
+    console.error(
+      "Telephony reconciliation: configuration has no call control application; inbound calls cannot be delivered.",
+    );
+    return;
+  }
+
+  const rows = await db
+    .select({ e164: businessPhoneNumbers.e164 })
+    .from(businessPhoneNumbers)
+    .where(ne(businessPhoneNumbers.status, "released"));
+
+  for (const row of rows) {
+    try {
+      const owned = await findOwnedNumber(row.e164);
+      if (!owned || owned.connectionId === connectionId) continue;
+      await bindNumberToConnection(owned.id, connectionId);
+      console.log(
+        `Telephony reconciliation: bound ${row.e164} to connection ${connectionId}.`,
+      );
+    } catch (error) {
+      console.error(
+        `Telephony reconciliation: could not bind ${row.e164}:`,
+        error,
+      );
+    }
+  }
 }
 
 export async function listBusinessPhoneNumbers(businessId: string) {

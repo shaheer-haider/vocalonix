@@ -7,6 +7,7 @@ import type {
   DograhModelConfiguration,
   DograhPhoneNumber,
   DograhTelephonyConfiguration,
+  DograhTelephonyConfigurationDetail,
   DograhTool,
   DograhUpload,
   DograhWorkflow,
@@ -121,6 +122,9 @@ export interface DograhManagementClient {
     body: Record<string, unknown>,
   ): Promise<DograhModelConfiguration>;
   listTelephonyConfigurations(): Promise<DograhTelephonyConfiguration[]>;
+  getTelephonyConfiguration(
+    configId: number,
+  ): Promise<DograhTelephonyConfigurationDetail>;
   createTelephonyConfiguration(
     body: Record<string, unknown>,
   ): Promise<{ id: number; name: string; provider: string }>;
@@ -454,6 +458,12 @@ export class DograhClient implements DograhManagementClient {
       configurations: DograhTelephonyConfiguration[];
     }>("/organizations/telephony-configs");
     return response.configurations ?? [];
+  }
+
+  getTelephonyConfiguration(
+    configId: number,
+  ): Promise<DograhTelephonyConfigurationDetail> {
+    return this.rawRequest(`/organizations/telephony-configs/${configId}`);
   }
 
   createTelephonyConfiguration(

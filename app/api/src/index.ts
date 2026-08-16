@@ -27,6 +27,7 @@ import { workspaceRoutes } from "./workspace/routes";
 import { agentToolRoutes } from "./agent/routes";
 import { platformRoutes } from "./platform/routes";
 import { reconcileProviderConfiguration } from "./platform/providers";
+import { reconcileTelephonyConfiguration } from "./platform/telephony";
 import { tenantRoutes } from "./tenant/routes";
 import { demoRoutes } from "./demo/routes";
 
@@ -261,5 +262,11 @@ if (import.meta.main) {
   // the readiness panel rather than blocking the API.
   void reconcileProviderConfiguration().catch((error: unknown) => {
     console.error("Provider reconciliation failed at boot:", error);
+  });
+  // Same treatment for telephony: refresh the webhook signing key and re-bind
+  // any number Telnyx is holding but not delivering calls for. Both failures
+  // are invisible in the product — the number simply never rings.
+  void reconcileTelephonyConfiguration().catch((error: unknown) => {
+    console.error("Telephony reconciliation failed at boot:", error);
   });
 }
