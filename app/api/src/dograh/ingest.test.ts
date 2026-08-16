@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { extractCaller, gapsFromContext, normalizeQuestion } from "./ingest";
+import {
+  extractCaller,
+  gapsFromContext,
+  normalizeQuestion,
+  withCallerId,
+} from "./ingest";
 import type { DograhWorkflowRun } from "./types";
 
 function run(context: Record<string, unknown> | null): DograhWorkflowRun {
@@ -135,5 +140,53 @@ describe("normalizeQuestion", () => {
     expect(normalizeQuestion("Do you take Bupa insurance")).toBe(
       "do you take bupa insurance",
     );
+  });
+});
+
+describe("caller id fallback", () => {
+  function phoneRun(
+    context: Record<string, unknown> | null,
+    callerNumber: string | null,
+  ): DograhWorkflowRun {
+    return { ...run(context), initial_context: { caller_number: callerNumber } };
+  }
+
+  const nobody = {
+    name: null,
+    phone: null,
+    email: null,
+    callbackRequested: false,
+    callbackReason: null,
+  };
+
+  test("gives a silent caller an identity, so the call reaches the contact list", () => {
+    // Without this the whole call is discarded: linkContact is handed three
+    // nulls and returns without creating anything.
+    const caller = withCallerId(nobody, phoneRun(null, "+923711303611"));
+    expect(caller.phone).toBe("+923711303611");
+    expect(caller.name).toBeNull();
+  });
+
+  test("does not overwrite a number the caller asked to be reached on", () => {
+    const stated = { ...nobody, phone: "+441614960000" };
+    const caller = withCallerId(stated, phoneRun(null, "+923711303611"));
+    expect(caller.phone).toBe("+441614960000");
+  });
+
+  test("keeps the name learned in conversation alongside the caller id", () => {
+    const stated = { ...nobody, name: "Marcus Bell" };
+    const caller = withCallerId(stated, phoneRun(null, "+923711303611"));
+    expect(caller).toMatchObject({ name: "Marcus Bell", phone: "+923711303611" });
+  });
+
+  test("leaves widget calls alone, which carry no caller id", () => {
+    expect(withCallerId(nobody, phoneRun(null, null)).phone).toBeNull();
+    expect(withCallerId(nobody, run(null)).phone).toBeNull();
+  });
+
+  test("rejects a caller id that is not a usable number", () => {
+    // Telnyx sends "anonymous" for a withheld number; storing that as a phone
+    // would collide every withheld caller into one contact.
+    expect(withCallerId(nobody, phoneRun(null, "anonymous")).phone).toBeNull();
   });
 });
