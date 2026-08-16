@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { ApiError } from "../errors";
-import { normalizeE164 } from "./telephony";
+import { isDialable, normalizeE164 } from "./telephony";
 
 describe("phone number normalisation", () => {
   test("accepts full international numbers and strips formatting", () => {
@@ -27,5 +27,24 @@ describe("phone number normalisation", () => {
       expect(error).toBeInstanceOf(ApiError);
       expect((error as ApiError).message).toContain("+14155550123");
     }
+  });
+});
+
+describe("whether a callback can be dialled", () => {
+  test("accepts what normalisation accepts, formatting and all", () => {
+    expect(isDialable("+14155550123")).toBe(true);
+    expect(isDialable("+1 (415) 555-0123")).toBe(true);
+  });
+
+  test("rejects the channels a callback may legitimately hold instead", () => {
+    // A callback is also a human to-do list, so an email or a local number is
+    // valid to store — it just cannot be handed to the engine.
+    expect(isDialable("someone@example.com")).toBe(false);
+    expect(isDialable("0161 496 0000")).toBe(false);
+    expect(isDialable("")).toBe(false);
+  });
+
+  test("answers rather than throwing, so the view can be built from it", () => {
+    expect(() => isDialable("not a number")).not.toThrow();
   });
 });

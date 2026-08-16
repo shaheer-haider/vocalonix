@@ -1499,13 +1499,21 @@ function CallbacksPage({ slug }: { slug: string }) {
               {canManage &&
                 (!selected.closed ? (
                   <div className="callbacks-actions">
-                    <Button
-                      variant="accent"
-                      disabled={busy}
-                      onClick={() => void handleAgentCall()}
-                    >
-                      Let the agent call them
-                    </Button>
+                    {selected.dialable ? (
+                      <Button
+                        variant="accent"
+                        disabled={busy}
+                        onClick={() => void handleAgentCall()}
+                      >
+                        Let the agent call them
+                      </Button>
+                    ) : (
+                      <p className="ui-field-message">
+                        The agent can only call a number in full international
+                        format, like +14155550123. This one reads{" "}
+                        <strong>{selected.contactChannel}</strong>.
+                      </p>
+                    )}
                     <Button
                       variant="primary"
                       disabled={busy}
