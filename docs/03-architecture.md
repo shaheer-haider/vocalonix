@@ -1,145 +1,255 @@
 # Architecture
 
-## Module/layer overview
+## Topology
 
-| Layer | Responsibility | Key files | Depends on | Dependents |
-|---|---|---|---|---|
-| **Web (React)** | Render UI, collect form data, load widget scripts, enforce role-based UI hiding | `app/web/src/main.tsx`, `app/web/src/router.tsx`, `app/web/src/App.tsx` | `api.ts` → API | Browser user |
-| **API client (Eden)** | Type-safe HTTP client from generated `App` type, unwraps errors | `app/web/src/api.ts:232` | API `App` type | All route components |
-| **HTTP server (Elysia)** | Route registration, CORS, global error handling, request validation | `app/api/src/index.ts:85` | Env, auth routes, workspace routes, tenant routes | Worker (none directly) |
-| **Authentication** | better-auth config, session extraction, login/signup/magic/verify endpoints | `app/api/src/auth/config.ts`, `app/api/src/auth/routes.ts` | `db/client`, `db/schema` | `workspace/context.ts`, `tenant/routes.ts` |
-| **Workspace** | Business CRUD, team membership, invitations, role checks | `app/api/src/workspace/routes.ts`, `app/api/src/workspace/permissions.ts`, `app/api/src/workspace/context.ts` | `db/schema`, `auth` | HTTP routes |
-| **Tenant** | Tenant-scoped settings, knowledge, onboarding, and publish workflow | `app/api/src/tenant/routes.ts` | `workspace/context`, `dograh/tenant`, `outbox` | HTTP routes |
-| **Dograh integration** | HTTP client, sync engine, failure classification, workflow desired-state builder | `app/api/src/dograh/client.ts`, `app/api/src/dograh/tenant.ts`, `app/api/src/dograh/config.ts` | Env | `index.ts`, `tenant/routes.ts`, `outbox.ts` |
-| **Outbox** | Persistent async job queue backed by `outbox_events` | `app/api/src/outbox.ts` | `db/schema`, `dograh/tenant` | `worker.ts` |
-| **Worker** | Polls outbox table and runs handlers | `app/api/src/worker.ts:12` | `outbox.ts` | none (background) |
-| **Database** | Drizzle ORM + postgres.js | `app/api/src/db/client.ts`, `app/api/src/db/schema.ts` | Postgres | All API layers |
+```mermaid
+flowchart TB
+    subgraph browser["Browser"]
+        spa["Harkbell SPA<br/>React 19 · TanStack Router"]
+        widget["Widget on the<br/>business's own site"]
+    end
 
-## Wiring and initialization order
+    subgraph harkbell["Harkbell"]
+        api["API — Elysia :3001<br/>app/api/src/index.ts"]
+        worker["Worker<br/>app/api/src/worker.ts"]
+        pg[("PostgreSQL 16<br/>:5433")]
+    end
+
+    subgraph engine["Dograh engine (submodule)"]
+        deng["API :8000"]
+        dstore[("Postgres · Redis · MinIO")]
+    end
+
+    subgraph ext["External"]
+        telnyx["Telnyx"]
+        stripe["Stripe"]
+        resend["Resend"]
+        speech["Deepgram · OpenAI<br/>Gemini · ElevenLabs"]
+    end
+
+    spa -->|"cookie session<br/>/api/*"| api
+    widget -->|"embed token<br/>WebRTC + WS"| deng
+    api --> pg
+    worker --> pg
+    api -->|"management API<br/>service credentials"| deng
+    worker -->|"workflow sync<br/>knowledge upload"| deng
+    worker -->|"pull completed runs"| deng
+    deng -->|"agent tools mid-call<br/>x-vocalonix-agent-key"| api
+    deng --> dstore
+    deng --> speech
+    api --> telnyx
+    api --> stripe
+    api --> resend
+    telnyx -->|"inbound calls"| deng
+```
+
+Three of our own processes: **API**, **worker**, **web** (a static bundle behind
+nginx in production, Vite in development). They share one Postgres. The worker
+is not optional — see [The outbox](#the-outbox).
+
+## Trust boundaries
+
+There are exactly three, and every one of them matters.
+
+**1. Browser → API.** Cookie-authenticated (`vocalonix_session`, HTTP-only,
+`SameSite=Lax`, `Secure` in production). CORS is restricted to `APP_ORIGIN`
+with `credentials: true`. Every workspace route re-derives the caller's rights
+from the database; nothing is trusted from the client.
+
+**2. Browser → Dograh.** The widget talks to the engine directly — it has to,
+for WebRTC — but only with a short-lived **embed token** minted server-side by
+`dograh.createEmbedToken()`. The browser never holds a Dograh API key, service
+password, or provider key. Any change that puts one into a `VITE_*` variable or
+a client bundle is a security regression, not a convenience.
+
+**3. Dograh → API.** The engine calls our agent-tool endpoints mid-call. These
+have no session and no CSRF token; they authenticate with the
+`x-vocalonix-agent-key` header, whose value is
+`sha256("vocalonix-agent-tools:" + AUTH_SECRET)` — derived in `env.ts`, never
+stored. The comparison lives in `requireAgentKey()` in
+`app/api/src/agent/routes.ts`.
+
+## Multi-tenancy
+
+Tenancy is enforced in application code, in one function, and there is no
+database-level safety net.
+
+```ts
+const workspace = await requireWorkspace(request.headers, params.slug);
+requirePermission(workspace.role, "bookings.manage");
+```
+
+`requireWorkspace` (`app/api/src/workspace/context.ts`) joins `businesses` to an
+**active** `memberships` row for the session user and a non-deleted business.
+A non-member gets `404 WORKSPACE_NOT_FOUND`, not 403 — the existence of another
+tenant's workspace is not something we confirm.
+
+`requirePermission` checks the matrix in `app/api/src/workspace/permissions.ts`:
+
+| Permission | Owner | Admin | Manager | Staff | Viewer |
+|---|:--:|:--:|:--:|:--:|:--:|
+| `workspace.view` | ● | ● | ● | ● | ● |
+| `callbacks.manage` | ● | ● | ● | ● | |
+| `contacts.manage` | ● | ● | ● | ● | |
+| `bookings.manage` | ● | ● | ● | ● | |
+| `agent.edit` | ● | ● | ● | | |
+| `knowledge.manage` | ● | ● | ● | | |
+| `bookings.configure` | ● | ● | ● | | |
+| `team.manage` | ● | ● | | | |
+| `billing.access` | ● | | | | |
+| `business.delete` | ● | | | | |
+
+`canManageRole` additionally stops an Admin from acting on an Owner: outside of
+Owners, you may only manage strictly lower ranks.
+
+**Every new workspace route must go through both calls.** A handler that reads
+`businessId` from anywhere other than a `requireWorkspace` result is a
+cross-tenant leak waiting to be found.
+
+## Request lifecycle
+
+1. **CORS** — `@elysiajs/cors` against `env.appOrigins`.
+2. **Route plugin** — `index.ts` composes `authRoutes`, `agentToolRoutes`,
+   `platformRoutes`, `tenantRoutes`, `workspaceRoutes`, `billingRoutes`,
+   `demoRoutes`, then its own legacy handlers.
+3. **Body validation** — Elysia's `t.Object({...})` in the route's second
+   argument. A failure is caught by `onError` as `VALIDATION` → `422`.
+4. **Auth and tenancy** — as above.
+5. **Handler** — Drizzle against Postgres, plus `enqueueOutbox` for anything
+   the engine must eventually hear about.
+6. **Error mapping** — one `onError` in `index.ts`:
+
+   | Thrown | Response |
+   |---|---|
+   | Elysia `VALIDATION` | 422 `{ error, code: "VALIDATION" }` |
+   | Elysia `NOT_FOUND` | 404 |
+   | `ApiError` | its own status and code |
+   | `DograhError` | its status, or 502 if the engine returned ≥500 |
+   | anything else | logged, 500 `"Unexpected server error"` |
+
+   So: throw `ApiError` and the client gets a usable message and a stable code.
+   Throw anything else and the user gets nothing useful.
+
+## The outbox
+
+Every side effect that must reach the Dograh engine goes through
+`outbox_events`, and only the **worker** performs it.
 
 ```mermaid
 sequenceDiagram
-    participant C as Container (Docker or shell)
-    participant E as env.ts
-    participant DB as db/client.ts
-    participant M as db/migrate.ts
-    participant IDX as index.ts
-    participant R as route modules
-    participant W as worker.ts
+    participant U as User
+    participant A as API
+    participant DB as Postgres
+    participant W as Worker
+    participant E as Dograh
 
-    C->>E: load .env / process.env
-    E->>E: zod parse + production superRefine
-    C->>DB: import drizzle client with schema
-    C->>M: run migrations
-    M->>DB: apply drizzle/*.sql
-    alt API server
-        C->>IDX: bun src/index.ts
-        IDX->>R: .use(authRoutes) .use(tenantRoutes) .use(workspaceRoutes)
-        IDX->>IDX: app.listen(env.port)
-    else Worker
-        C->>W: bun src/worker.ts
-        W->>W: recoverStuckOutboxEvents()<br/>recoverStuckBusinessSyncs()
-        W->>W: while true processNextOutboxEvent()
-    end
+    U->>A: PUT /api/b/:slug/settings/agent
+    A->>DB: update business_agent_settings
+    A->>DB: insert outbox_events (dedupeKey)
+    A-->>U: 200 — "changes pending"
+    W->>DB: claim next pending event
+    W->>E: reconcile workflow
+    E-->>W: ok
+    W->>DB: mark completed, syncState = synced
 ```
 
-There is no dependency-injection framework. Modules import singletons directly:
+Why: an engine call inside a request handler would make a slow or unreachable
+engine into a failed user action, and a crash mid-call would leave the database
+and the engine permanently disagreeing.
 
-- `env` from `app/api/src/env.ts:186` is validated once at import time.
-- `db` from `app/api/src/db/client.ts:13` is a single Drizzle client.
-- `dograh` from `app/api/src/dograh/client.ts:356` is a single `DograhClient` instance.
-- `auth` from `app/api/src/auth/config.ts:10` is a single better-auth instance.
+Mechanics (`app/api/src/outbox.ts`):
 
-## State management
+- **Claim** is a conditional `UPDATE … WHERE status = 'pending'` returning the
+  row, so two workers cannot take the same event.
+- **Dedupe** — a partial unique index on `dedupe_key` covering only `pending`
+  and `processing` rows, with `onConflictDoNothing` on insert. Ten rapid saves
+  collapse into one sync; a later save after the first completed enqueues again.
+- **Retry** — exponential backoff, `2^(n-1) × 5s` capped at 5 minutes, up to
+  `maxAttempts` (8). Retryability comes from `classifyDograhFailure`: a
+  `rejected` failure is the engine saying "this configuration is wrong", and
+  retrying it is pointless.
+- **Polling is not failure** — a handler may return `retryAfterMs` (a document
+  still processing). That resets `attemptCount` to 0, so slow-but-healthy work
+  never eats the retry budget reserved for real failures.
+- **Recovery** — on start, `recoverStuckOutboxEvents()` returns anything left
+  `processing` for over 5 minutes back to `pending`. A killed worker self-heals.
 
-### Server state
+Event types: `dograh.workflow.ensure`, `dograh.workflow.sync`,
+`dograh.widget.publish`, `dograh.knowledge.upload`,
+`dograh.knowledge.reconcile`, `dograh.knowledge.delete`,
+`dograh.business.offboard`.
 
-The source of truth for all persistent state is the Vocalonix Postgres database. The Elysia server is stateless; the worker is also stateless and polls the same database. Session state is stored in the `sessions` table and referenced by an HTTP-only `vocalonix_session` cookie (`app/api/src/auth/config.ts:47`).
+## The worker loop
 
-### Client state
+`app/api/src/worker.ts` — a single sequential loop, deliberately boring:
 
-The React frontend uses local `useState` for form and page state. It does not use TanStack Query for caching or mutation in the current code; every route component fetches its own data on mount (`app/web/src/routes/tenant.tsx:68` uses `useEffect` + `useState`). The `AuthProvider` (`app/web/src/auth/AuthProvider.tsx:31`) is the only global React context; it stores the current session and exposes `login`, `logout`, `logoutAll`, and `refresh`.
+1. Write a heartbeat file every 10s (`WORKER_HEARTBEAT_PATH`, default
+   `/tmp/vocalonix-worker-heartbeat`) — the Compose healthcheck reads it.
+2. Every 60s, `ingestAllBusinessRuns()` — pull completed runs out of the engine
+   into `call_records`, contacts, callbacks and knowledge gaps.
+3. Process one outbox event; if there was none, sleep 1s.
 
-### Sync state
+`SIGTERM`/`SIGINT` set a flag and the loop finishes its current event before
+exiting, so a deploy never interrupts a sync mid-flight.
 
-Each business has a `business_dograh_mappings` row that tracks the desired Dograh workflow state (`app/api/src/db/schema.ts:329`). The mapping contains:
+## Boot reconcilers
 
-- `syncState` — `pending`, `syncing`, `synced`, `rejected`, `failed`, `offboarding`, `offboarded`.
-- `configHash` and `syncedConfigHash` — SHA-256 hashes of the desired and last-successfully-synced workflow definitions.
-- `syncLeaseId` / `syncLeaseExpiresAt` — five-minute lease to prevent concurrent syncs (`app/api/src/dograh/tenant.ts:26`).
+`index.ts` fires three jobs at startup, none awaited — the API must serve health
+checks even while the engine is still coming up. Each failure is reported
+through the readiness panel rather than blocking boot.
 
-## Data storage
+| Job | Purpose |
+|---|---|
+| `reconcileProviderConfiguration()` | Push the resolved speech stack from our environment into Dograh's organisation model configuration, so the operator never opens the Dograh UI |
+| `reconcileTelephonyConfiguration()` | Refresh the Telnyx webhook signing key and re-assert any number that is bought but not actually delivering calls |
+| `backfillCallRecords()` | Copy across calls taken before `call_records` existed. Upserts, so re-running is harmless |
 
-The database schema is defined in `app/api/src/db/schema.ts` and is physically created/migrated by `app/api/drizzle/0000_crazy_meggan.sql` and later migrations.
+The telephony one exists because buying a number, binding it to the call-control
+application, and registering the routing record are three separate steps, and a
+gap in any one produces a number that bills monthly and never rings. All three
+are verified on purchase *and* re-asserted at boot.
 
-### Entity-relationship diagram
+## Authentication
 
-```mermaid
-erDiagram
-    users ||--o{ sessions : has
-    users ||--o{ accounts : has
-    users ||--o{ memberships : member_of
-    users ||--o{ businesses : creates
-    users ||--o{ audit_logs : acts
-    businesses ||--o{ memberships : has
-    businesses ||--o{ invitations : sends
-    businesses ||--o{ business_dograh_mappings : maps
-    businesses ||--o{ business_agent_settings : configures
-    businesses ||--o{ business_onboarding : tracks
-    businesses ||--o{ business_knowledge : owns
-    businesses ||--o{ outbox_events : emits
-    businesses ||--o{ audit_logs : logged
-```
+better-auth (`app/api/src/auth/config.ts`) with the Drizzle adapter.
 
-### Key tables
+- Cookie `vocalonix_session`, HTTP-only, `SameSite=Lax`, `Secure` in production.
+- Sessions are database rows (`sessions`), which is what makes "log out
+  everywhere" and the session list on `/account` real rather than cosmetic.
+- Password and magic-link sign-in. Magic-link tokens are stored **hashed** in
+  `magic_link_requests` with an expiry and a `consumed_at`.
+- Outside production, verification and magic links are returned in the response
+  as preview URLs instead of being emailed — `captureAuthLinks` in
+  `auth/email.ts` intercepts them.
+- `safeReturnTo()` rejects any redirect target that is not a same-origin path,
+  which is what keeps `?redirect=` from becoming an open redirect.
+- Per-IP rate limits on signup (10/min), login (20/min), magic link (10/min),
+  password confirm (5/min) and demo sessions (10/min).
 
-| Table | Purpose | Important columns / constraints |
-|---|---|---|
-| `users` | Account identity | `id`, `email` unique, `emailVerified` (`app/api/src/db/schema.ts:16`) |
-| `sessions` | better-auth session rows | `token` unique, FK to `users` (`app/api/src/db/schema.ts:34`) |
-| `accounts` | Credential/account provider data | `providerId`+`accountId` unique, FK to `users` (`app/api/src/db/schema.ts:58`) |
-| `verifications` | better-auth email verification tokens | `identifier`+`value` (`app/api/src/db/schema.ts:94`) |
-| `magic_link_requests` | One-time sign-in links | `tokenHash` unique, `consumedAt`, `expiresAt` (`app/api/src/db/schema.ts:111`) |
-| `businesses` | A workspace/tenant | `slug` unique, `createdBy` FK to `users` (`app/api/src/db/schema.ts:181`) |
-| `memberships` | User ↔ Business role | Composite PK `(userId, businessId)`, `status` enum (`app/api/src/db/schema.ts:211`) |
-| `invitations` | Email-bound pending invites | `tokenHash` unique, partial unique on pending `(businessId, email)` (`app/api/src/db/schema.ts:236`) |
-| `audit_logs` | Append-only audit stream | `businessId`, `actorUserId`, `action`, `payload` JSONB (`app/api/src/db/schema.ts:269`) |
-| `outbox_events` | Async job queue | `status`, `dedupeKey`, `availableAt`, `attemptCount` (`app/api/src/db/schema.ts:293`) |
-| `business_dograh_mappings` | Dograh workflow sync state | `businessId` PK, `workflowId`, `syncState`, `configHash` (`app/api/src/db/schema.ts:329`) |
-| `business_agent_settings` | Tenant agent config | `businessId` PK, defaults to Nova/greeting/prompt (`app/api/src/db/schema.ts:362`) |
-| `business_onboarding` | Onboarding step tracking | `businessId` PK, `completedSteps` JSONB, `currentStep` (`app/api/src/db/schema.ts:397`) |
-| `business_knowledge` | Tenant knowledge sources | `businessId` FK, `state`, `active`, `remoteDocumentUuid` (`app/api/src/db/schema.ts:412`) |
+That limiter is **in-memory** (`app/api/src/rateLimit.ts`). It is correct for
+one API instance and silently useless behind two. Moving to a shared store is a
+prerequisite for horizontal scaling.
 
-### Where each model is read and written
+## Frontend ↔ backend typing
 
-| Model | Read | Write |
-|---|---|---|
-| `users` | `auth.api.*`, `workspace/routes.ts:131`, `auth/routes.ts:221` | `auth.api.signUpEmail`, `auth/routes.ts:101` |
-| `sessions` | `auth.api.getSession`, `auth/routes.ts:221` | better-auth middleware, `auth/routes.ts:214` |
-| `businesses` | `workspace/routes.ts:131`, `tenant/routes.ts:153` | `workspace/routes.ts:158` |
-| `memberships` | `workspace/context.ts:17`, `workspace/routes.ts:296` | `workspace/routes.ts:158` (create), `workspace/routes.ts:579` (role), `workspace/routes.ts:653` (revoke), `workspace/routes.ts:742` (accept invite) |
-| `invitations` | `workspace/routes.ts:705` | `workspace/routes.ts:338` (create), `workspace/routes.ts:474` (revoke), `workspace/routes.ts:519` (resend), `workspace/routes.ts:742` (accept) |
-| `business_dograh_mappings` | `dograh/tenant.ts:61` | `workspace/routes.ts:158` (create), `dograh/tenant.ts:177` (sync) |
-| `business_agent_settings` | `tenant/routes.ts:153` | `tenant/routes.ts:153` (ensure), `tenant/routes.ts:209` (profile), `tenant/routes.ts:259` (agent), `tenant/routes.ts:316` (hours), `tenant/routes.ts:350` (widget) |
-| `business_onboarding` | `tenant/routes.ts:153` | `tenant/routes.ts:64` (complete step), `outbox.ts:77` (publish) |
-| `business_knowledge` | `tenant/routes.ts:549` | `tenant/routes.ts:578` (create), `tenant/routes.ts:746` (delete), `outbox.ts` (reconcile) |
-| `outbox_events` | `outbox.ts:146` | `workspace/routes.ts:158` (ensure), `tenant/routes.ts:93` (sync), `outbox.ts` (self-queue) |
-| `audit_logs` | — | `workspace/routes.ts` and `tenant/routes.ts` (append-only) |
+`app/web/src/api.ts` builds an `edenTreaty<App>` client against
+`typeof app` imported straight from `app/api/src/index.ts`. Route signatures are
+shared at the type level with no code generation and no OpenAPI step — which is
+why request bodies use Elysia's `t` and why the web `tsconfig` can see the API
+source. Break a route's shape and the **web** typecheck fails, which is the
+point.
 
-## Design decisions
+`unwrap()` normalises every response: it throws `ApiClientError(status, code,
+message)` when the transport failed *or* when `data` came back null, so a
+malformed response surfaces at the call site instead of deep inside a render.
 
-1. **Server-only Dograh credentials.** The browser never receives `DOGRAH_API_KEY` or `DOGRAH_SERVICE_PASSWORD`. The API generates an embed token and returns the script URL to the browser (`app/api/src/index.ts:63`).
-2. **Single source of truth in Postgres.** The worker polls the same database as the API. This removes the need for a separate job broker and makes the codebase runnable with only Postgres.
-3. **Desired-state workflow sync.** `dograh/tenant.ts` builds a deterministic workflow definition from `business_agent_settings` + `business_knowledge`, computes a SHA-256 hash, and only mutates Dograh when the hash changes (`app/api/src/dograh/tenant.ts:117`).
-4. **Outbox for async durability.** Every Dograh side effect is persisted as an `outbox_events` row before being attempted. If the process restarts, the worker replays uncompleted events (`app/api/src/outbox.ts:51`).
-5. **Role matrix duplicated on client and server.** The server has the real enforcement (`app/api/src/workspace/permissions.ts`), but the web mirrors the matrix in `app/web/src/permissions.ts` to hide UI controls. The server is still authoritative.
-6. **Legacy single-workflow path coexists with tenant sync.** `app/api/src/dograh/workflow.ts` manages the unprotected `/secret/*` lab as a single `[Vocalonix]` workflow, while `app/api/src/dograh/tenant.ts` manages per-business workflows under `[Vocalonix:<businessId>]` names (`app/api/src/dograh/config.ts:32`).
+## Where things deliberately are not
 
-## Error handling
-
-All routes use the same `onError` handler (`app/api/src/index.ts:94`):
-
-- `ApiError` returns `{ error, code }` with the status.
-- `DograhError` returns 502 (or 503 for unauthorized) with the Dograh message.
-- Unexpected errors log to stderr and return `500` with a generic message.
-
+- **No SSR.** The web app is a static bundle. nginx serves it; there is no Node
+  process in front of the frontend in production.
+- **No Stripe SDK.** `billing/routes.ts` calls the REST API with `fetch` and
+  verifies webhook signatures with `node:crypto` and `timingSafeEqual`.
+- **No job queue service.** The outbox table is the queue. One less thing to
+  run, and it is transactional with the data that caused it.
+- **No ORM-level tenant scoping.** Enforced in `requireWorkspace` instead. This
+  is the highest-risk design decision in the codebase; treat it accordingly.

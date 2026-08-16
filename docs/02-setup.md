@@ -1,240 +1,195 @@
 # Setup
 
+Two ways to run it. Pick by what you are changing.
+
+| You are changing… | Use |
+|---|---|
+| API logic, frontend, anything touching the engine, the worker, or a real call | **Full stack** (Docker Compose) |
+| Frontend only, against an already-running engine | **App only** |
+
+The full stack is the supported runtime. If a change cannot be demonstrated
+there, it has not been demonstrated.
+
+---
+
 ## Prerequisites
 
-- **Git** with submodule support
-- **Docker** and **Docker Compose v2** (the only fully supported runtime)
-- **Bun** `1.1.45` — the engine pinned in `package.json:25`. The local verification in this doc was run with `1.3.0`, but `1.1.45` is the project target.
-- Ports free on the host:
-  - `3000` — Vocalonix web
-  - `3001` — Vocalonix API
-  - `5432` — Dograh Postgres
-  - `5433` — Vocalonix Postgres
-  - `6379` — Redis
-  - `8000` — Dograh API
-  - `9000` / `9001` — MinIO
-  - `3010` — Dograh UI
+- Git with submodule support
+- Docker and Docker Compose v2
+- Bun 1.1.45 (for the app-only mode, and for `typecheck` / `test`)
 
-## Full stack setup (Docker Compose, recommended)
-
-These commands were verified by running them on macOS and confirming the health endpoints responded.
+## Full stack
 
 ```bash
-# 1. Clone and initialise the Dograh submodule
 git clone --recurse-submodules https://github.com/shaheer-haider/vocalonix.git
 cd vocalonix
-
-# 2. Generate .env, secrets, and validate compose
 ./scripts/setup.sh
-# Output: "Vocalonix is configured. Run ./scripts/start.sh to start the stack."
-
-# 3. Build and start everything
-./scripts/start.sh
-# Equivalent to: ./scripts/setup.sh && docker compose up --build
-
-# 4. Wait for all services to be healthy (run in a second terminal)
-docker compose ps
-
-# 5. Verify Vocalonix API and Dograh integration
-curl -fsS http://localhost:3001/api/health
-curl -fsS http://localhost:3001/api/dograh/status
-
-# 6. Open the app
-open http://localhost:3000
-```
-
-`./scripts/setup.sh` does the following (`scripts/setup.sh:1`):
-1. Runs `git submodule update --init --recursive`.
-2. Copies `.env.example` to `.env` if missing.
-3. Generates cryptographically random values for `OSS_JWT_SECRET`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `VOCALONIX_POSTGRES_PASSWORD`, `AUTH_SECRET`, and `DOGRAH_SERVICE_PASSWORD`.
-4. Sets `DATABASE_URL` to `postgres://vocalonix:<generated>@localhost:5433/vocalonix`.
-5. Validates the Docker Compose file with `docker compose config`.
-
-`./scripts/start.sh` does the following (`scripts/start.sh:1`):
-1. Runs `setup.sh`.
-2. Runs `docker compose up --build` (foreground, blocking). The API container runs migrations automatically before starting (`app/api/Dockerfile:12`).
-
-### To run the stack in the background
-
-Replace the final command with:
-
-```bash
 docker compose up -d --build --wait
 ```
 
-Then use `docker compose logs -f vocalonix-api` to watch the API.
+`scripts/setup.sh` initialises the submodule, copies `.env.example` to `.env`
+if there is none, and generates every local secret that does not already have a
+value — `AUTH_SECRET`, both Postgres passwords, Redis, MinIO, the Dograh service
+password, and `TURN_SECRET`. It never overwrites a value you set. It also
+appends empty placeholder lines for every provider key, so an `.env` created
+before a key existed still shows you the line to fill in.
 
-### To stop the stack
+Then open:
+
+| | |
+|---|---|
+| Web app | http://localhost:3000 |
+| Harkbell API | http://localhost:3001/api/health |
+| Dograh engine | http://localhost:8000 |
+| Dograh dashboard | http://localhost:3010 |
+| Harkbell Postgres | `localhost:5433` |
+
+First boot pulls the Dograh images and can take several minutes. The API creates
+a Dograh service account on its first request.
+
+Stop with `docker compose down`. Add `-v` to also drop the volumes and start
+from an empty database.
+
+### The services
+
+| Service | What it is |
+|---|---|
+| `vocalonix-api` | Our Elysia API. Runs migrations on start, then serves :3001 |
+| `vocalonix-worker` | Same image, `bun src/worker.ts`. Outbox + run ingestion |
+| `vocalonix-web` | Vite build served by nginx on :3000 |
+| `vocalonix-db` | Our Postgres 16, on host port 5433 |
+| `api`, `ui`, `postgres`, `redis`, `minio` | Dograh's own stack, extended from `dograh/docker-compose.yaml` |
+
+Note the two Postgres instances. Ours is `vocalonix-db` on 5433; the one called
+`postgres` belongs to Dograh. Never point `DATABASE_URL` at Dograh's.
+
+## App only
+
+Use when Dograh is already running locally or remotely.
 
 ```bash
-docker compose down
-```
-
-To also remove all Postgres / Redis / MinIO volumes:
-
-```bash
-docker compose down -v
-```
-
-## App-only setup (Bun, when Dograh is already running)
-
-Use this when Dograh is already available locally or remotely and you only want to run the Vocalonix web and API.
-
-```bash
-# 1. Install dependencies
-bun install --frozen-lockfile
-
-# 2. Create .env from the example and fill it in
-cp .env.example .env
-# Edit .env: set DATABASE_URL, AUTH_SECRET, DOGRAH_INTERNAL_URL,
-# DOGRAH_PUBLIC_API_URL, DOGRAH_WIDGET_URL, and either DOGRAH_API_KEY or
-# DOGRAH_SERVICE_EMAIL + DOGRAH_SERVICE_PASSWORD.
-
-# 3. Run migrations
-bun run db:migrate
-
-# 4. Start the Bun dev stack (API, worker, and web in one command)
+bun install
 ./scripts/dev-app.sh
-# Equivalent to: source .env && bun run db:migrate && bun run dev
 ```
 
-`./scripts/dev-app.sh` (`scripts/dev-app.sh:14`) runs `bun run --cwd app/api dev` and `bun run --cwd app/api worker` and `bun run --cwd app/web dev` via `concurrently` (`package.json:10`).
+`dev-app.sh` sources the root `.env`, runs migrations, and starts the API, the
+worker and Vite concurrently. You must have `DATABASE_URL`, `AUTH_SECRET`, the
+three `DOGRAH_*` URLs, and either `DOGRAH_API_KEY` or the service
+email/password pair.
+
+---
+
+## Making calls actually work
+
+The API refuses to boot on an invalid environment (`app/api/src/env.ts`), but it
+will happily boot with no provider keys at all — it just cannot place a call.
+The dashboard's **Setup** panel (`GET /api/platform/status`) reports exactly
+what is missing and the environment variable that fixes it.
+
+| What you want | What to set |
+|---|---|
+| Calls working at all | `GEMINI_API_KEY` |
+| Calls working *well* | `DEEPGRAM_API_KEY` + `OPENAI_API_KEY` |
+| A real phone number | `TELNYX_API_KEY` (+ `TELNYX_WEBHOOK_PUBLIC_KEY` in production) |
+| Real sign-in emails | `RESEND_API_KEY` + a verified sending domain |
+| Paid plans | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO` |
+| Transcript mining (contacts, gaps) | `GEMINI_API_KEY` or `OPENAI_API_KEY` |
+
+Paste keys into `.env` and restart the API. Keys are validated: Deepgram,
+OpenAI and ElevenLabs are checked against the real provider APIs by the engine
+and a rejection is shown verbatim; Google keys are not checked by the engine, so
+Harkbell verifies `GEMINI_API_KEY` itself against the Generative Language API.
+
+You never open the Dograh dashboard to configure models.
+`app/api/src/platform/providers.ts` pushes the resolved stack into Dograh's
+organisation model configuration at API boot.
+
+### `VOICE_STACK`
+
+- `auto` (default) — use the Deepgram STT → LLM → Deepgram TTS **pipeline** when
+  the keys allow it, otherwise fall back to realtime speech-to-speech.
+- `pipeline` — force the pipeline.
+- `realtime` — force speech-to-speech.
+
+The pipeline is the recommended stack for launch: it puts transcription on its
+own stream, which is what makes interruptions and knowledge answers reliable.
+See [`STATUS.md`](../STATUS.md) for the current production setting and the open
+disagreement about it.
+
+### `TURN_SECRET` and the demo
+
+Dograh reports `turn_enabled` as `bool(TURN_SECRET)`, and the web app gates the
+whole demo funnel on that flag — with `turnEnabled: false` the landing page hides
+the **Hear it now** CTA and **Start demo call** stays disabled. `setup.sh`
+generates `TURN_SECRET`, but an `.env` predating that change will not have it:
+
+```bash
+docker compose up -d --wait api
+curl -fsS http://localhost:3001/api/dograh/health   # expect turnEnabled: true
+```
+
+Local WebRTC still works over host candidates without it; the secret only flips
+the capability flag and lets the widget request TURN credentials.
+
+---
 
 ## Environment variables
 
-All variables are read from the shell environment by `app/api/src/env.ts:122` and `app/web/src/api.ts:11` (Vite `import.meta.env`).
+`app/api/src/env.ts` is the authority: it declares every variable, its type, its
+default, and the extra rules that apply when `NODE_ENV=production`. An invalid
+environment throws at import time with the field errors printed — the API will
+not start half-configured.
 
-### Vocalonix application
+### Required everywhere
 
-| Variable | Purpose | Example | Required |
-|---|---|---|---|
-| `APP_ORIGIN` | Comma-separated allowed browser origins for CORS and callback URLs | `http://localhost:3000` | Yes |
-| `VITE_API_BASE_URL` | Browser-facing API base URL, baked into the web build | `http://localhost:3001` | Yes for build |
-| `VOCALONIX_API_PUBLIC_URL` | Alias used by `docker-compose.yml` for `API_PUBLIC_URL` | `http://localhost:3001` | Yes in Compose |
-| `API_PUBLIC_URL` | Public base URL for better-auth callbacks and links | `http://localhost:3001` | Yes |
-| `NODE_ENV` | Runtime mode: `development`, `test`, or `production` | `development` | Yes |
+`DATABASE_URL`, `AUTH_SECRET` (≥32 chars), `API_PUBLIC_URL`, `APP_ORIGIN`,
+`EMAIL_FROM`, `DOGRAH_INTERNAL_URL`, `DOGRAH_PUBLIC_API_URL`,
+`DOGRAH_WIDGET_URL`, `DOGRAH_SERVICE_EMAIL`, `DOGRAH_SERVICE_PASSWORD`,
+`DOGRAH_SERVICE_NAME`, `DOGRAH_WORKFLOW_NAME`, `DOGRAH_WIDGET_ALLOWED_DOMAINS`,
+and the `VOICE_*` model names (all defaulted).
 
-### Vocalonix database and sessions
+### Additionally enforced in production
 
-| Variable | Purpose | Example | Required |
-|---|---|---|---|
-| `VOCALONIX_POSTGRES_USER` | Postgres user for `vocalonix-db` | `vocalonix` | Yes in Compose |
-| `VOCALONIX_POSTGRES_PASSWORD` | Postgres password for `vocalonix-db` | (generated) | Yes in Compose |
-| `VOCALONIX_POSTGRES_DB` | Database name for `vocalonix-db` | `vocalonix` | Yes in Compose |
-| `VOCALONIX_POSTGRES_PORT` | Host port mapped to `vocalonix-db` | `5433` | Optional, defaults to `5433` |
-| `DATABASE_URL` | Full Postgres connection string used by API and worker | `postgres://vocalonix:...@localhost:5433/vocalonix` | Yes |
-| `AUTH_SECRET` | better-auth secret for signing session cookies | (generated) | Yes, must be ≥32 chars |
-| `REQUIRE_EMAIL_VERIFICATION` | `true` to require verified email before login | `false` | Optional, defaults to `false` in dev, `true` in production |
-| `RESEND_API_KEY` | Resend API key for sending real email | `re_...` | Required in production; local dev shows preview links |
-| `EMAIL_FROM` | Sender address for Resend | `Vocalonix <hello@vocalonix.ai>` | Required in production |
-| `MAGIC_LINK_TTL_SECONDS` | Magic-link lifetime | `900` | Optional, defaults to `900` |
+| Rule | Why |
+|---|---|
+| `AUTH_SECRET` ≠ the development default | It also derives the agent-tool key |
+| `RESEND_API_KEY` set | Otherwise nobody can receive a sign-in link |
+| `API_PUBLIC_URL` is HTTPS | |
+| Every origin in `APP_ORIGIN` is HTTPS | Comma-separated list |
+| `REQUIRE_EMAIL_VERIFICATION=true` | |
+| `DOGRAH_API_KEY` set, or a service password that is not the placeholder | |
 
-### Dograh integration
+### Notable optional ones
 
-| Variable | Purpose | Example | Required |
-|---|---|---|---|
-| `DOGRAH_INTERNAL_URL` | Dograh API base URL from inside the Docker network | `http://api:8000` | Yes |
-| `DOGRAH_PUBLIC_API_URL` | Dograh API base URL for the browser widget | `http://localhost:8000` | Yes |
-| `DOGRAH_WIDGET_URL` | Host that serves the widget script, used in snippet URLs | `http://localhost:3000` | Yes |
-| `DOGRAH_STORAGE_INTERNAL_URL` | MinIO/S3 endpoint for uploading knowledge bytes | `http://minio:9000` | Yes |
-| `DOGRAH_API_KEY` | Static Dograh API key, if used instead of service account | | Optional |
-| `DOGRAH_SERVICE_EMAIL` | Service account email for the Dograh integration | `vocalonix@vocalonix.ai` | Yes |
-| `DOGRAH_SERVICE_PASSWORD` | Service account password for the Dograh integration | (generated) | Yes |
-| `DOGRAH_SERVICE_NAME` | Display name for the service account | `Vocalonix` | Yes |
-| `DOGRAH_WORKFLOW_NAME` | Fallback name for the legacy single workflow | `Vocalonix Agent` | Yes |
-| `DOGRAH_WIDGET_ALLOWED_DOMAINS` | Comma-separated allowed widget domains | `localhost,127.0.0.1` | Yes |
+| Variable | Effect |
+|---|---|
+| `VOCALONIX_INTERNAL_URL` | Where the **engine** reaches our agent-tool endpoints. Defaults to `API_PUBLIC_URL`. In Compose it is `http://vocalonix-api:3001`. It is part of the config hash, so changing it re-registers every agent |
+| `DOGRAH_STORAGE_INTERNAL_URL` | MinIO, for knowledge uploads |
+| `MAX_OWNED_WORKSPACES` | Default 3 |
+| `MAGIC_LINK_TTL_SECONDS` | 60–3600, default 900 |
+| `VITE_API_BASE_URL` | **Frontend only.** Read from the repo-root `.env` (`envDir` in `app/web/vite.config.ts`), not from `app/web` |
 
-### Dograh-only (managed by `docker-compose.yml`, not read by Vocalonix code)
+Only `VITE_`-prefixed variables ever reach the browser. Nothing else may.
 
-| Variable | Purpose | Example |
-|---|---|---|
-| `DOGRAH_VERSION` | Pinned Dograh image tag | `1.41.0` |
-| `ENVIRONMENT` | Dograh deployment mode | `local` |
-| `ENABLE_SIGNUP` | Whether Dograh local auth signups are allowed | `true` |
-| `ENABLE_TELEMETRY` | Posthog telemetry toggle | `false` |
-| `BACKEND_API_ENDPOINT` | Dograh public API endpoint | `http://localhost:8000` |
-| `MINIO_PUBLIC_ENDPOINT` | MinIO public endpoint | `http://localhost:9000` |
-| `TURN_HOST` | TURN server host | `localhost` |
-| `OSS_JWT_SECRET` | Secret for Dograh JWTs | (generated) |
-| `POSTGRES_PASSWORD` | Dograh Postgres password | (generated) |
-| `REDIS_PASSWORD` | Redis password | (generated) |
-| `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` | MinIO credentials | (generated) |
+---
 
-## How to run tests and build
-
-Verified commands:
+## Database changes
 
 ```bash
-# Run API unit tests
-bun run test
-
-# Run TypeScript checks on both packages
-bun run typecheck
-
-# Build both packages (web build emits to app/web/dist)
-bun run build
+# 1. edit app/api/src/db/schema.ts
+bun run db:generate     # writes app/api/drizzle/NNNN_*.sql and a snapshot
+bun run db:migrate      # applies it
 ```
 
-Test output observed locally:
+Commit the generated SQL and the snapshot together with the schema change. The
+API container runs `db:migrate` on start, so a missing migration file means a
+successful build and a broken deploy.
 
-```text
-23 pass
-0 fail
-188 expect() calls
-Ran 23 tests across 6 files.
-```
+Never hand-write a migration to work around a generation you dislike — change
+the schema until Drizzle generates what you want.
 
-The CI pipeline runs the same sequence (`.github/workflows/ci.yml:37-41`):
+## Local email and magic links
 
-```bash
-bun install --frozen-lockfile
-./scripts/setup.sh
-bun run db:migrate
-bun run typecheck
-bun run test
-bun run build
-```
-
-## Common setup failures and fixes
-
-### `bun: command not found`
-
-Install Bun via `curl -fsSL https://bun.sh/install | bash` and restart the shell. The lockfile is `bun.lockb`; `npm` / `pnpm` are not tested.
-
-### `docker compose up` fails because ports are already in use
-
-Check which services are bound to the required ports and stop them, or edit the `ports` blocks in `docker-compose.yml` and update the corresponding URLs in `.env`.
-
-### `Failed to fetch` on `http://localhost:3000` even though `/api/health` is OK
-
-The web container must be built with the correct `VITE_API_BASE_URL`. The API defaults `APP_ORIGIN` to `http://localhost:3000`, but the browser uses the URL it is loaded from. If you preview the web on a different port, set `APP_ORIGIN` to that origin and rebuild (`docker compose up -d --build`).
-
-### `DATABASE_URL` connection refused during `bun run db:migrate`
-
-If running app-only, ensure `vocalonix-db` is running. The default `DATABASE_URL` expects Postgres on `localhost:5433`. Start just the database with:
-
-```bash
-docker compose up -d vocalonix-db
-```
-
-### `Invalid environment` errors on API start
-
-`app/api/src/env.ts:159` throws if validation fails. Common causes:
-
-- `AUTH_SECRET` is missing or shorter than 32 characters.
-- `APP_ORIGIN` is not a valid origin list.
-- `DATABASE_URL` is not a valid URL.
-- In production mode, `RESEND_API_KEY`, `EMAIL_FROM`, `API_PUBLIC_URL`, and `APP_ORIGIN` HTTPS checks are enforced.
-
-### `docker compose` healthcheck loops on `api` or `vocalonix-api`
-
-First run of Dograh pulls images and may take several minutes. If `vocalonix-api` reports `Failed to fetch` errors in its logs, the most likely cause is `api` not yet healthy. Wait for `api` to be healthy (`docker compose ps`) and then restart the dependent containers:
-
-```bash
-docker compose restart vocalonix-api vocalonix-web vocalonix-worker
-```
-
-### `bun run test` fails with `ECONNREFUSED` to `localhost:5433`
-
-The unit tests do not require a database, but `NODE_ENV=test` still validates `DATABASE_URL` (`app/api/src/env.ts:122`). If you have overridden `.env`, ensure `DATABASE_URL` is syntactically valid even if unused.
-
+With no `RESEND_API_KEY`, sign-up verification and magic links are not sent.
+The API returns the link in the response and the UI shows it as a preview,
+rather than pretending an email went out. This only happens outside production.
