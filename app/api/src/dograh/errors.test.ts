@@ -8,7 +8,7 @@ describe("Dograh failure classification", () => {
     expect(classifyDograhFailure(new DograhError("timeout", 503))).toEqual({
       category: "unreachable",
       message:
-        "Dograh is temporarily unavailable. Vocalonix saved the local changes and will retry.",
+        "Dograh is temporarily unavailable. Harkbell saved the local changes and will retry.",
       retryable: true,
     });
   });

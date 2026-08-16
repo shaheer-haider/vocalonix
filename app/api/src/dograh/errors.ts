@@ -48,7 +48,7 @@ export function classifyDograhFailure(error: unknown): ClassifiedDograhFailure {
   if (error.status === 408 || error.status === 429 || error.status >= 500) {
     return {
       category: "unreachable",
-      message: "Dograh is temporarily unavailable. Vocalonix saved the local changes and will retry.",
+      message: "Dograh is temporarily unavailable. Harkbell saved the local changes and will retry.",
       retryable: true,
     };
   }
