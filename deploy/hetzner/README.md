@@ -171,38 +171,71 @@ It needs two things configured once in the GitHub repo:
        "printf '%s\n' '$(cat ci_deploy_key.pub)' >> ~/.ssh/authorized_keys"
      # paste ci_deploy_key into the HETZNER_SSH_KEY secret, then delete both files
      ```
-   - `VOCALONIX_ENV` — the entire contents of the Vocalonix server's `.env`,
-     as one secret. The deploy writes it to the box before starting the stack,
-     which makes GitHub the one place that configuration is edited. See
-     [Server configuration](#server-configuration) below.
+   - `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, `INFISICAL_PROJECT_ID` —
+     the machine identity the deploy uses to pull the Vocalonix box's
+     configuration. See [Server configuration](#server-configuration) below.
+   - `VOCALONIX_ENV` — **legacy.** The whole `.env` as one secret. Still
+     honoured when the Infisical credentials are absent, so a deploy works
+     mid-migration. Delete it once a deploy is green on Infisical.
 
-The pipeline does not touch the Dograh server; use the manual steps below for it.
+The pipeline does not touch the Dograh server; use the manual steps below for
+it. Its `.env` is still hand-managed — moving it to Infisical is not done yet.
 
 ## Server configuration
 
-The Vocalonix box's `.env` comes from the `VOCALONIX_ENV` secret. The deploy
-installs it before starting the stack, so **edit the secret, not the file on the
-box** — a hand-edit is undone by the next deploy, and while it survives it is
-invisible to everyone else. The `--exclude 'deploy/hetzner/*/.env'` in the rsync
-still stands and guards the other direction: an operator's laptop `.env` must
-never reach a server.
+The Vocalonix box's `.env` is built at deploy time from **Infisical**, folder
+`/vocalonix`, environment `prod`. Edit a value there and the next deploy carries
+it — do not edit the file on the box, because the next deploy overwrites it and
+in the meantime the change is invisible to everyone else. The
+`--exclude 'deploy/hetzner/*/.env'` in the rsync guards the other direction: an
+operator's laptop `.env` must never reach a server.
 
-Seed the secret from the **server's** current file, never from a local checkout.
-Those two have diverged before — a local copy still said `NODE_ENV=development`
-with no mail sender long after the box had been moved to production — and
-seeding from the wrong one silently rolls production back:
+The deploy pulls **the whole folder**, so adding a key in Infisical is the
+entire change — no workflow edit and no compose edit. That property is the
+reason for this design: `STRIPE_PRICE_STARTER` once existed in the environment
+and never reached the container because the compose file did not forward it, and
+nothing failed loudly.
+
+### First-time setup
 
 ```bash
-ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
-  'cat /opt/vocalonix/repo/deploy/hetzner/vocalonix/.env' | pbcopy
-# paste into the VOCALONIX_ENV secret on the hetzner environment
+brew install infisical/get-cli/infisical
+infisical login
 ```
 
-Keep a copy somewhere you can read it back: GitHub secrets are write-only, so
-once it is pasted the only readable copy is the file on the box. If you would
-rather have configuration that is diffable and reviewable in git, the upgrade
-path is [SOPS](https://github.com/getsops/sops) with an `age` key — the
-encrypted `.env` lives in the repo and only the key sits in GitHub.
+1. Create a project (`harkbell`) with environment **prod** and a folder
+   **`/vocalonix`**. A separate `/dograh` folder keeps the Dograh box from being
+   handed Stripe keys it has no business holding.
+2. Migrate the values that already exist, seeding from the **server's** file and
+   never a local checkout — those two have diverged before, and a local copy
+   still said `NODE_ENV=development` long after the box was in production:
+
+   ```bash
+   ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
+     'cat /opt/vocalonix/repo/deploy/hetzner/vocalonix/.env' > /tmp/server.env
+   INFISICAL_PROJECT_ID=<id> ./scripts/secrets.sh push vocalonix /tmp/server.env
+   rm /tmp/server.env
+   ./scripts/secrets.sh check vocalonix      # names only, safe to run anywhere
+   ```
+3. Create a **machine identity** with universal auth, give it read access to the
+   project, and put its client id, client secret and the project id into the
+   `hetzner` environment as the three secrets listed above.
+4. Deploy. The log line says which source it used — confirm it reads
+   `Infisical /vocalonix @ prod` and not the legacy secret.
+5. Delete `VOCALONIX_ENV`.
+
+### Day to day
+
+```bash
+./scripts/secrets.sh check vocalonix       # what is set, without values
+./scripts/secrets.sh pull vocalonix        # write a local copy of the box's .env
+./scripts/secrets.sh run vocalonix -- CMD  # run something with them injected
+```
+
+Changing a value is done in the Infisical UI or CLI, then redeployed. The deploy
+refuses to install an environment missing `AUTH_SECRET`, `APP_ORIGIN`,
+`API_PUBLIC_URL` or `EMAIL_FROM`, because a half-populated file reports as a
+health-check timeout ten minutes later rather than as the missing key it is.
 
 Before the secret exists the deploy logs a warning and leaves the box's file
 alone, so nothing breaks in the meantime. It refuses to install a file that is

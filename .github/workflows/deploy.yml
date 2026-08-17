@@ -59,32 +59,74 @@ jobs:
       # The rsync exclude below still stands. It guards the opposite direction —
       # an operator's laptop .env must never reach the box — and that is exactly
       # why this step writes from the secret rather than from the checkout.
+      # Infisical is the one place a value is edited. The deploy pulls the whole
+      # folder, so adding a key there is the entire change — no workflow edit,
+      # no compose edit. That matters: STRIPE_PRICE_STARTER once existed in the
+      # environment and never reached the container because the compose file did
+      # not forward it, and nothing failed loudly.
       - name: Install server environment
         env:
           VOCALONIX_ENV: ${{ secrets.VOCALONIX_ENV }}
+          INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
+          INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: |
-          if [ -z "${VOCALONIX_ENV:-}" ]; then
-            echo "::warning::VOCALONIX_ENV is not set; leaving the server's .env untouched." \
-                 "Seed it from the SERVER's current file (see deploy/hetzner/README.md) — never from a laptop copy."
+          set -euo pipefail
+          umask 077
+          env_file="$(mktemp)"
+          trap 'rm -f "$env_file"' EXIT
+
+          if [ -n "${INFISICAL_CLIENT_ID:-}" ]; then
+            # Installed here rather than in its own step: the `secrets` context
+            # is not dependably available to a step-level `if:`, so gating a
+            # separate install step on it is a trap. Testing the env var inside
+            # the script always works.
+            curl -1sLf 'https://artifacts-cli.infisical.com/setup.deb.sh' | sudo -E bash
+            sudo apt-get update -qq && sudo apt-get install -y infisical
+
+            # `--plain --silent` so only the token reaches stdout; anything else
+            # would be captured into the variable and sent to the server.
+            token="$(infisical login --method=universal-auth \
+              --client-id="$INFISICAL_CLIENT_ID" \
+              --client-secret="$INFISICAL_CLIENT_SECRET" \
+              --plain --silent)"
+            infisical export \
+              --token="$token" \
+              --projectId="$INFISICAL_PROJECT_ID" \
+              --env=prod --path=/vocalonix --format=dotenv --silent > "$env_file"
+            source_desc="Infisical /vocalonix @ prod"
+          elif [ -n "${VOCALONIX_ENV:-}" ]; then
+            # The pre-Infisical path, kept so a deploy still works before the
+            # migration lands. Delete the secret once a deploy is green on
+            # Infisical and this branch goes with it.
+            printf '%s\n' "$VOCALONIX_ENV" > "$env_file"
+            source_desc="the legacy VOCALONIX_ENV secret"
+          else
+            echo "::warning::Neither Infisical nor VOCALONIX_ENV is configured;" \
+                 "leaving the server's .env untouched. See deploy/hetzner/README.md."
             exit 0
           fi
-          # A truncated or half-populated secret would overwrite a working
+
+          # A truncated or half-populated environment would overwrite a working
           # configuration with one that cannot boot, and the deploy would report
-          # it as a health-check timeout several minutes later. Check the file
-          # looks like the real thing before it goes anywhere near the server.
+          # it as a health-check timeout several minutes later. Check it looks
+          # like the real thing before it goes anywhere near the server.
           for key in AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM; do
-            if ! printf '%s\n' "$VOCALONIX_ENV" | grep -q "^${key}="; then
-              echo "VOCALONIX_ENV has no ${key}= line; refusing to install a partial environment." >&2
+            if ! grep -q "^${key}=" "$env_file"; then
+              echo "No ${key}= in $source_desc; refusing to install a partial environment." >&2
               exit 1
             fi
           done
+          echo "Installing $(grep -cE '^[A-Za-z_]' "$env_file") values from $source_desc."
+
           # Truncate in place rather than replacing the file. A rename would give
           # it a fresh inode, and anything bind-mounting it would keep serving the
           # old one — the trap that made Caddyfile edits invisible for a day.
           # The remote script is an argument, not a heredoc: ssh's stdin has to
           # stay free to carry the file itself.
-          printf '%s\n' "$VOCALONIX_ENV" | ssh hetzner \
-            'set -eu; f=/opt/vocalonix/repo/deploy/hetzner/vocalonix/.env; umask 077; cat > "$f"; chmod 600 "$f"'
+          ssh hetzner \
+            'set -eu; f=/opt/vocalonix/repo/deploy/hetzner/vocalonix/.env; umask 077; cat > "$f"; chmod 600 "$f"' \
+            < "$env_file"
 
       - name: Sync repo to server
         run: |
