@@ -103,7 +103,16 @@ api() {
   curl "${args[@]}"
 }
 
-json() { python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get(sys.argv[1]) or "")' "$1"; }
+# `or ""` would be wrong here: it collapses a JSON `false` to an empty string,
+# which silently broke the archived-product check below — `active` read as ""
+# rather than "False", so an archived product was treated as healthy.
+json() {
+  python3 -c '
+import sys, json
+v = json.load(sys.stdin).get(sys.argv[1])
+print("" if v is None else v)
+' "$1"
+}
 
 # --- One plan --------------------------------------------------------------
 #
@@ -122,8 +131,17 @@ provision() {
   # is strongly consistent, so this is idempotent even back-to-back.
   local product="harkbell_${plan}"
 
-  if api GET "/products/${product}" >/dev/null 2>&1; then
-    echo "  reusing product  $product"
+  local existing
+  if existing="$(api GET "/products/${product}" 2>/dev/null)"; then
+    # An archived product still answers 200, so "it exists" is not enough: a
+    # price attached to an inactive product cannot be bought, and the plan would
+    # look configured while every checkout failed.
+    if [ "$(printf '%s' "$existing" | json active)" = "False" ]; then
+      api POST "/products/${product}" "active=true" >/dev/null
+      echo "  reactivated product $product"
+    else
+      echo "  reusing product  $product"
+    fi
   else
     product="$(api POST "/products" \
       "id=harkbell_${plan}" \
