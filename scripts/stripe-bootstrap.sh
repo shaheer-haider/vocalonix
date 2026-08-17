@@ -79,10 +79,18 @@ echo "Stripe mode: $MODE"
 # script without reading it.
 if [ "$MODE" = "LIVE" ] && [ "${ASSUME_YES:-}" != "1" ]; then
   printf 'Create products on the LIVE Stripe account? [y/N] '
-  read -r reply
+  # `|| reply=""` matters: with no terminal attached `read` hits EOF and returns
+  # non-zero, and under `set -e` that killed the script with a bare exit 1 and
+  # no explanation — safe, but indistinguishable from a real failure.
+  read -r reply || reply=""
   case "$reply" in
     [yY]*) ;;
-    *) echo "Aborted. Nothing was created."; exit 0 ;;
+    *)
+      echo
+      echo "Aborted. Nothing was created."
+      echo "Re-run attached to a terminal, or set ASSUME_YES=1 to skip this prompt."
+      exit 0
+      ;;
   esac
 fi
 
