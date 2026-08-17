@@ -115,6 +115,13 @@ conversations, contacts and knowledge gaps.
 ## Deployment checklist (needs the operator)
 
 - [ ] Speech keys in `.env` (see the table above) — the setup panel confirms.
+- [ ] `STRIPE_PRICE_STARTER` / `STRIPE_PRICE_PRO` on the server. Without them a
+      paid plan is not offered for purchase at all — `/pricing` and the
+      onboarding plan step both fall back to "Talk to us", which is honest but
+      unbuyable. `./scripts/stripe-bootstrap.sh` creates the products and
+      prices and prints the two lines; run it with the key whose mode the
+      server actually uses, because a test price id does not resolve against a
+      live key.
 - [ ] `TELNYX_API_KEY` if you want phone numbers, plus
       `TELNYX_WEBHOOK_PUBLIC_KEY` in production so webhooks are verified.
 - [ ] Resend API key + verified sending domain (`RESEND_API_KEY`, `EMAIL_FROM`).
