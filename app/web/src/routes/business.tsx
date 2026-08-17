@@ -1405,6 +1405,19 @@ function WorkspaceBilling({ slug }: { slug: string }) {
               </div>
             ) : null}
 
+            {/* One subscription covers several businesses, so the panel has to
+                say how many are in use — the minutes bar alone would not
+                explain a bill that includes paid-for extras. */}
+            <p className="auth-card-copy">
+              {status.businessAllowance === null
+                ? `${status.usage.businessesUsed} businesses — unlimited on this plan.`
+                : `${status.usage.businessesUsed} of ${status.businessAllowance} businesses in use${
+                    status.extraBusinesses > 0
+                      ? ` (${status.extraBusinesses} added)`
+                      : ""
+                  }. Each has its own phone number.`}
+            </p>
+
             {status.periodEnd ? (
               <p className="auth-card-copy">
                 Renews {new Date(status.periodEnd).toLocaleDateString()}.
@@ -1444,8 +1457,13 @@ function WorkspaceBilling({ slug }: { slug: string }) {
                     </p>
                     <ul>
                       <li>{limitLabel(plan.monthlyMinutes, "minutes")}</li>
-                      <li>{limitLabel(plan.phoneNumbers, "phone numbers")}</li>
-                      <li>{limitLabel(plan.seats, "team members")}</li>
+                      <li>
+                        {limitLabel(plan.businesses, "businesses")}
+                        {plan.additionalBusinessCents !== null
+                          ? `, then ${money(plan.additionalBusinessCents)} each`
+                          : ""}
+                      </li>
+                      <li>{limitLabel(plan.seats, "team members")} per business</li>
                     </ul>
                     <Button
                       variant={current ? undefined : "primary"}

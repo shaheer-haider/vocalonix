@@ -11,23 +11,47 @@ import { env } from "../env";
  *
  * Limits are expressed as numbers, with `UNLIMITED` for the absent ceiling, so
  * a comparison never has to special-case `null`.
+ *
+ * A plan is bought once per **account** and covers several businesses. That is
+ * why `businesses` is a plan dimension at all: "Pro includes 3 businesses" is
+ * meaningless if the subscription hangs off a business, because you would buy
+ * Pro once per business and the allowance could never be anything but one.
  */
 export const UNLIMITED = Number.POSITIVE_INFINITY;
+
+/**
+ * One business, one phone number — a product rule rather than a plan lever, so
+ * it is a constant and not a per-plan field. More numbers means more
+ * businesses, which is what the `businesses` allowance sells.
+ */
+export const PHONE_NUMBERS_PER_BUSINESS = 1;
 
 export type PlanId = "free" | "starter" | "pro";
 
 export interface Plan {
+  /**
+   * Infrastructure identifier. It reaches Stripe (product `harkbell_starter`,
+   * `STRIPE_PRICE_STARTER`) and is the value stored in `plan_name`, so it does
+   * not follow the display name when that is reworded — the same split the
+   * repo already makes between Harkbell and vocalonix.
+   */
   id: PlanId;
+  /** What a customer sees. Safe to change. */
   name: string;
   /** Stripe price id, or null when this plan cannot be bought. */
   priceId: string | null;
   /** Monthly price in minor units, for display only; Stripe remains the source of truth. */
   amountCents: number;
-  /** Answered-call minutes included per billing period. */
+  /** Answered-call minutes included per period, pooled across the account. */
   monthlyMinutes: number;
-  /** Phone numbers the workspace may hold at once. */
-  phoneNumbers: number;
-  /** Members with access to the workspace, including the owner. */
+  /** Businesses the account may run at once, each with its own phone number. */
+  businesses: number;
+  /**
+   * Charged monthly for each business beyond the included allowance, or null
+   * when the plan does not sell extras at all.
+   */
+  additionalBusinessCents: number | null;
+  /** Members with access to one business, including the owner. */
   seats: number;
   /**
    * Display copy. It lives here rather than in the web app because the pricing
@@ -48,32 +72,36 @@ export const PLANS: Record<PlanId, Plan> = {
     priceId: null,
     amountCents: 0,
     monthlyMinutes: 30,
-    phoneNumbers: 1,
+    businesses: 1,
+    additionalBusinessCents: null,
     seats: 2,
     tagline: "Hear it on your own website before you pay anything.",
     features: [
       "30 answered minutes a month",
+      "One business, with its own phone number",
       "Website widget and browser calls",
-      "Your prices, hours and knowledge",
       "Bookings, callbacks and transcripts",
       "2 team members",
     ],
   },
   starter: {
+    // `starter` is the Stripe product and the stored plan id; "Essential" is
+    // only what the customer reads.
     id: "starter",
-    name: "Starter",
+    name: "Essential",
     priceId: env.stripePriceStarter,
     amountCents: 4900,
     monthlyMinutes: 500,
-    phoneNumbers: 1,
-    seats: 5,
-    tagline: "For a single location that wants every call answered.",
+    businesses: 1,
+    additionalBusinessCents: null,
+    seats: 10,
+    tagline: "Everything one business needs to stop missing calls.",
     features: [
       "500 answered minutes a month",
-      "One real phone number",
+      "One business, with its own phone number",
       "Warm transfer to a person",
       "Knowledge gaps flagged for the morning",
-      "5 team members",
+      "10 team members",
     ],
     highlighted: true,
   },
@@ -83,14 +111,15 @@ export const PLANS: Record<PlanId, Plan> = {
     priceId: env.stripePricePro,
     amountCents: 14900,
     monthlyMinutes: 2000,
-    phoneNumbers: 3,
+    businesses: 3,
+    additionalBusinessCents: 1900,
     seats: UNLIMITED,
-    tagline: "For several locations, or one busy one.",
+    tagline: "For a group of locations under one roof.",
     features: [
       "2,000 answered minutes a month",
-      "Up to 3 phone numbers",
+      "Three businesses, each with its own phone number",
+      "$19 a month for each business after that",
       "Outbound callbacks from your own number",
-      "Everything in Starter",
       "Unlimited team members",
     ],
   },

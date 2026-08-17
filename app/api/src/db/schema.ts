@@ -178,19 +178,26 @@ const bytea = customType<{ data: Uint8Array }>({
   },
 });
 
-export const businesses = pgTable(
-  "businesses",
+/**
+ * What a subscription is actually bought against.
+ *
+ * The plan used to live on `businesses`, which quietly capped every allowance
+ * at one business: "Pro includes 3 businesses" cannot mean anything when the
+ * subscription hangs off a business, because you would buy Pro once per
+ * business. One account owns many businesses and carries the single
+ * subscription that covers them.
+ */
+export const billingAccounts = pgTable(
+  "billing_accounts",
   {
     id: text("id").primaryKey(),
-    slug: text("slug").notNull(),
-    name: text("name").notNull(),
-    initial: text("initial").notNull(),
-    country: text("country").notNull().default("US"),
-    timezone: text("timezone").notNull().default("America/New_York"),
-    city: text("city"),
-    contactEmail: text("contact_email"),
-    vertical: text("vertical"),
-    locations: text("locations"),
+    /**
+     * The account is the owner. A person gets exactly one, created with their
+     * first business — hence the unique index rather than a plain reference.
+     */
+    ownerUserId: text("owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     stripeCustomerId: text("stripe_customer_id"),
     /** Plan id from the catalogue in billing/plans.ts, not a display name. */
     planName: text("plan_name"),
@@ -204,18 +211,59 @@ export const businesses = pgTable(
     planStatus: text("plan_status"),
     planPeriodEnd: timestamp("plan_period_end", { withTimezone: true }),
     /**
-     * Set when the workspace has spent its plan's monthly minutes, and cleared
+     * Businesses bought beyond the plan's included allowance, at the plan's
+     * `additionalBusinessCents`. Stored rather than derived because it is a
+     * purchase, not a count of what exists — a downgrade must never silently
+     * delete somebody's fourth business.
+     */
+    extraBusinesses: integer("extra_businesses").notNull().default(0),
+    /**
+     * Set when the account has spent its plan's monthly minutes, and cleared
      * when an upgrade or a new billing period puts it back under.
      *
      * Minutes cannot be enforced when a call starts: the widget holds a
      * long-lived embed token and talks to the engine directly, so Harkbell is
-     * never in the path. Suspension is therefore the enforcement — the embed
-     * token is deactivated, which is what actually stops the next call. That
-     * makes the ceiling soft by at most the call in flight, which is the normal
-     * behaviour of a metered service and far better than the previous
-     * behaviour of not enforcing the limit at all.
+     * never in the path. Suspension is therefore the enforcement — every embed
+     * token the account owns is deactivated, which is what actually stops the
+     * next call. That makes the ceiling soft by at most the calls in flight,
+     * which is the normal behaviour of a metered service and far better than
+     * the previous behaviour of not enforcing the limit at all.
      */
     callsSuspendedAt: timestamp("calls_suspended_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("billing_accounts_owner_unique").on(table.ownerUserId),
+    index("billing_accounts_stripe_customer_idx").on(table.stripeCustomerId),
+  ],
+);
+
+export const businesses = pgTable(
+  "businesses",
+  {
+    id: text("id").primaryKey(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    initial: text("initial").notNull(),
+    country: text("country").notNull().default("US"),
+    timezone: text("timezone").notNull().default("America/New_York"),
+    city: text("city"),
+    contactEmail: text("contact_email"),
+    vertical: text("vertical"),
+    locations: text("locations"),
+    /**
+     * Which subscription pays for this business. Nullable only so the column
+     * could be added to existing rows; every business gets one at creation.
+     */
+    billingAccountId: text("billing_account_id").references(
+      () => billingAccounts.id,
+      { onDelete: "set null" },
+    ),
     createdBy: text("created_by")
       .notNull()
       .references(() => users.id),
@@ -230,6 +278,7 @@ export const businesses = pgTable(
   (table) => [
     uniqueIndex("businesses_slug_unique").on(table.slug),
     index("businesses_created_by_idx").on(table.createdBy),
+    index("businesses_billing_account_idx").on(table.billingAccountId),
   ],
 );
 

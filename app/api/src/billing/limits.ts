@@ -3,31 +3,69 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { businessPhoneNumbers, memberships } from "../db/schema";
 import { ApiError } from "../errors";
-import { UNLIMITED, effectivePlan } from "./plans";
+import { accountForBusiness, businessCountForAccount, type BillingAccount } from "./account";
+import { PHONE_NUMBERS_PER_BUSINESS, UNLIMITED, effectivePlan } from "./plans";
 
 /**
  * Plan enforcement.
  *
- * These guard the two things a workspace can accumulate that cost real money or
- * real support: phone numbers, which carry a monthly charge from the carrier,
- * and seats. Both are checked at the moment of acquisition, which is the only
- * place a limit can be enforced without stranding a workspace that is already
- * over — downgrading someone from Pro to Free must not start deleting their
- * numbers, so existing state is always left alone and only growth is blocked.
+ * These guard the things a customer can accumulate that cost real money or real
+ * support: businesses, which each carry a phone number and a monthly carrier
+ * charge; phone numbers themselves; and seats. All are checked at the moment of
+ * acquisition, which is the only place a limit can be enforced without
+ * stranding somebody who is already over — downgrading from Pro to Free must
+ * not start deleting businesses or releasing numbers, so existing state is
+ * always left alone and only growth is blocked.
  */
 
-interface PlanBearing {
-  id: string;
-  planName: string | null;
-  planStatus: string | null;
+/**
+ * What an account may run: the plan's allowance plus anything it has bought.
+ *
+ * Extras only count while the effective plan actually sells them. They are
+ * priced against Pro, so a lapsed or cancelled subscription that falls back to
+ * Free must not carry them across — otherwise a cancelled Pro that had bought
+ * two extra businesses would keep three of them for nothing.
+ */
+export function businessAllowance(account: BillingAccount): number {
+  const plan = effectivePlan(account);
+  if (plan.businesses === UNLIMITED) return UNLIMITED;
+  if (plan.additionalBusinessCents === null) return plan.businesses;
+  return plan.businesses + account.extraBusinesses;
 }
 
-export async function assertCanAddPhoneNumber(
-  business: PlanBearing,
+/**
+ * A business is the unit the plan sells, so this is the limit that matters
+ * most. Pro sells more of them outright; every plan can be over its allowance
+ * after a downgrade, and that is deliberately survivable.
+ */
+export async function assertCanAddBusiness(
+  account: BillingAccount,
 ): Promise<void> {
-  const plan = effectivePlan(business);
-  if (plan.phoneNumbers === UNLIMITED) return;
+  const allowance = businessAllowance(account);
+  if (allowance === UNLIMITED) return;
 
+  const held = await businessCountForAccount(account.id);
+  if (held < allowance) return;
+
+  const plan = effectivePlan(account);
+  const extra = plan.additionalBusinessCents;
+  throw new ApiError(
+    402,
+    "PLAN_LIMIT_BUSINESSES",
+    extra === null
+      ? `The ${plan.name} plan covers ${allowance === 1 ? "one business" : `${allowance} businesses`}. Upgrade to add another.`
+      : `You are using all ${allowance} of your businesses. Add another for $${(extra / 100).toFixed(0)} a month from Account & billing.`,
+  );
+}
+
+/**
+ * One business, one number. This is a product rule rather than a plan lever, so
+ * every plan enforces the same ceiling and buying a second number means buying
+ * another business.
+ */
+export async function assertCanAddPhoneNumber(business: {
+  id: string;
+}): Promise<void> {
   const [row] = await db
     .select({ count: sql<number>`count(*)` })
     .from(businessPhoneNumbers)
@@ -39,19 +77,21 @@ export async function assertCanAddPhoneNumber(
     );
 
   const held = Number(row?.count ?? 0);
-  if (held >= plan.phoneNumbers) {
+  if (held >= PHONE_NUMBERS_PER_BUSINESS) {
     throw new ApiError(
       402,
       "PLAN_LIMIT_PHONE_NUMBERS",
-      plan.phoneNumbers === 1
-        ? `The ${plan.name} plan includes one phone number. Upgrade to add another.`
-        : `The ${plan.name} plan includes ${plan.phoneNumbers} phone numbers. Upgrade to add another.`,
+      "Each business has one phone number. Add another business to get another number.",
     );
   }
 }
 
-export async function assertCanAddSeat(business: PlanBearing): Promise<void> {
-  const plan = effectivePlan(business);
+/** Seats are per business — a team belongs to a business, not to the account. */
+export async function assertCanAddSeat(business: {
+  id: string;
+}): Promise<void> {
+  const account = await accountForBusiness(business.id);
+  const plan = effectivePlan(account);
   if (plan.seats === UNLIMITED) return;
 
   const [row] = await db
@@ -69,7 +109,7 @@ export async function assertCanAddSeat(business: PlanBearing): Promise<void> {
     throw new ApiError(
       402,
       "PLAN_LIMIT_SEATS",
-      `The ${plan.name} plan includes ${plan.seats} team members. Upgrade to invite more.`,
+      `The ${plan.name} plan includes ${plan.seats} team members per business. Upgrade to invite more.`,
     );
   }
 }

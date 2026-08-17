@@ -98,6 +98,13 @@ conversations, contacts and knowledge gaps.
 - **A plan step in onboarding.** Setup is seven steps, and choosing a plan is
   the one before publishing — nobody builds an agent and first learns the price
   from a card statement. Free is a real choice there, not a way to skip.
+- **Billing belongs to an account, not a business.** One subscription covers
+  several businesses: Free and Essential include one, Pro includes three and
+  sells further ones at $19 a month. Minutes pool across the account and
+  suspension moves every business together, because they share one allowance.
+  One business gets exactly one phone number — a product rule rather than a plan
+  lever, so more numbers means more businesses. Seats are per business: 2 on
+  Free, 10 on Essential, unlimited on Pro.
 - **A demo that starts in one click.** Picking a trade starts the call; contact
   details are asked for afterwards, when there is a reason to give them. The
   funnel used to ask nine fields across four screens before a visitor heard

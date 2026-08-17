@@ -26,7 +26,13 @@ import {
   requireWorkspace,
 } from "./context";
 import { canManageRole } from "./permissions";
-import { assertCanAddSeat } from "../billing/limits";
+import { accountForUser } from "../billing/account";
+import {
+  assertCanAddBusiness,
+  assertCanAddSeat,
+  businessAllowance,
+} from "../billing/limits";
+import { UNLIMITED, effectivePlan } from "../billing/plans";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const invitationTtlMs = 7 * 24 * 60 * 60 * 1000;
@@ -178,13 +184,24 @@ export const workspaceRoutes = new Elysia()
 
     const page = paginate(rows, limit);
     const ownedCount = await countOwnedWorkspaces(session.user.id);
+    // The plan is the real ceiling now. The env var stays as a backstop, so the
+    // limit shown is whichever binds first.
+    const account = await accountForUser(session.user.id);
+    const allowance = businessAllowance(account);
+    const planLimit =
+      allowance === UNLIMITED
+        ? env.maxOwnedWorkspaces
+        : Math.min(allowance, env.maxOwnedWorkspaces);
     return {
       businesses: page.items,
       hasMore: page.hasMore,
       limit,
       offset,
-      workspaceLimit: env.maxOwnedWorkspaces,
-      canCreateWorkspace: ownedCount < env.maxOwnedWorkspaces,
+      workspaceLimit: planLimit,
+      canCreateWorkspace: ownedCount < planLimit,
+      /** What buying another would cost, or null when the plan sells none. */
+      additionalBusinessCents:
+        effectivePlan(account).additionalBusinessCents,
     };
   })
   .post(
@@ -201,12 +218,20 @@ export const workspaceRoutes = new Elysia()
           "Enter a business name with at least two characters.",
         );
       }
+      // The plan decides how many businesses an account may run; the env var is
+      // now only a hard backstop against a single account creating thousands.
+      const account = await accountForUser(session.user.id);
+      await assertCanAddBusiness(account);
+
+      // Reached only by somebody who has bought their way past the abuse
+      // backstop, so it is a conversation rather than an upsell — saying
+      // "upgrade" here to a customer already paying for more would be wrong.
       const ownedCount = await countOwnedWorkspaces(session.user.id);
       if (ownedCount >= env.maxOwnedWorkspaces) {
         throw new ApiError(
           403,
           "WORKSPACE_LIMIT_REACHED",
-          `Your account can own up to ${env.maxOwnedWorkspaces} workspaces.`,
+          `This account has reached the ${env.maxOwnedWorkspaces}-business ceiling. Contact us and we will raise it.`,
         );
       }
       const businessId = randomUUID();
@@ -229,6 +254,7 @@ export const workspaceRoutes = new Elysia()
                 : null,
               vertical: body.vertical?.trim() || null,
               locations: body.locations?.trim() || null,
+              billingAccountId: account.id,
               createdBy: session.user.id,
               createdAt: now,
               updatedAt: now,

@@ -215,7 +215,12 @@ export interface BillingPlan {
   name: string;
   amountCents: number;
   monthlyMinutes: number | null;
-  phoneNumbers: number | null;
+  /** Businesses included, or null when unlimited. */
+  businesses: number | null;
+  /** Monthly cost of a business beyond the allowance, or null if not sold. */
+  additionalBusinessCents: number | null;
+  /** A product rule, the same on every plan. */
+  phoneNumbersPerBusiness: number;
   seats: number | null;
   /** Display copy, served from the catalogue so it cannot drift per surface. */
   tagline: string;
@@ -242,8 +247,13 @@ export interface BillingStatus {
   usage: {
     minutesUsed: number;
     seatsUsed: number;
+    businessesUsed: number;
     windowStart: string;
   };
+  /** Businesses bought beyond the plan's allowance. */
+  extraBusinesses: number;
+  /** Total businesses permitted, or null when unlimited. */
+  businessAllowance: number | null;
   /**
    * Set when the included minutes ran out and the agent stopped answering.
    * Distinct from simply being at 100%: the workspace is off the air until it

@@ -104,7 +104,11 @@ const faqs = [
   },
   {
     q: "Do I need a phone number?",
-    a: "No. The website widget works on its own, and it is the fastest way to hear the agent on your own site. Add a number whenever you want one.",
+    a: "No. The website widget works on its own, and it is the fastest way to hear the agent on your own site. Add a number whenever you want one — every business includes one.",
+  },
+  {
+    q: "What if I run more than one business?",
+    a: "A plan is bought once and covers several businesses, each with its own agent, its own number and its own team. Pro includes three, and further businesses are $19 a month each.",
   },
   {
     q: "Can I cancel?",
@@ -144,9 +148,9 @@ export function PricingPage() {
         <Pill variant="accent">Pricing</Pill>
         <h1>Start free. Pay when it earns its keep.</h1>
         <p>
-          Every plan answers on your website, quotes your real prices and books
-          into your real diary. The only thing that changes is how much talking
-          it does — and whether it answers a phone number too.
+          Every plan answers on your website and on a real phone number, quotes
+          your real prices and books into your real diary. What changes is how
+          much talking it does, and how many businesses it does it for.
         </p>
       </section>
 

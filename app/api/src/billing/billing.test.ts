@@ -2,9 +2,11 @@ import { createHmac } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
+import { businessAllowance } from "./limits";
 import { subscriptionUpdate, verifyStripeSignature } from "./routes";
 import {
   FREE_PLAN,
+  PHONE_NUMBERS_PER_BUSINESS,
   PLANS,
   UNLIMITED,
   effectivePlan,
@@ -137,5 +139,68 @@ describe("entitlement", () => {
     expect(FREE_PLAN.monthlyMinutes).toBeLessThan(PLANS.starter.monthlyMinutes);
     expect(PLANS.starter.monthlyMinutes).toBeLessThan(PLANS.pro.monthlyMinutes);
     expect(PLANS.pro.seats).toBe(UNLIMITED);
+  });
+});
+
+describe("the catalogue matches what the pricing page promises", () => {
+  test("seats climb 2 → 10 → unlimited", () => {
+    expect(PLANS.free.seats).toBe(2);
+    expect(PLANS.starter.seats).toBe(10);
+    expect(PLANS.pro.seats).toBe(UNLIMITED);
+  });
+
+  test("businesses climb 1 → 1 → 3", () => {
+    expect(PLANS.free.businesses).toBe(1);
+    expect(PLANS.starter.businesses).toBe(1);
+    expect(PLANS.pro.businesses).toBe(3);
+  });
+
+  test("only Pro sells extra businesses, at $19", () => {
+    expect(PLANS.free.additionalBusinessCents).toBeNull();
+    expect(PLANS.starter.additionalBusinessCents).toBeNull();
+    expect(PLANS.pro.additionalBusinessCents).toBe(1900);
+  });
+
+  test("one business gets exactly one phone number, on every plan", () => {
+    // A product rule rather than a plan lever: more numbers means more
+    // businesses. If this ever becomes per-plan again, the pricing copy and
+    // `assertCanAddPhoneNumber` both have to change with it.
+    expect(PHONE_NUMBERS_PER_BUSINESS).toBe(1);
+  });
+
+  test("the stored plan id is not the display name", () => {
+    // `starter` reaches Stripe as product `harkbell_starter` and is the value
+    // in `plan_name`; renaming the plan for customers must not move it.
+    expect(PLANS.starter.id).toBe("starter");
+    expect(PLANS.starter.name).toBe("Essential");
+  });
+});
+
+describe("businessAllowance", () => {
+  const account = (over: Partial<Parameters<typeof businessAllowance>[0]> = {}) =>
+    businessAllowance({
+      planName: "pro",
+      planStatus: "active",
+      extraBusinesses: 0,
+      ...over,
+    } as Parameters<typeof businessAllowance>[0]);
+
+  test("is the plan's included count when nothing extra is bought", () => {
+    expect(account()).toBe(3);
+  });
+
+  test("adds what the account has paid for on top", () => {
+    expect(account({ extraBusinesses: 2 })).toBe(5);
+  });
+
+  test("a lapsed payment falls back to Free's single business", () => {
+    // Extras are priced per plan, so they cannot survive the drop to Free
+    // either — otherwise a cancelled Pro keeps five businesses for nothing.
+    expect(account({ planStatus: "past_due", extraBusinesses: 2 })).toBe(1);
+  });
+
+  test("Free and Essential are one business each", () => {
+    expect(account({ planName: "free", planStatus: null })).toBe(1);
+    expect(account({ planName: "starter", planStatus: "active" })).toBe(1);
   });
 });
