@@ -155,6 +155,20 @@
       "when": 1786944362935,
       "tag": "0021_flawless_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1786948714296,
+      "tag": "0022_lush_magma",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1786948724360,
+      "tag": "0023_dashing_maddog",
+      "breakpoints": true
     }
   ]
 }

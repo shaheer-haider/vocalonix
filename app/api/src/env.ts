@@ -41,7 +41,14 @@ const schema = z
     // account is a deploy-time change instead of a code change.
     STRIPE_PRICE_STARTER: z.string().optional(),
     STRIPE_PRICE_PRO: z.string().optional(),
-    MAX_OWNED_WORKSPACES: z.coerce.number().int().min(1).default(3),
+    /**
+     * Abuse backstop, not a product limit — the plan decides how many
+     * businesses an account may run (`billing/limits.ts`). It defaulted to 3
+     * from before plans existed, which silently refused the fourth business a
+     * Pro customer had just paid $19 for and blamed "your account can own up
+     * to 3 workspaces". It has to stay clear of any allowance anyone can buy.
+     */
+    MAX_OWNED_WORKSPACES: z.coerce.number().int().min(1).default(50),
     GEMINI_API_KEY: z.string().optional(),
     GEMINI_EXTRACTION_MODEL: z.string().min(1),
     VOICE_STACK: z.enum(["auto", "pipeline", "realtime"]),
@@ -191,7 +198,7 @@ const parsed = schema.safeParse({
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET?.trim() || undefined,
   STRIPE_PRICE_STARTER: process.env.STRIPE_PRICE_STARTER?.trim() || undefined,
   STRIPE_PRICE_PRO: process.env.STRIPE_PRICE_PRO?.trim() || undefined,
-  MAX_OWNED_WORKSPACES: process.env.MAX_OWNED_WORKSPACES ?? "3",
+  MAX_OWNED_WORKSPACES: process.env.MAX_OWNED_WORKSPACES ?? "50",
   GEMINI_API_KEY: process.env.GEMINI_API_KEY?.trim() || undefined,
   GEMINI_EXTRACTION_MODEL:
     process.env.GEMINI_EXTRACTION_MODEL?.trim() || "gemini-flash-latest",

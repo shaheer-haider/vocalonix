@@ -4,12 +4,15 @@ import { eq } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 
 import { db } from "../db/client";
-import { businesses } from "../db/schema";
+import { billingAccounts } from "../db/schema";
 import { env } from "../env";
 import { ApiError } from "../errors";
 import { requirePermission, requireWorkspace } from "../workspace/context";
+import { accountForBusiness, type BillingAccount } from "./account";
+import { businessAllowance } from "./limits";
 import {
   FREE_PLAN,
+  PHONE_NUMBERS_PER_BUSINESS,
   PLANS,
   UNLIMITED,
   effectivePlan,
@@ -18,7 +21,7 @@ import {
   purchasablePlans,
   type PlanStatus,
 } from "./plans";
-import { reconcileBusinessUsage, usageForBusiness } from "./usage";
+import { reconcileAccountUsage, usageForBusinessAccount } from "./usage";
 
 const stripeApiUrl = "https://api.stripe.com/v1";
 
@@ -60,18 +63,22 @@ async function stripeRequest(
   return payload;
 }
 
-async function ensureStripeCustomer(business: {
-  id: string;
-  name: string;
-  contactEmail: string | null;
-  stripeCustomerId: string | null;
-}): Promise<string> {
-  if (business.stripeCustomerId) return business.stripeCustomerId;
+/**
+ * The Stripe customer is the account, not a business. A customer per business
+ * would mean a card on file per business and a separate invoice for each,
+ * which is the opposite of what a plan covering three of them is for.
+ */
+async function ensureStripeCustomer(
+  account: BillingAccount,
+  label: string,
+  email: string | null,
+): Promise<string> {
+  if (account.stripeCustomerId) return account.stripeCustomerId;
 
   const customer = await stripeRequest("/customers", {
-    name: business.name,
-    ...(business.contactEmail ? { email: business.contactEmail } : {}),
-    "metadata[vocalonix_business_id]": business.id,
+    name: label,
+    ...(email ? { email } : {}),
+    "metadata[vocalonix_account_id]": account.id,
   });
   const customerId = typeof customer.id === "string" ? customer.id : null;
   if (!customerId) {
@@ -82,9 +89,9 @@ async function ensureStripeCustomer(business: {
     );
   }
   await db
-    .update(businesses)
+    .update(billingAccounts)
     .set({ stripeCustomerId: customerId, updatedAt: new Date() })
-    .where(eq(businesses.id, business.id));
+    .where(eq(billingAccounts.id, account.id));
   return customerId;
 }
 
@@ -94,7 +101,9 @@ function planShape(plan: ReturnType<typeof planById>) {
     name: plan.name,
     amountCents: plan.amountCents,
     monthlyMinutes: plan.monthlyMinutes === UNLIMITED ? null : plan.monthlyMinutes,
-    phoneNumbers: plan.phoneNumbers === UNLIMITED ? null : plan.phoneNumbers,
+    businesses: plan.businesses === UNLIMITED ? null : plan.businesses,
+    additionalBusinessCents: plan.additionalBusinessCents,
+    phoneNumbersPerBusiness: PHONE_NUMBERS_PER_BUSINESS,
     seats: plan.seats === UNLIMITED ? null : plan.seats,
     tagline: plan.tagline,
     features: plan.features,
@@ -202,23 +211,32 @@ export const billingRoutes = new Elysia()
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "billing.access");
 
-    const business = workspace.business;
-    const plan = effectivePlan(business);
-    const usage = await usageForBusiness(business.id, business.planPeriodEnd);
+    const { account, usage } = await usageForBusinessAccount(
+      workspace.business.id,
+    );
+    const plan = effectivePlan(account);
 
     return {
       configured: Boolean(env.stripeSecretKey),
       plan: planShape(plan),
-      status: business.planStatus ?? null,
-      periodEnd: business.planPeriodEnd?.toISOString() ?? null,
+      status: account.planStatus ?? null,
+      periodEnd: account.planPeriodEnd?.toISOString() ?? null,
       usage: {
         minutesUsed: usage.minutesUsed,
         seatsUsed: usage.seatsUsed,
+        businessesUsed: usage.businessesUsed,
         windowStart: usage.windowStart.toISOString(),
       },
+      // Bought beyond the plan's included allowance, so the panel can explain a
+      // bill that is more than the sticker price.
+      extraBusinesses: account.extraBusinesses,
+      businessAllowance:
+        businessAllowance(account) === UNLIMITED
+          ? null
+          : businessAllowance(account),
       // The agent stops answering when the included minutes run out, so the
       // panel has to say so plainly rather than showing a bar quietly at 100%.
-      callsSuspendedAt: business.callsSuspendedAt?.toISOString() ?? null,
+      callsSuspendedAt: account.callsSuspendedAt?.toISOString() ?? null,
       available: purchasablePlans().map(planShape),
     };
   })
@@ -237,7 +255,12 @@ export const billingRoutes = new Elysia()
         );
       }
 
-      const customerId = await ensureStripeCustomer(workspace.business);
+      const account = await accountForBusiness(workspace.business.id);
+      const customerId = await ensureStripeCustomer(
+        account,
+        workspace.business.name,
+        workspace.business.contactEmail ?? workspace.session.user.email ?? null,
+      );
       // Where Stripe sends the browser back to. This is a closed set built on
       // the server rather than a caller-supplied URL, because a `returnTo` that
       // reached `success_url` unchecked would be an open redirect wearing a
@@ -256,9 +279,10 @@ export const billingRoutes = new Elysia()
         // Stripe replaces the placeholder; it must reach the browser literally.
         success_url: `${returnUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${returnUrl}?checkout=cancelled`,
-        "subscription_data[metadata][vocalonix_business_id]":
-          workspace.business.id,
-        client_reference_id: workspace.business.id,
+        // The account, not the business: the webhook matches on it, and a
+        // subscription tagged with one of three businesses would be ambiguous.
+        "subscription_data[metadata][vocalonix_account_id]": account.id,
+        client_reference_id: account.id,
         allow_promotion_codes: "true",
       });
 
@@ -285,7 +309,12 @@ export const billingRoutes = new Elysia()
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "billing.access");
 
-    const customerId = await ensureStripeCustomer(workspace.business);
+    const account = await accountForBusiness(workspace.business.id);
+    const customerId = await ensureStripeCustomer(
+      account,
+      workspace.business.name,
+      workspace.business.contactEmail ?? workspace.session.user.email ?? null,
+    );
     const session = await stripeRequest("/billing_portal/sessions", {
       customer: customerId,
       return_url: new URL(
@@ -337,8 +366,10 @@ export const billingRoutes = new Elysia()
         typeof object.customer === "string" ? object.customer : null;
       if (!customerId) return { received: true };
 
-      // A deleted subscription drops the workspace to Free rather than leaving
-      // it on a plan it is no longer paying for.
+      // A deleted subscription drops the account to Free rather than leaving
+      // it on a plan it is no longer paying for. Extras go with it: they are
+      // priced per plan, so carrying them onto Free would grant businesses
+      // nobody is paying for.
       const update =
         type === "customer.subscription.deleted"
           ? {
@@ -346,25 +377,26 @@ export const billingRoutes = new Elysia()
               planStatus: "canceled" as PlanStatus,
               stripeSubscriptionId: null,
               planPeriodEnd: null,
+              extraBusinesses: 0,
             }
           : subscriptionUpdate(object);
 
       const affected = await db
-        .update(businesses)
+        .update(billingAccounts)
         .set({ ...update, updatedAt: new Date() })
-        .where(eq(businesses.stripeCustomerId, customerId))
-        .returning({ id: businesses.id });
+        .where(eq(billingAccounts.stripeCustomerId, customerId))
+        .returning({ id: billingAccounts.id });
 
       // An upgrade has to put the agent back on the air now, not on the
       // worker's next sweep — the customer has just paid and will reload the
-      // page to check. The same call suspends a workspace whose downgrade left
+      // page to check. The same call suspends an account whose downgrade left
       // it over its new, smaller allowance.
       for (const row of affected) {
         try {
-          await reconcileBusinessUsage(row.id);
+          await reconcileAccountUsage(row.id);
         } catch (caught) {
           console.error(
-            `Usage reconciliation after a plan change failed for ${row.id}:`,
+            `Usage reconciliation after a plan change failed for account ${row.id}:`,
             caught,
           );
         }

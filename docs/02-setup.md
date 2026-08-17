@@ -165,7 +165,7 @@ and the `VOICE_*` model names (all defaulted).
 |---|---|
 | `VOCALONIX_INTERNAL_URL` | Where the **engine** reaches our agent-tool endpoints. Defaults to `API_PUBLIC_URL`. In Compose it is `http://vocalonix-api:3001`. It is part of the config hash, so changing it re-registers every agent |
 | `DOGRAH_STORAGE_INTERNAL_URL` | MinIO, for knowledge uploads |
-| `MAX_OWNED_WORKSPACES` | Default 3 |
+| `MAX_OWNED_WORKSPACES` | Default 50. An abuse backstop, not a product limit — the plan governs how many businesses an account may run |
 | `MAGIC_LINK_TTL_SECONDS` | 60–3600, default 900 |
 | `VITE_API_BASE_URL` | **Frontend only.** Read from the repo-root `.env` (`envDir` in `app/web/vite.config.ts`), not from `app/web` |
 

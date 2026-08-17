@@ -52,16 +52,42 @@ Our own record of magic-link issuance. The token is stored **hashed**
 leaked database row cannot be replayed into a session and a consumed link cannot
 be reused.
 
+### `billing_accounts`
+What a subscription is bought against. One row per owner (`owner_user_id` is
+uniquely indexed), owning many businesses through
+`businesses.billing_account_id`.
+
+The plan used to live on `businesses`, which capped every allowance at one
+business: "Pro includes 3 businesses" cannot mean anything when the subscription
+hangs off a business, because you would buy Pro once per business.
+
+Carries the billing mirror: `stripe_customer_id`, `plan_name` (a plan **id**
+from `billing/plans.ts`, not a display name), `stripe_subscription_id`,
+`plan_status`, `plan_period_end`. Stored locally so an entitlement check is a
+column read rather than a Stripe call on every request, and so the product keeps
+working while Stripe is briefly unreachable. The webhook keeps it honest.
+
+Also `extra_businesses` — businesses bought beyond the plan's allowance, stored
+rather than derived because it is a purchase and not a count of what exists. A
+downgrade must never silently delete somebody's fourth business. They only count
+while the effective plan actually sells them, so a cancelled Pro does not keep
+its paid extras for free.
+
+`calls_suspended_at` marks an account that has spent its minutes; every business
+it owns is suspended together, because they share one allowance.
+
 ### `businesses`
 The tenant. `slug` is unique and is how every workspace route addresses it.
 Soft-deleted via `deleted_at` — `requireWorkspace` filters on it, so a deleted
 workspace disappears from the product without destroying its history.
 
-Also carries the billing mirror: `stripe_customer_id`, `plan_name` (a plan **id**
-from `billing/plans.ts`, not a display name), `stripe_subscription_id`,
-`plan_status`, `plan_period_end`. Stored locally so an entitlement check is a
-column read rather than a Stripe call on every request, and so the product keeps
-working while Stripe is briefly unreachable. The webhook keeps it honest.
+`billing_account_id` says which subscription pays for it. Nullable only so the
+column could be added to existing rows; every business gets one at creation, and
+the worker links any stragglers at boot.
+
+One business gets exactly one phone number — a product rule
+(`PHONE_NUMBERS_PER_BUSINESS`), not a plan lever. More numbers means more
+businesses, which is what the plan's business allowance sells.
 
 ### `memberships`
 Composite primary key `(user_id, business_id)`. `role` is the enum

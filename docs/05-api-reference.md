@@ -65,7 +65,7 @@ only same-origin paths.
 | Method | Path | Auth | Permission | Notes |
 |---|---|---|---|---|
 | GET | `/api/businesses` | 🍪 | | Also returns `workspaceLimit` and `canCreateWorkspace` |
-| POST | `/api/businesses` | 🍪 | | Capped by `MAX_OWNED_WORKSPACES`. Creates the membership, agent settings, onboarding and Dograh mapping rows |
+| POST | `/api/businesses` | 🍪 | | Capped by the plan's business allowance (`billing/limits.ts`), with `MAX_OWNED_WORKSPACES` as an abuse backstop above it. Creates the membership, agent settings, onboarding and Dograh mapping rows |
 | GET | `/api/b/:slug` | 🏢 | | |
 | DELETE | `/api/b/:slug` | 🏢 | `business.delete` | Soft delete; enqueues `dograh.business.offboard` |
 | GET | `/api/b/:slug/team` | 🏢 | `team.manage` | Members and pending invitations |
