@@ -509,6 +509,71 @@ export async function publishBusinessWidget(
   };
 }
 
+/**
+ * Stops this business answering calls, without tearing down its configuration.
+ *
+ * Deactivating the embed token is what actually enforces the limit: the widget
+ * on the customer's site holds that token and talks to the engine directly, so
+ * refusing something on Harkbell's side would not stop a single call. The
+ * workflow itself is left alone, so resuming is one token away and nothing the
+ * business configured is lost.
+ */
+export async function suspendBusinessCalls(
+  businessId: string,
+  client: DograhManagementClient = dograh,
+): Promise<void> {
+  const [mapping] = await db
+    .select({ workflowId: businessDograhMappings.workflowId })
+    .from(businessDograhMappings)
+    .where(eq(businessDograhMappings.businessId, businessId))
+    .limit(1);
+  if (!mapping?.workflowId) return;
+
+  await client.deactivateEmbedToken(Number(mapping.workflowId)).catch((error: unknown) => {
+    // A token that was never minted, or is already gone, is the state we want.
+    if (error instanceof DograhError && error.status === 404) return;
+    throw error;
+  });
+}
+
+/**
+ * Puts a suspended business back on the air.
+ *
+ * The token value survives a suspend/resume cycle, which is the only reason
+ * this is safe: Dograh's `POST /workflow/:id/embed-token` looks up existing
+ * tokens with `active_only=False` and reactivates that same row rather than
+ * issuing a new one. If that ever changes, every customer who was suspended
+ * once would be left with a dead snippet on their website and no idea why —
+ * so a Dograh upgrade that touches embed tokens needs this path re-checked.
+ *
+ * This deliberately does not re-synchronize the workflow: the configuration was
+ * never changed by the suspension, and forcing a full sync here would make
+ * every upgrade wait on the engine.
+ */
+export async function resumeBusinessCalls(
+  businessId: string,
+  client: DograhManagementClient = dograh,
+): Promise<void> {
+  const [mapping] = await db
+    .select({
+      workflowId: businessDograhMappings.workflowId,
+      syncState: businessDograhMappings.syncState,
+    })
+    .from(businessDograhMappings)
+    .where(eq(businessDograhMappings.businessId, businessId))
+    .limit(1);
+  // A business that never finished publishing has nothing to restore; its next
+  // publish mints a token anyway.
+  if (!mapping?.workflowId || mapping.syncState !== "synced") return;
+
+  const loaded = await loadTenantConfiguration(businessId);
+  await client.createEmbedToken(
+    Number(mapping.workflowId),
+    widgetTokenSettings(loaded.business, loaded.settings),
+    loaded.settings.allowedDomains,
+  );
+}
+
 export async function uploadKnowledgeSource(
   knowledgeId: string,
   client: DograhManagementClient = dograh,

@@ -18,6 +18,9 @@ import {
   SignupPage,
   VerifyEmailPage,
 } from "./routes/public";
+// Pricing is a marketing page a visitor reaches before signing up, so it shares
+// the public chunk rather than costing a lazy round trip on first paint.
+import { PricingPage } from "./routes/pricing";
 
 /**
  * Everything behind auth is split out. Previously a visitor landing on the
@@ -77,6 +80,12 @@ const demoRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/demo",
   component: DemoPage,
+});
+
+const pricingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pricing",
+  component: PricingPage,
 });
 
 const loginRoute = createRoute({
@@ -278,6 +287,7 @@ const designSystemRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   demoRoute,
+  pricingRoute,
   loginRoute,
   signupRoute,
   magicLinkRoute,
@@ -328,6 +338,7 @@ export const router = createRouter({
 const ROUTE_TITLES: Array<[RegExp, string]> = [
   [/^\/$/, "Harkbell — never lose another booking to a missed call"],
   [/^\/demo/, "Hear it now"],
+  [/^\/pricing/, "Pricing"],
   [/^\/login/, "Log in"],
   [/^\/signup/, "Create your account"],
   [/^\/magic/, "Check your email"],

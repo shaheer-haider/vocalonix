@@ -13,6 +13,7 @@ import { z } from "zod";
 
 import {
   api,
+  ApiClientError,
   type BusinessHoursDay,
   type TenantConfigSnapshot,
   type TenantConfigVersion,
@@ -38,6 +39,8 @@ import {
 } from "../components/ui";
 import { CopyIcon } from "../icons";
 import { useVerticals, verticalOptions } from "../hooks/useVerticals";
+import type { BillingStatus } from "../types";
+import { PlanGrid, usePricing } from "./pricing";
 import type {
   AvailableNumber,
   BusinessPhoneNumber,
@@ -57,6 +60,7 @@ const onboardingSteps = [
   { label: "Opening hours", slug: "hours" },
   { label: "Knowledge", slug: "knowledge" },
   { label: "Widget", slug: "widget" },
+  { label: "Plan", slug: "plan" },
   { label: "Review and publish", slug: "review" },
 ] as const;
 
@@ -1669,6 +1673,159 @@ function BrowserTestCall({ widget }: { widget: TenantWidget }) {
   );
 }
 
+/**
+ * The plan step.
+ *
+ * Free is a real, complete choice here rather than a way of skipping the step:
+ * a workspace on Free publishes and answers calls, it just answers fewer of
+ * them. So the step is satisfied either way, and nobody is pushed through a
+ * card form to finish setting up.
+ */
+function PlanStep({
+  slug,
+  nextHref,
+}: {
+  slug: string;
+  nextHref: string;
+}) {
+  const navigate = useNavigate();
+  const { pricing, error: pricingError } = usePricing();
+  const [status, setStatus] = useState<BillingStatus | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void api.billing
+      .status(slug)
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, [slug]);
+
+  // Coming back from Stripe. The webhook is what actually grants the plan, so
+  // this only records that the choice was made and tells the customer where
+  // they are — it never trusts the query string for entitlement.
+  useEffect(() => {
+    const outcome = new URLSearchParams(window.location.search).get("checkout");
+    if (!outcome) return;
+    if (outcome === "success") {
+      setNotice({
+        tone: "success",
+        message:
+          "Payment received. Your new plan applies as soon as Stripe confirms it — usually within a few seconds.",
+      });
+      void api.businesses.completePlanOnboarding(slug).catch(() => undefined);
+    } else if (outcome === "cancelled") {
+      setNotice({
+        tone: "info",
+        message: "Checkout cancelled. You can carry on with the free plan.",
+      });
+    }
+  }, [slug]);
+
+  async function continueOnFree() {
+    setBusyPlanId("free");
+    try {
+      await api.businesses.completePlanOnboarding(slug);
+      await navigate({ to: nextHref });
+    } catch {
+      setNotice({
+        tone: "error",
+        message: "That could not be saved. Please try again.",
+      });
+    } finally {
+      setBusyPlanId(null);
+    }
+  }
+
+  async function upgrade(planId: string) {
+    setBusyPlanId(planId);
+    setNotice(null);
+    try {
+      const { url } = await api.billing.checkout(slug, planId, "onboarding");
+      window.location.href = url;
+    } catch (caught) {
+      setNotice({
+        tone: "error",
+        message:
+          caught instanceof ApiClientError
+            ? caught.message
+            : "Checkout could not be started. Please try again.",
+      });
+      setBusyPlanId(null);
+    }
+  }
+
+  return (
+    <div className="onboarding-step">
+      <header className="onboarding-step__header">
+        <h2>Choose how much it answers</h2>
+        <p>
+          Every plan does the same job — the difference is how many minutes it
+          spends talking, and whether it answers a phone number. You can change
+          this at any time, and nothing here blocks you from publishing.
+        </p>
+      </header>
+
+      {notice ? <Alert variant={notice.tone}>{notice.message}</Alert> : null}
+      {pricingError ? (
+        <Alert variant="error">
+          Plans could not be loaded. You can continue on the free plan and
+          choose later from Account &amp; billing.
+        </Alert>
+      ) : null}
+
+      {!pricing && !pricingError ? (
+        <LoadingState label="Loading plans…" />
+      ) : null}
+
+      {pricing ? (
+        <PlanGrid
+          plans={pricing.plans}
+          currentPlanId={status?.plan.id}
+          action={(plan) =>
+            plan.amountCents === 0 ? (
+              <Button
+                loading={busyPlanId === "free"}
+                onClick={() => void continueOnFree()}
+              >
+                Continue on Free
+              </Button>
+            ) : (
+              <Button
+                variant={plan.highlighted ? "primary" : undefined}
+                loading={busyPlanId === plan.id}
+                disabled={!plan.purchasable || !status?.configured}
+                onClick={() => void upgrade(plan.id)}
+              >
+                {plan.purchasable && status?.configured
+                  ? `Choose ${plan.name}`
+                  : "Not available yet"}
+              </Button>
+            )
+          }
+        />
+      ) : null}
+
+      {pricing && !pricing.billingEnabled ? (
+        <p className="auth-card-copy">
+          Card payments are not switched on for this deployment yet. Continue on
+          the free plan — we can move you onto a paid plan directly.
+        </p>
+      ) : null}
+
+      <div className="stack-row">
+        <Button
+          variant="ghost"
+          onClick={() => void continueOnFree()}
+          loading={busyPlanId === "free"}
+        >
+          Skip for now →
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ReviewPublish({
   data,
   refresh,
@@ -1867,6 +2024,12 @@ export function TenantOnboardingPage() {
                 data={data}
                 slug={slug}
                 onSaved={refresh}
+                nextHref={`/app/${slug}/onboarding/plan`}
+              />
+            ) : null}
+            {step === "plan" ? (
+              <PlanStep
+                slug={slug}
                 nextHref={`/app/${slug}/onboarding/review`}
               />
             ) : null}

@@ -129,6 +129,8 @@ export interface DemoStartResponse {
   apiEndpoint: string;
   durationSeconds: number;
   suggestedScripts: string[];
+  /** The invented business this trade's demo agent answers as. */
+  businessName: string;
   agentName: string;
 }
 
@@ -215,6 +217,20 @@ export interface BillingPlan {
   monthlyMinutes: number | null;
   phoneNumbers: number | null;
   seats: number | null;
+  /** Display copy, served from the catalogue so it cannot drift per surface. */
+  tagline: string;
+  features: string[];
+  highlighted: boolean;
+}
+
+/** The public catalogue behind /pricing, readable without an account. */
+export interface PublicPlan extends BillingPlan {
+  purchasable: boolean;
+}
+
+export interface PublicPricing {
+  billingEnabled: boolean;
+  plans: PublicPlan[];
 }
 
 export interface BillingStatus {
@@ -228,6 +244,12 @@ export interface BillingStatus {
     seatsUsed: number;
     windowStart: string;
   };
+  /**
+   * Set when the included minutes ran out and the agent stopped answering.
+   * Distinct from simply being at 100%: the workspace is off the air until it
+   * upgrades or the period rolls over.
+   */
+  callsSuspendedAt: string | null;
   /** Plans that can actually be bought on this deployment. */
   available: BillingPlan[];
 }

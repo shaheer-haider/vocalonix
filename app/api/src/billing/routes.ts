@@ -1,15 +1,16 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { and, eq, gte, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 
 import { db } from "../db/client";
-import { businesses, callRecords, memberships } from "../db/schema";
+import { businesses } from "../db/schema";
 import { env } from "../env";
 import { ApiError } from "../errors";
 import { requirePermission, requireWorkspace } from "../workspace/context";
 import {
   FREE_PLAN,
+  PLANS,
   UNLIMITED,
   effectivePlan,
   planByPriceId,
@@ -17,6 +18,7 @@ import {
   purchasablePlans,
   type PlanStatus,
 } from "./plans";
+import { reconcileBusinessUsage, usageForBusiness } from "./usage";
 
 const stripeApiUrl = "https://api.stripe.com/v1";
 
@@ -86,75 +88,6 @@ async function ensureStripeCustomer(business: {
   return customerId;
 }
 
-/**
- * Start of the window usage is measured against. When a subscription is live
- * this is the current period start, which we derive from the period end Stripe
- * reported. Otherwise it is a rolling 30 days, so a workspace on Free still
- * sees a number that means something.
- */
-function usageWindowStart(periodEnd: Date | null): Date {
-  const now = Date.now();
-  if (periodEnd && periodEnd.getTime() > now) {
-    const start = new Date(periodEnd);
-    start.setMonth(start.getMonth() - 1);
-    return start;
-  }
-  return new Date(now - 30 * 24 * 60 * 60 * 1000);
-}
-
-export async function usageForBusiness(
-  businessId: string,
-  periodEnd: Date | null,
-): Promise<{ minutesUsed: number; seatsUsed: number; windowStart: Date }> {
-  const windowStart = usageWindowStart(periodEnd);
-  const [minutes] = await db
-    .select({
-      seconds: sql<number>`coalesce(sum(${callRecords.durationSeconds}), 0)`,
-    })
-    .from(callRecords)
-    .where(
-      and(
-        eq(callRecords.businessId, businessId),
-        gte(callRecords.startedAt, windowStart),
-      ),
-    );
-  const [seats] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(memberships)
-    .where(
-      and(
-        eq(memberships.businessId, businessId),
-        eq(memberships.status, "active"),
-      ),
-    );
-
-  return {
-    minutesUsed: Math.ceil(Number(minutes?.seconds ?? 0) / 60),
-    seatsUsed: Number(seats?.count ?? 0),
-    windowStart,
-  };
-}
-
-/**
- * Whether a workspace may still take calls. Enforced at the point calls are
- * answered rather than at the dashboard, because the dashboard is not the thing
- * that costs money.
- */
-export async function callMinutesExhausted(business: {
-  id: string;
-  planName: string | null;
-  planStatus: string | null;
-  planPeriodEnd: Date | null;
-}): Promise<boolean> {
-  const plan = effectivePlan(business);
-  if (plan.monthlyMinutes === UNLIMITED) return false;
-  const { minutesUsed } = await usageForBusiness(
-    business.id,
-    business.planPeriodEnd,
-  );
-  return minutesUsed >= plan.monthlyMinutes;
-}
-
 function planShape(plan: ReturnType<typeof planById>) {
   return {
     id: plan.id,
@@ -163,6 +96,9 @@ function planShape(plan: ReturnType<typeof planById>) {
     monthlyMinutes: plan.monthlyMinutes === UNLIMITED ? null : plan.monthlyMinutes,
     phoneNumbers: plan.phoneNumbers === UNLIMITED ? null : plan.phoneNumbers,
     seats: plan.seats === UNLIMITED ? null : plan.seats,
+    tagline: plan.tagline,
+    features: plan.features,
+    highlighted: plan.highlighted ?? false,
   };
 }
 
@@ -243,6 +179,25 @@ export function subscriptionUpdate(subscription: Record<string, unknown>): {
 }
 
 export const billingRoutes = new Elysia()
+  /**
+   * The catalogue, for the public pricing page. Unauthenticated on purpose —
+   * a visitor deciding whether to sign up is exactly who needs it.
+   *
+   * Free is included even though it cannot be bought, because it is the plan a
+   * new workspace lands on and hiding it would misrepresent what signing up
+   * gets you. `purchasable` says whether this deployment has a Stripe price
+   * configured, so a deployment with billing switched off renders an honest
+   * page rather than a checkout button that 409s.
+   */
+  .get("/api/plans", () => {
+    return {
+      billingEnabled: Boolean(env.stripeSecretKey),
+      plans: Object.values(PLANS).map((plan) => ({
+        ...planShape(plan),
+        purchasable: plan.priceId !== null,
+      })),
+    };
+  })
   .get("/api/b/:slug/billing", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "billing.access");
@@ -261,6 +216,9 @@ export const billingRoutes = new Elysia()
         seatsUsed: usage.seatsUsed,
         windowStart: usage.windowStart.toISOString(),
       },
+      // The agent stops answering when the included minutes run out, so the
+      // panel has to say so plainly rather than showing a bar quietly at 100%.
+      callsSuspendedAt: business.callsSuspendedAt?.toISOString() ?? null,
       available: purchasablePlans().map(planShape),
     };
   })
@@ -280,10 +238,15 @@ export const billingRoutes = new Elysia()
       }
 
       const customerId = await ensureStripeCustomer(workspace.business);
-      const accountUrl = new URL(
-        `/app/${workspace.business.slug}/account`,
-        env.appOrigin,
-      ).toString();
+      // Where Stripe sends the browser back to. This is a closed set built on
+      // the server rather than a caller-supplied URL, because a `returnTo` that
+      // reached `success_url` unchecked would be an open redirect wearing a
+      // checkout as a disguise.
+      const returnPath =
+        body.returnTo === "onboarding"
+          ? `/app/${workspace.business.slug}/onboarding/plan`
+          : `/app/${workspace.business.slug}/account`;
+      const returnUrl = new URL(returnPath, env.appOrigin).toString();
 
       const session = await stripeRequest("/checkout/sessions", {
         mode: "subscription",
@@ -291,8 +254,8 @@ export const billingRoutes = new Elysia()
         "line_items[0][price]": plan.priceId,
         "line_items[0][quantity]": "1",
         // Stripe replaces the placeholder; it must reach the browser literally.
-        success_url: `${accountUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${accountUrl}?checkout=cancelled`,
+        success_url: `${returnUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${returnUrl}?checkout=cancelled`,
         "subscription_data[metadata][vocalonix_business_id]":
           workspace.business.id,
         client_reference_id: workspace.business.id,
@@ -309,7 +272,14 @@ export const billingRoutes = new Elysia()
       }
       return { url };
     },
-    { body: t.Object({ planId: t.String() }) },
+    {
+      body: t.Object({
+        planId: t.String(),
+        returnTo: t.Optional(
+          t.Union([t.Literal("account"), t.Literal("onboarding")]),
+        ),
+      }),
+    },
   )
   .post("/api/b/:slug/billing/portal", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
@@ -379,10 +349,26 @@ export const billingRoutes = new Elysia()
             }
           : subscriptionUpdate(object);
 
-      await db
+      const affected = await db
         .update(businesses)
         .set({ ...update, updatedAt: new Date() })
-        .where(eq(businesses.stripeCustomerId, customerId));
+        .where(eq(businesses.stripeCustomerId, customerId))
+        .returning({ id: businesses.id });
+
+      // An upgrade has to put the agent back on the air now, not on the
+      // worker's next sweep — the customer has just paid and will reload the
+      // page to check. The same call suspends a workspace whose downgrade left
+      // it over its new, smaller allowance.
+      for (const row of affected) {
+        try {
+          await reconcileBusinessUsage(row.id);
+        } catch (caught) {
+          console.error(
+            `Usage reconciliation after a plan change failed for ${row.id}:`,
+            caught,
+          );
+        }
+      }
     }
 
     return { received: true };

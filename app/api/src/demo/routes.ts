@@ -8,7 +8,8 @@ import { demoSessions } from "../db/schema";
 import { dograh } from "../dograh/client";
 import { env } from "../env";
 import { clientKey, createRateLimiter } from "../rateLimit";
-import { provisionDemoWorkflow } from "./workflow";
+import { demoAgentFor } from "./agents";
+import { DEMO_CALL_SECONDS, demoScriptUrl } from "./workflow";
 import { getVertical, VERTICALS } from "../verticals";
 
 function clientInfo(request: Request) {
@@ -178,39 +179,28 @@ export const demoRoutes = new Elysia({ prefix: "/api" })
         throw new Error("Invalid vertical.");
       }
 
-      const services = session.services.length ? session.services : vertical.defaultServices;
-
-      const workflow = await provisionDemoWorkflow({
-        sessionId: id,
-        businessName: session.businessName || `${vertical.label} demo`,
-        city: session.city,
-        country: "US",
-        timezone: "America/New_York",
-        vertical: session.vertical,
-        services,
-        verticalAnswers: session.verticalAnswers,
-        voice: session.voice,
-        agentName: "Ava",
-      });
+      // The agent for this trade already exists and is published — boot
+      // reconciled it. Starting a demo is now a row read, not four calls to the
+      // engine while the visitor stares at a spinner.
+      const agent = await demoAgentFor(vertical);
 
       await db
         .update(demoSessions)
         .set({
-          workflowId: workflow.workflowId,
+          workflowId: agent.workflowId,
           status: "call_started",
           updatedAt: new Date(),
         })
         .where(eq(demoSessions.id, id));
 
-      const verticalConfig = getVertical(session.vertical);
-
       return {
-        workflowId: workflow.workflowId,
-        scriptUrl: workflow.scriptUrl,
-        token: workflow.embedToken,
+        workflowId: agent.workflowId,
+        scriptUrl: demoScriptUrl(agent.embedToken),
+        token: agent.embedToken,
         apiEndpoint: env.dograhPublicApiUrl,
-        durationSeconds: 60,
-        suggestedScripts: verticalConfig?.suggestedCallerScripts ?? [],
+        durationSeconds: DEMO_CALL_SECONDS,
+        suggestedScripts: vertical.suggestedCallerScripts,
+        businessName: vertical.demoBusinessName,
         agentName: "Ava",
       };
     },

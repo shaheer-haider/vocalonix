@@ -203,6 +203,19 @@ export const businesses = pgTable(
      */
     planStatus: text("plan_status"),
     planPeriodEnd: timestamp("plan_period_end", { withTimezone: true }),
+    /**
+     * Set when the workspace has spent its plan's monthly minutes, and cleared
+     * when an upgrade or a new billing period puts it back under.
+     *
+     * Minutes cannot be enforced when a call starts: the widget holds a
+     * long-lived embed token and talks to the engine directly, so Harkbell is
+     * never in the path. Suspension is therefore the enforcement — the embed
+     * token is deactivated, which is what actually stops the next call. That
+     * makes the ceiling soft by at most the call in flight, which is the normal
+     * behaviour of a metered service and far better than the previous
+     * behaviour of not enforcing the limit at all.
+     */
+    callsSuspendedAt: timestamp("calls_suspended_at", { withTimezone: true }),
     createdBy: text("created_by")
       .notNull()
       .references(() => users.id),
@@ -808,6 +821,32 @@ export const knowledgeGaps = pgTable(
     ),
   ],
 );
+
+/**
+ * One reusable demo agent per trade, instead of a throwaway workflow per
+ * visitor.
+ *
+ * Building a workflow on the fly meant every visitor waited on three sequential
+ * Dograh calls before they heard anything, and left a dead workflow behind on
+ * the engine for ever. The demo agent is identical for every visitor in a
+ * trade — it answers as an invented business — so there was never a reason for
+ * it to be per-session. `configHash` is what makes the boot reconciler cheap:
+ * unchanged trades are skipped entirely.
+ */
+export const demoAgents = pgTable("demo_agents", {
+  vertical: text("vertical").primaryKey(),
+  workflowId: integer("workflow_id").notNull(),
+  workflowUuid: text("workflow_uuid"),
+  /** Reused by every visitor; the demo has no per-caller secret to protect. */
+  embedToken: text("embed_token").notNull(),
+  configHash: text("config_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const demoSessions = pgTable(
   "demo_sessions",

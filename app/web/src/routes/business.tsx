@@ -53,6 +53,7 @@ import type { BillingStatus, PlatformStatus } from "../types";
 import { detectTimezone, timezoneOptions } from "../timezones";
 import { useVerticals, verticalOptions } from "../hooks/useVerticals";
 import { AccountContent } from "./account";
+import { money } from "./pricing";
 
 const createBusinessSchema = z.object({
   name: z.string().min(2, "Enter a business name."),
@@ -1230,10 +1231,6 @@ export function WorkspaceDashboardPage() {
   );
 }
 
-function money(cents: number): string {
-  return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
-}
-
 /** `null` on a limit means unlimited; the API cannot send Infinity over JSON. */
 function limitLabel(value: number | null, noun: string): string {
   return value === null ? `Unlimited ${noun}` : `${value} ${noun}`;
@@ -1374,6 +1371,14 @@ function WorkspaceBilling({ slug }: { slug: string }) {
               <Alert variant="error">
                 Your last payment failed. Update your card in the billing portal
                 to keep the agent answering.
+              </Alert>
+            ) : null}
+
+            {status.callsSuspendedAt ? (
+              <Alert variant="error">
+                Your agent has stopped answering — this plan&apos;s{" "}
+                {included} minutes are spent. Upgrade below and it comes back on
+                straight away.
               </Alert>
             ) : null}
 

@@ -2,6 +2,7 @@ import {
   processNextOutboxEvent,
   recoverStuckOutboxEvents,
 } from "./outbox";
+import { reconcileAllUsage } from "./billing/usage";
 import { ingestAllBusinessRuns } from "./dograh/ingest";
 import { recoverStuckBusinessSyncs } from "./dograh/tenant";
 
@@ -46,6 +47,13 @@ while (!shuttingDown) {
       await ingestAllBusinessRuns();
     } catch (caught) {
       console.error("Run ingestion pass failed:", caught);
+    }
+    // Runs immediately after ingestion, because ingestion is what moves the
+    // minute count — checking before it would always act on stale usage.
+    try {
+      await reconcileAllUsage();
+    } catch (caught) {
+      console.error("Usage reconciliation pass failed:", caught);
     }
   }
   const processed = await processNextOutboxEvent();

@@ -92,6 +92,7 @@ only same-origin paths.
 | GET | `/api/b/:slug/dograh` | 🏢 | | Sync state, last error, hashes |
 | POST | `/api/b/:slug/dograh/retry` | 🏢 | `agent.edit` | Clears a `rejected`/`failed` state and re-enqueues |
 | POST | `/api/b/:slug/onboarding/knowledge/complete` | 🏢 | `knowledge.manage` | Marks the wizard step done |
+| POST | `/api/b/:slug/onboarding/plan/complete` | 🏢 | `agent.edit` | Marks the plan step done; choosing Free touches no payment provider |
 
 Mutations write to Postgres and enqueue an outbox event. The response is "saved,
 pending" — the engine has not been called yet. See
@@ -156,10 +157,23 @@ whether it is dialable at all.
 
 | Method | Path | Auth | Permission | Notes |
 |---|---|---|---|---|
-| GET | `/api/b/:slug/billing` | 🏢 | `billing.access` | Effective plan, status, period end, usage, purchasable plans |
-| POST | `/api/b/:slug/billing/checkout` | 🏢 | `billing.access` | `{ planId }` → a Stripe Checkout URL |
+| GET | `/api/plans` | — | | The public catalogue behind `/pricing`. No session |
+| GET | `/api/b/:slug/billing` | 🏢 | `billing.access` | Effective plan, status, period end, usage, `callsSuspendedAt`, purchasable plans |
+| POST | `/api/b/:slug/billing/checkout` | 🏢 | `billing.access` | `{ planId, returnTo? }` → a Stripe Checkout URL |
 | POST | `/api/b/:slug/billing/portal` | 🏢 | `billing.access` | Stripe billing portal URL |
 | POST | `/api/billing/webhook` | ✍️ | | `customer.subscription.created/updated/deleted` |
+
+`returnTo` is `"account"` (default) or `"onboarding"`, and selects a path built
+on the server. It is deliberately not a URL: a caller-supplied `success_url`
+would be an open redirect wearing a checkout as a disguise.
+
+Included minutes are enforced by suspension, not by refusing a call. The widget
+holds a long-lived embed token and talks to the engine directly, so Harkbell is
+never in the path of a call; the worker instead deactivates the embed token when
+a plan's minutes are spent and restores it on upgrade or a new period. The
+ceiling is therefore soft by at most the call in flight, and
+`GET /api/b/:slug/billing` reports `callsSuspendedAt` so the panel can say the
+agent has stopped answering rather than showing a bar quietly pinned at 100%.
 
 The webhook verifies the `stripe-signature` HMAC with `timingSafeEqual` and a
 300-second tolerance, and **refuses every delivery when `STRIPE_WEBHOOK_SECRET`

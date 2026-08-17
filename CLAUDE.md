@@ -259,7 +259,7 @@ when asked.
 
 ## 8. Testing reality
 
-147 tests across 17 files, all passing, and **all of them are unit tests.** Not
+174 tests across 20 files, all passing, and **all of them are unit tests.** Not
 one exercises an HTTP route.
 
 That is the single biggest quality gap in the repo, and it has already cost:

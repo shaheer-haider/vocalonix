@@ -1,0 +1,1 @@
+ALTER TABLE "businesses" ADD COLUMN "calls_suspended_at" timestamp with time zone;

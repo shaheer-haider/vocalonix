@@ -120,6 +120,35 @@ export interface ReconcileResult {
  * push failed. `force` re-pushes regardless, which is what the operator's
  * "recheck" button needs after rotating a key to the same shape.
  */
+/**
+ * Pushes the environment's provider keys into one specific Dograh
+ * organization.
+ *
+ * Separate from `reconcileProviderConfiguration` because that function records
+ * its result in a single `platform_settings` row and hash-gates on it. That
+ * bookkeeping is right for the one platform organization and wrong for tenants:
+ * every business shares the row, so the first tenant push would mark the
+ * configuration current and every later tenant would be skipped — landing them
+ * on an organization with no keys and calls that fail on connect.
+ *
+ * Returns the reason it could not push, or null on success.
+ */
+export async function pushModelConfigurationTo(
+  client: DograhManagementClient,
+): Promise<string | null> {
+  const stack = resolveVoiceStack();
+  if (!stack.ok) return stack.reason;
+
+  try {
+    await client.saveModelConfiguration(modelConfigurationPayload(stack));
+    return null;
+  } catch (error) {
+    return error instanceof DograhError
+      ? error.message
+      : "Dograh rejected the provider configuration.";
+  }
+}
+
 export async function reconcileProviderConfiguration(
   options: { force?: boolean; client?: DograhManagementClient } = {},
 ): Promise<ReconcileResult> {

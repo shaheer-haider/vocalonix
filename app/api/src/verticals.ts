@@ -29,6 +29,14 @@ export interface VerticalConfig {
   emailCaseStudy: string;
   // Average booking value, used in ROI copy.
   missedCallValue: number;
+  /**
+   * The invented business the demo agent answers as.
+   *
+   * A name rather than "salon demo" because the demo's whole job is to sound
+   * like a real receptionist at a real place; an agent that opens with "thanks
+   * for calling salon demo" undoes that in the first sentence.
+   */
+  demoBusinessName: string;
 }
 
 /**
@@ -142,6 +150,7 @@ Answer general questions about services and pricing. Be honest when you don't kn
     emailCaseStudy:
       "A salon in Manchester recovered 12 missed calls in the first week — worth about £1,020 in colour and cut bookings.",
     missedCallValue: 85,
+    demoBusinessName: "Willow & Co Hair Studio",
   },
   {
     slug: "pmu",
@@ -188,6 +197,7 @@ Most PMU treatments require a consultation first. Explain this gently. Answer qu
     emailCaseStudy:
       "A PMU studio saved 4 hours a week on repetitive consultation calls and converted 60% of enquiries into booked consultations.",
     missedCallValue: 150,
+    demoBusinessName: "Fine Line Brow Studio",
   },
   {
     slug: "spa",
@@ -233,6 +243,7 @@ Mention packages and memberships when relevant. Do not invent availability.`,
     emailCaseStudy:
       "A day spa increased package upsells by 22% by answering after-hours calls that previously went to voicemail.",
     missedCallValue: 120,
+    demoBusinessName: "Stillwater Spa",
   },
   {
     slug: "nail_lash",
@@ -278,6 +289,7 @@ Answer questions about services and timing. Do not make up prices unless given.`
     emailCaseStudy:
       "A lash studio cut no-shows in half by collecting deposits over the phone automatically.",
     missedCallValue: 75,
+    demoBusinessName: "Gloss & Co Nail Bar",
   },
   {
     slug: "barber",
@@ -323,6 +335,7 @@ Handle walk-in vs appointment questions. Keep responses short and friendly.`,
     emailCaseStudy:
       "A barbershop filled 30% more chairs by answering overflow calls during busy Saturday mornings.",
     missedCallValue: 35,
+    demoBusinessName: "Cutler Street Barbers",
   },
   {
     slug: "dental",
@@ -362,6 +375,7 @@ Do not give medical advice. Triage enquiries and book consultations.`,
     emailCaseStudy:
       "A dental clinic recovered 18 after-hours appointment requests in the first month.",
     missedCallValue: 200,
+    demoBusinessName: "Bright Smile Dental",
   },
   {
     slug: "medspa",
@@ -399,6 +413,7 @@ Do not give medical advice. Explain that consultations are required for treatmen
     emailCaseStudy:
       "A med-spa converted 40% more consultation calls into booked appointments.",
     missedCallValue: 350,
+    demoBusinessName: "Alder Aesthetics",
   },
   {
     slug: "mental_health",
@@ -437,6 +452,7 @@ If a caller sounds in crisis, escalate immediately to a human line. Do not give 
     emailCaseStudy:
       "A therapy practice reduced intake-call bottlenecks and captured 50% more new-patient enquiries.",
     missedCallValue: 150,
+    demoBusinessName: "Fernwood Therapy Practice",
   },
   {
     slug: "vet",
@@ -475,6 +491,7 @@ If the caller says it is an emergency, escalate immediately. Do not give medical
     emailCaseStudy:
       "A vet clinic routed after-hours emergencies correctly and saved 3 critical calls in the first week.",
     missedCallValue: 120,
+    demoBusinessName: "Oakfield Veterinary Clinic",
   },
   {
     slug: "funeral",
@@ -512,6 +529,7 @@ If the call is an immediate need, offer to connect a human immediately. Be patie
     emailCaseStudy:
       "A funeral home gave grieving families an immediate, calm first point of contact at any hour.",
     missedCallValue: 0,
+    demoBusinessName: "Harrow & Sons Funeral Home",
   },
   {
     slug: "home_services",
@@ -549,6 +567,7 @@ Capture the issue and address. If it is an emergency, escalate. Do not quote pri
     emailCaseStudy:
       "An HVAC company captured 20% more after-hours emergency calls and reduced dispatch delays.",
     missedCallValue: 250,
+    demoBusinessName: "Kestrel Heating & Plumbing",
   },
 ];
 
