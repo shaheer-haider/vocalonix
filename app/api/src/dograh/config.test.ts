@@ -90,6 +90,71 @@ function documentUuids(configuration: ReturnType<typeof desired>): string[][] {
   });
 }
 
+/**
+ * Every node, including ones that carry no documents. `documentUuids` above
+ * drops empty lists, which is what a "does any node leak?" check must not do.
+ */
+function everyNodeDocuments(
+  configuration: ReturnType<typeof desired>,
+): Array<{ id: string; documents: string[] | undefined }> {
+  const nodes = configuration.workflowDefinition.nodes;
+  if (!Array.isArray(nodes)) return [];
+  return nodes.map((node) => {
+    const record = node as Record<string, unknown>;
+    const data = (record.data ?? {}) as Record<string, unknown>;
+    const documents = data.document_uuids;
+    return {
+      id: String(record.id),
+      documents: Array.isArray(documents)
+        ? documents.filter((value): value is string => typeof value === "string")
+        : undefined,
+    };
+  });
+}
+
+/**
+ * Tenant isolation of the knowledge base.
+ *
+ * Every business currently lives in one shared Dograh organization, and
+ * Dograh's retrieval is scoped by `organization_id` — so an unfiltered search
+ * would reach every other business's documents. The only thing preventing that
+ * is that this generator pins `document_uuids` on every node that can retrieve.
+ * That safety is a property of the generator, not of the engine, so it is
+ * asserted here: a new node added without pinning must fail the suite rather
+ * than ship a cross-tenant leak.
+ */
+describe("knowledge stays inside one tenant", () => {
+  const mine = ["doc-mine-1", "doc-mine-2"];
+
+  test("no node ever carries a document this business does not own", () => {
+    const configuration = desired("business-a", { documentUuids: mine });
+    for (const node of everyNodeDocuments(configuration)) {
+      for (const uuid of node.documents ?? []) {
+        expect(mine).toContain(uuid);
+      }
+    }
+  });
+
+  test("a business with no knowledge pins an empty list, never an open search", () => {
+    // Dograh registers its retrieval tool only when `document_uuids` is
+    // non-empty. An empty list therefore means "no retrieval"; omitting the
+    // filter entirely would have meant "search the whole organization".
+    const configuration = desired("business-a", { documentUuids: [] });
+    for (const node of everyNodeDocuments(configuration)) {
+      expect(node.documents ?? []).toHaveLength(0);
+    }
+  });
+
+  test("one business's documents never appear in another's workflow", () => {
+    const other = desired("business-b", { documentUuids: ["doc-theirs"] });
+    const ours = desired("business-a", { documentUuids: mine });
+    const oursFlat = everyNodeDocuments(ours).flatMap((n) => n.documents ?? []);
+    const theirsFlat = everyNodeDocuments(other).flatMap((n) => n.documents ?? []);
+    expect(oursFlat).not.toContain("doc-theirs");
+    expect(theirsFlat.every((uuid) => uuid === "doc-theirs")).toBe(true);
+  });
+});
+
 describe("tenant Dograh configuration", () => {
   test("stable hashing ignores object key and document input order", () => {
     expect(stableConfigurationHash({ b: 2, a: { z: 3, y: 4 } })).toBe(

@@ -11,7 +11,7 @@ real Postgres 16 service, on every pull request and every push to `main`.
 
 ## What is covered today
 
-147 tests across 17 files. All green. **All of them are unit tests.**
+174 tests across 20 files. All green. **All of them are unit tests.**
 
 | File | Tests | Covers |
 |---|---:|---|

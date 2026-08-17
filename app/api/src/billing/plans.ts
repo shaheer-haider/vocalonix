@@ -29,6 +29,16 @@ export interface Plan {
   phoneNumbers: number;
   /** Members with access to the workspace, including the owner. */
   seats: number;
+  /**
+   * Display copy. It lives here rather than in the web app because the pricing
+   * page, the in-app billing panel and the onboarding plan step all render the
+   * same catalogue, and three copies of it would drift the moment a limit
+   * changed.
+   */
+  tagline: string;
+  features: string[];
+  /** Drawn out as the default on the pricing page. Exactly one plan sets it. */
+  highlighted?: boolean;
 }
 
 export const PLANS: Record<PlanId, Plan> = {
@@ -40,6 +50,14 @@ export const PLANS: Record<PlanId, Plan> = {
     monthlyMinutes: 30,
     phoneNumbers: 1,
     seats: 2,
+    tagline: "Hear it on your own website before you pay anything.",
+    features: [
+      "30 answered minutes a month",
+      "Website widget and browser calls",
+      "Your prices, hours and knowledge",
+      "Bookings, callbacks and transcripts",
+      "2 team members",
+    ],
   },
   starter: {
     id: "starter",
@@ -49,6 +67,15 @@ export const PLANS: Record<PlanId, Plan> = {
     monthlyMinutes: 500,
     phoneNumbers: 1,
     seats: 5,
+    tagline: "For a single location that wants every call answered.",
+    features: [
+      "500 answered minutes a month",
+      "One real phone number",
+      "Warm transfer to a person",
+      "Knowledge gaps flagged for the morning",
+      "5 team members",
+    ],
+    highlighted: true,
   },
   pro: {
     id: "pro",
@@ -58,6 +85,14 @@ export const PLANS: Record<PlanId, Plan> = {
     monthlyMinutes: 2000,
     phoneNumbers: 3,
     seats: UNLIMITED,
+    tagline: "For several locations, or one busy one.",
+    features: [
+      "2,000 answered minutes a month",
+      "Up to 3 phone numbers",
+      "Outbound callbacks from your own number",
+      "Everything in Starter",
+      "Unlimited team members",
+    ],
   },
 };
 

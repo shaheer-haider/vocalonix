@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { AuthShell } from "../components/shell";
 import { Alert, Box, Button, Pill, TextField } from "../components/ui";
 import { useDograhHealth } from "../hooks/useDograhHealth";
+import { money, usePricing } from "./pricing";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email."),
@@ -82,9 +83,35 @@ const landingStats = [
   { value: "1 afternoon", label: "from sign-up to live on the site" },
 ];
 
+/**
+ * Read from the catalogue rather than written out here, so a change to the free
+ * allowance or the entry price cannot leave the landing page quoting a number
+ * the pricing page contradicts. Falls back to copy with no figures in it if the
+ * request fails — a vaguer sentence beats a wrong one.
+ */
+function usePricingSummary(): string {
+  const { pricing } = usePricing();
+  if (!pricing) {
+    return "Start free, and pay only when it is answering enough calls to be worth it.";
+  }
+  const free = pricing.plans.find((plan) => plan.amountCents === 0);
+  const cheapestPaid = pricing.plans
+    .filter((plan) => plan.amountCents > 0)
+    .sort((a, b) => a.amountCents - b.amountCents)[0];
+
+  const freeClause = free?.monthlyMinutes
+    ? `Start on the free plan with ${free.monthlyMinutes} answered minutes a month — enough to hear it on your own site and show the team.`
+    : "Start on the free plan.";
+  const paidClause = cheapestPaid
+    ? ` Paid plans start at ${money(cheapestPaid.amountCents)} a month when you want it answering everything.`
+    : "";
+  return `${freeClause}${paidClause}`;
+}
+
 export function LandingPage() {
   const auth = useAuth();
   const { isLoading, turnEnabled } = useDograhHealth();
+  const pricingSummary = usePricingSummary();
   const isAuthenticated = auth.status === "authenticated";
   const primaryHref = isAuthenticated ? "/app" : "/signup";
   const primaryLabel = isAuthenticated ? "Open app →" : "Start setup →";
@@ -99,6 +126,7 @@ export function LandingPage() {
           {turnEnabled ? (
             <Link to="/demo">Hear it now</Link>
           ) : null}
+          <Link to="/pricing">Pricing</Link>
           {isAuthenticated ? (
             <Link to="/app" className="ui-button ui-button--primary">
               Open app
@@ -188,6 +216,17 @@ export function LandingPage() {
       </section>
 
       <section className="landing-section landing-cta">
+        <p className="eyebrow">Pricing</p>
+        <h2>Free until it earns its keep.</h2>
+        <p className="landing-pricing-note">{pricingSummary}</p>
+        <div className="landing__actions">
+          <Link to="/pricing" className="ui-button">
+            See pricing
+          </Link>
+        </div>
+      </section>
+
+      <section className="landing-section landing-cta">
         <h2>Put a voice on your website this afternoon.</h2>
         <div className="landing__actions">
           <Link to={primaryHref} className="ui-button ui-button--primary">
@@ -198,6 +237,7 @@ export function LandingPage() {
 
       <footer className="landing-footer">
         <span>© 2026 Harkbell</span>
+        <Link to="/pricing">Pricing</Link>
         {turnEnabled ? <Link to="/demo">Hear it now</Link> : null}
       </footer>
     </div>

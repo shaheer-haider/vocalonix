@@ -17,6 +17,7 @@ import type {
   VoiceCatalogueEntry,
   WidgetResponse,
   BillingStatus,
+  PublicPricing,
 } from "./types";
 
 const API_BASE_URL =
@@ -517,12 +518,19 @@ export const api = {
       unwrap(await client.api.auth.email.verify.post({ token })),
   },
   billing: {
+    /** The public catalogue. No session — this is what /pricing renders. */
+    plans: async (): Promise<PublicPricing> =>
+      unwrap(await client.api.plans.get()),
     status: async (slug: string): Promise<BillingStatus> =>
       unwrap(await client.api.b[slug].billing.get()),
     portal: async (slug: string): Promise<{ url: string }> =>
       unwrap(await client.api.b[slug].billing.portal.post()),
-    checkout: async (slug: string, planId: string): Promise<{ url: string }> =>
-      unwrap(await client.api.b[slug].billing.checkout.post({ planId })),
+    checkout: async (
+      slug: string,
+      planId: string,
+      returnTo?: "account" | "onboarding",
+    ): Promise<{ url: string }> =>
+      unwrap(await client.api.b[slug].billing.checkout.post({ planId, returnTo })),
   },
   businesses: {
     list: async (): Promise<BusinessListResponse> => {
@@ -634,6 +642,8 @@ export const api = {
       unwrap(
         await client.api.b[slug].onboarding.knowledge.complete.post(),
       ),
+    completePlanOnboarding: async (slug: string) =>
+      unwrap(await client.api.b[slug].onboarding.plan.complete.post()),
     dograhStatus: async (slug: string) =>
       unwrap(await client.api.b[slug].dograh.get()),
     retryDograh: async (slug: string) =>

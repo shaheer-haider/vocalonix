@@ -1,6 +1,9 @@
-import { tenantDesiredConfiguration, type TenantBusinessProfile } from "../dograh/config";
+import {
+  stableConfigurationHash,
+  tenantDesiredConfiguration,
+  type TenantBusinessProfile,
+} from "../dograh/config";
 import { type TenantAgentSettings } from "../dograh/types";
-import { dograh } from "../dograh/client";
 import { env } from "../env";
 import { businessVoiceOverride } from "../platform/providers";
 import { getVertical } from "../verticals";
@@ -102,9 +105,22 @@ export function buildDemoBusinessProfile(input: DemoWorkflowInput): TenantBusine
   };
 }
 
-export async function provisionDemoWorkflow(
-  input: DemoWorkflowInput,
-): Promise<DemoWorkflowResult> {
+export interface BuiltDemoWorkflow {
+  name: string;
+  hash: string;
+  workflowDefinition: Record<string, unknown>;
+  workflowConfigurations: Record<string, unknown>;
+  settings: TenantAgentSettings;
+}
+
+/**
+ * Everything about a demo agent that does not touch the network.
+ *
+ * Split out from provisioning so the reconciler can hash the result and skip a
+ * trade whose agent has not changed, and so the shape of a demo workflow is
+ * testable without an engine.
+ */
+export function buildDemoWorkflow(input: DemoWorkflowInput): BuiltDemoWorkflow {
   const business = buildDemoBusinessProfile(input);
   const settings = buildDemoAgentSettings(input);
 
@@ -120,39 +136,33 @@ export async function provisionDemoWorkflow(
   });
   const workflowConfigurations = {
     ...desired.workflowConfigurations,
-    max_call_duration: 60,
+    max_call_duration: DEMO_CALL_SECONDS,
     max_user_idle_timeout: 15,
   };
 
-  const created = await dograh.createWorkflow(
-    desired.name,
-    desired.workflowDefinition,
-  );
-  await dograh.updateWorkflow(
-    created.id,
-    desired.name,
-    desired.workflowDefinition,
-    workflowConfigurations,
-  );
-  await dograh.publishWorkflow(created.id);
-
-  const token = await dograh.createEmbedToken(created.id, {
-    embedMode: "headless",
-    autoStart: false,
-    agentName: settings.agentName,
-    businessName: business.name,
-  });
-
-  const scriptUrl =
-    `${env.dograhWidgetUrl}/embed/vocalonix-widget.js` +
-    `?token=${encodeURIComponent(token.token)}` +
-    `&environment=local` +
-    `&apiEndpoint=${encodeURIComponent(env.dograhPublicApiUrl)}`;
-
   return {
-    workflowId: created.id,
-    workflowUuid: created.workflow_uuid ?? null,
-    embedToken: token.token,
-    scriptUrl,
+    name: desired.name,
+    // The tenant hash covers the definition; the demo adds its own call limits
+    // on top, so both have to be in the hash or a change to the limit would
+    // never reach an already-provisioned agent.
+    hash: stableConfigurationHash({
+      tenant: desired.hash,
+      workflowConfigurations,
+    }),
+    workflowDefinition: desired.workflowDefinition,
+    workflowConfigurations,
+    settings,
   };
+}
+
+/** How long a demo call may run. Also the number the UI counts down from. */
+export const DEMO_CALL_SECONDS = 60;
+
+export function demoScriptUrl(token: string): string {
+  return (
+    `${env.dograhWidgetUrl}/embed/vocalonix-widget.js` +
+    `?token=${encodeURIComponent(token)}` +
+    `&environment=${encodeURIComponent(env.nodeEnv)}` +
+    `&apiEndpoint=${encodeURIComponent(env.dograhPublicApiUrl)}`
+  );
 }

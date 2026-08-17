@@ -1,6 +1,6 @@
 # Harkbell — Product Status & Roadmap
 
-_Last updated: 2026-08-16_
+_Last updated: 2026-08-17_
 
 > This file answers **what is built and what is next**. For how any of it works,
 > see [`docs/`](docs/README.md); for the rules of changing it, see
@@ -90,12 +90,27 @@ conversations, contacts and knowledge gaps.
   layout, and host-page theme matching.
 - **Try your agent.** Owners can call their own published agent from the
   dashboard before customers do.
+- **Pricing that a visitor can actually see.** `/pricing` renders the plan
+  catalogue from an unauthenticated `GET /api/plans`, and the landing page
+  derives its price line from the same endpoint rather than repeating figures
+  that would drift. A deployment with no Stripe price configured renders an
+  honest page instead of a checkout button that fails.
+- **A plan step in onboarding.** Setup is seven steps, and choosing a plan is
+  the one before publishing — nobody builds an agent and first learns the price
+  from a card statement. Free is a real choice there, not a way to skip.
+- **A demo that starts in one click.** Picking a trade starts the call; contact
+  details are asked for afterwards, when there is a reason to give them. The
+  funnel used to ask nine fields across four screens before a visitor heard
+  anything. Each live trade has one reusable published agent on the engine,
+  reconciled at boot and skipped when its config hash is unchanged, so starting
+  a demo is a row read (~25ms) rather than four calls to the engine — and the
+  engine no longer collects a dead workflow per curious visitor.
 - Signup/login, sessions, workspaces, roles, invitations, audit logs.
 - Knowledge uploads synced to the engine through an outbox worker with retry and
   stuck-event recovery.
 - Bookings with clash detection, callbacks, conversations with transcripts,
   contacts, knowledge gaps.
-- Docker Compose runtime, health endpoints, 147 unit tests, clean typecheck.
+- Docker Compose runtime, health endpoints, 174 unit tests, clean typecheck.
 
 ## Deployment checklist (needs the operator)
 
@@ -113,7 +128,7 @@ conversations, contacts and knowledge gaps.
 
 ## What is left
 
-- [ ] **Integration tests** covering API routes end to end. All 17 test files are
+- [ ] **Integration tests** covering API routes end to end. All 20 test files are
       unit-level; not one exercises an HTTP route. This is the gap that let a
       bought number reach production unable to receive a call — every individual
       unit passed, and nothing tested the path they form. Highest priority.
@@ -128,6 +143,41 @@ conversations, contacts and knowledge gaps.
       webhook delivery, entitlement change, downgrade — and no test covers the
       webhook against a real payload. Treat billing as built but unverified
       until that pass is done and recorded.
+
+      The included-minutes ceiling *is* now enforced. It could not be: the
+      widget holds a long-lived embed token and talks to the engine directly,
+      so nothing on the Harkbell side was in the path of a call, and
+      `callMinutesExhausted()` was written but never called from anywhere — a
+      free workspace could spend unlimited minutes. Enforcement is now
+      suspension: the worker reconciles usage after each ingest pass and
+      deactivates the embed token when a plan's minutes are spent, restoring it
+      on upgrade or a new period. The ceiling is soft by at most the call in
+      flight. Dograh reactivates the same token row, so a customer's published
+      snippet keeps working across a suspension — see the note on
+      `resumeBusinessCalls`.
+- [ ] **Each business in its own Dograh organization.** The foundation landed:
+      `dograh/tenantAccount.ts` derives per-business engine credentials from
+      `AUTH_SECRET`, `tenantDograhClient()` returns a client scoped to that
+      business, and `pushModelConfigurationTo()` puts the provider keys into a
+      fresh organization. Isolation is verified against a running engine — a
+      tenant client sees only its own workflows and gets a 404 on another's.
+      **The sync path does not use it yet**, and two things have to be solved
+      before it can:
+      - *Telephony is per-organization too.* A workflow in a business's own
+        organization cannot route through a telephony configuration in the
+        platform organization, so each business needs its own — and Dograh
+        creates a Telnyx call control application per configuration. This is
+        the area that already shipped a number that billed and never rang, so
+        it needs a Telnyx key and a real inbound call to verify, not a
+        typecheck.
+      - *Existing businesses' workflows live in the platform organization.*
+        Flipping the client without moving them makes `getWorkflow` 404 and the
+        sync state machine build duplicates. Needs a migration that recreates
+        each workflow under its own organization and re-points its number.
+
+      Until then knowledge stays tenant-safe because the generator pins
+      `document_uuids` on every node that can retrieve, which is now asserted
+      by `config.test.ts` rather than left to whoever adds the next node.
 - [ ] **Held slots and a waitlist** on bookings.
 - [ ] Rate limiting is in-memory only; move to a shared store when the API
       scales past one instance.

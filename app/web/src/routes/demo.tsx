@@ -14,31 +14,33 @@ import {
   Button,
   EmptyState,
   Pill,
-  SelectField,
   TextArea,
   TextField,
   VoiceOrb,
   type VoiceOrbState,
 } from "../components/ui";
 import { AuthShell } from "../components/shell";
-import { PauseIcon, PlayIcon } from "../icons";
 import { useDograhHealth } from "../hooks/useDograhHealth";
 import type {
   DemoSession,
   DemoStartResponse,
   Vertical,
-  VoiceCatalogueEntry,
   VoiceWidget,
   VoiceWidgetStatus,
 } from "../types";
 
-type Step =
-  | "vertical"
-  | "business"
-  | "intake"
-  | "voice"
-  | "live"
-  | "wrap";
+/**
+ * Three steps, and only one of them is a form.
+ *
+ * The funnel used to ask for a business name, a city, services, a booking tool,
+ * trade-specific answers, a name, an email and a voice — nine fields across
+ * four screens — before a visitor heard a single word. Everything it collected
+ * was either invented by the visitor on the spot or available from the trade
+ * itself, so none of it made the demo better; it just stood between somebody
+ * curious and the thing that convinces them. Contact details are now asked for
+ * after the call, when there is a reason to give them.
+ */
+type Step = "vertical" | "live" | "wrap";
 
 interface StoredDemo {
   savedAt: string;
@@ -51,13 +53,7 @@ interface StoredDemo {
 const STORAGE_KEY = "vocalonix-demo";
 const DEMO_TTL_MS = 24 * 60 * 60 * 1000;
 const CALL_DURATION_SECONDS = 60;
-const TOTAL_STEPS = 6;
-
-/**
- * Voices come from the API so the demo offers exactly what a published agent
- * can use. Picking one here carries through signup into the real workspace.
- */
-type Voice = VoiceCatalogueEntry;
+const TOTAL_STEPS = 3;
 
 /**
  * The orb has one "live" state; the widget distinguishes listening from
@@ -114,12 +110,6 @@ function formatTitle(step: Step) {
   switch (step) {
     case "vertical":
       return "Pick your industry";
-    case "business":
-      return "Business basics";
-    case "intake":
-      return "A few details";
-    case "voice":
-      return "Pick a voice";
     case "live":
       return "Live demo call";
     case "wrap":
@@ -128,14 +118,7 @@ function formatTitle(step: Step) {
 }
 
 function formatStepNumber(step: Step) {
-  const map: Record<Step, number> = {
-    vertical: 1,
-    business: 2,
-    intake: 3,
-    voice: 4,
-    live: 5,
-    wrap: 6,
-  };
+  const map: Record<Step, number> = { vertical: 1, live: 2, wrap: 3 };
   return map[step];
 }
 
@@ -362,6 +345,12 @@ function LiveCall({
 
   return (
     <div>
+      {/* The agent answers as an invented business. Saying which one up front
+          stops the caller wondering whose receptionist just picked up. */}
+      <p style={{ color: "var(--ink-3)", marginBottom: 14 }}>
+        You&apos;re calling <strong>{call.businessName}</strong>, where{" "}
+        {call.agentName} is on reception.
+      </p>
       <div className="demo-call">
         <VoiceOrb state={status} label={statusCopy[status] ?? status} />
         <p className="demo-call__status" role="status">
@@ -439,8 +428,8 @@ function VerticalStep({
   return (
     <div>
       <p style={{ color: "var(--ink-3)", marginBottom: 18 }}>
-        Pick the industry closest to your business. We&apos;ll build a
-        one-minute demo from your details.
+        Pick the industry closest to your business and the call starts straight
+        away — no forms, no email, one minute.
       </p>
       <div
         style={{
@@ -479,265 +468,6 @@ function VerticalStep({
   );
 }
 
-function BusinessStep({
-  draft,
-  vertical,
-  onUpdate,
-  onSubmit,
-  loading,
-}: {
-  draft: Partial<DemoSession>;
-  vertical: Vertical | null;
-  onUpdate: (patch: Partial<DemoSession>) => void;
-  onSubmit: () => void;
-  loading: boolean;
-}) {
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    onSubmit();
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <TextField
-        label="Business name"
-        placeholder="e.g. The Brow Studio"
-        value={draft.businessName ?? ""}
-        onChange={(e) => onUpdate({ businessName: e.currentTarget.value })}
-        required
-      />
-      <div style={{ marginTop: 14 }}>
-        <TextField
-          label="City or area"
-          placeholder="e.g. Brooklyn, NY"
-          value={draft.city ?? ""}
-          onChange={(e) => onUpdate({ city: e.currentTarget.value })}
-        />
-      </div>
-      <div style={{ marginTop: 18 }}>
-        <label className="ui-label">Top services you offer</label>
-        <ToggleGroup
-          options={vertical?.serviceOptions ?? []}
-          values={draft.services ?? []}
-          onChange={(values) => onUpdate({ services: values })}
-        />
-      </div>
-      <div style={{ marginTop: 18 }}>
-        <TextField
-          label="Booking tool (optional)"
-          placeholder="e.g. Square, Fresha, Calendly"
-          value={draft.bookingTool ?? ""}
-          onChange={(e) => onUpdate({ bookingTool: e.currentTarget.value })}
-        />
-      </div>
-      <div style={{ marginTop: 22 }}>
-        <Button type="submit" variant="primary" loading={loading}>
-          Continue
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-/**
- * Only the questions that actually shape the demo call. Personal contact details
- * moved to the post-call step: asking for a phone number before the visitor has
- * heard anything was the funnel's biggest drop-off risk.
- */
-function IntakeStep({
-  draft,
-  vertical,
-  setAnswer,
-  onSubmit,
-  loading,
-}: {
-  draft: Partial<DemoSession>;
-  vertical: Vertical | null;
-  setAnswer: (name: string, value: unknown) => void;
-  onSubmit: () => void;
-  loading: boolean;
-}) {
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    onSubmit();
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      {vertical?.intakeFields.map((field, index) => (
-        <div
-          key={field.name}
-          style={{ marginTop: index === 0 ? 0 : 16 }}
-        >
-          {field.type === "select" ? (
-            <SelectField
-              label={field.label}
-              options={field.options?.map((o) => ({ label: o, value: o })) ?? []}
-              value={String(draft.verticalAnswers?.[field.name] ?? "")}
-              onChange={(e) => setAnswer(field.name, e.currentTarget.value)}
-              required={field.required}
-            />
-          ) : field.type === "yes_no" ? (
-            <div>
-              <label className="ui-label">{field.label}</label>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {["Yes", "No"].map((option) => (
-                  <ChoiceButton
-                    key={option}
-                    selected={String(draft.verticalAnswers?.[field.name]) === option}
-                    onClick={() => setAnswer(field.name, option)}
-                  >
-                    {option}
-                  </ChoiceButton>
-                ))}
-              </div>
-            </div>
-          ) : field.type === "multi_select" ? (
-            <div>
-              <label className="ui-label">{field.label}</label>
-              <ToggleGroup
-                options={field.options ?? []}
-                values={
-                  Array.isArray(draft.verticalAnswers?.[field.name])
-                    ? (draft.verticalAnswers[field.name] as string[])
-                    : []
-                }
-                onChange={(values) => setAnswer(field.name, values)}
-              />
-            </div>
-          ) : field.type === "textarea" ? (
-            <TextArea
-              label={field.label}
-              value={String(draft.verticalAnswers?.[field.name] ?? "")}
-              onChange={(e) => setAnswer(field.name, e.currentTarget.value)}
-              required={field.required}
-            />
-          ) : (
-            <TextField
-              label={field.label}
-              value={String(draft.verticalAnswers?.[field.name] ?? "")}
-              onChange={(e) => setAnswer(field.name, e.currentTarget.value)}
-              required={field.required}
-            />
-          )}
-        </div>
-      ))}
-
-
-      <div style={{ marginTop: 22 }}>
-        <Button type="submit" variant="primary" loading={loading}>
-          Continue
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function VoiceStep({
-  voices,
-  selectedVoice,
-  onSelect,
-  onStart,
-  loading,
-  turnEnabled,
-}: {
-  voices: Voice[];
-  selectedVoice: string;
-  onSelect: (voice: string) => void;
-  onStart: () => void;
-  loading: boolean;
-  turnEnabled: boolean;
-}) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState<string | null>(null);
-
-  const preview = (voice: Voice) => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (playing === voice.id) {
-      el.pause();
-      setPlaying(null);
-      return;
-    }
-    // AAC in m4a, not WAV: the previews were 145 kB of uncompressed PCM each,
-    // 4.4 MB across the set, and every tap paid it. 32 kbps holds up for a
-    // 24 kHz mono voice sample — which matters, since this audio is the whole
-    // basis on which someone picks a voice.
-    el.src = voice.preview;
-    el.currentTime = 0;
-    void el.play().catch(() => setPlaying(null));
-    setPlaying(voice.id);
-  };
-
-  const renderVoice = (voice: Voice) => {
-    const selected = selectedVoice === voice.id;
-    const isPlaying = playing === voice.id;
-    return (
-      <li key={voice.id} className="voice-row">
-        <button
-          type="button"
-          onClick={() => onSelect(voice.id)}
-          className={`voice-row__pick ${selected ? "voice-row__pick--selected" : ""}`}
-          aria-pressed={selected}
-        >
-          <span className="voice-row__desc">{voice.description}</span>
-          <span className="voice-row__name">{voice.label}</span>
-        </button>
-        <button
-          type="button"
-          className="voice-row__preview"
-          onClick={() => preview(voice)}
-          aria-pressed={isPlaying}
-          aria-label={`${isPlaying ? "Stop" : "Play"} sample of ${voice.label}`}
-        >
-          {isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
-        </button>
-      </li>
-    );
-  };
-
-  return (
-    <div>
-      <p style={{ color: "var(--ink-3)", marginBottom: 14 }}>
-        Pick how you want your agent to sound. Press play to hear a sample.
-      </p>
-      <audio ref={audioRef} onEnded={() => setPlaying(null)} hidden />
-
-      {voices.length > 0 ? (
-        <ul className="voice-list">{voices.map(renderVoice)}</ul>
-      ) : (
-        <p style={{ color: "var(--ink-3)" }}>Loading voices\u2026</p>
-      )}
-
-      {!turnEnabled ? (
-        <div style={{ marginTop: 14 }}>
-          <Alert variant="warn">
-            Live calls are unavailable right now. You can still choose a voice \u2014
-            we&apos;ll email you when the call is ready.
-          </Alert>
-        </div>
-      ) : null}
-      <div style={{ marginTop: 22 }}>
-        <Button
-          onClick={onStart}
-          variant="primary"
-          loading={loading}
-          disabled={!selectedVoice || !turnEnabled}
-        >
-          Hear your agent
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * The post-call screen. Previously this was a rating form that silently decided
- * whether the visitor was offered an account: 4-5 redirected to signup, 1-3 got a
- * dead end. The offer is now unconditional and leads; feedback is optional and
- * secondary. Contact details are captured here, at peak interest, rather than
- * before the visitor has heard anything.
- */
 function WrapStep({
   draft,
   onUpdate,
@@ -777,8 +507,9 @@ function WrapStep({
   return (
     <div>
       <p style={{ color: "var(--ink-3)", marginBottom: 18 }}>
-        That was your agent, using your prices and your services. Set it up on
-        your own site and it can answer like that every time you miss a call.
+        That was a stock agent for your trade. Yours would answer with your real
+        prices, your real hours and your own knowledge — on your website, every
+        time you miss a call.
       </p>
 
       <form onSubmit={handleCreate}>
@@ -861,24 +592,10 @@ export function DemoPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [call, setCall] = useState<DemoStartResponse | null>(null);
-  const [voices, setVoices] = useState<Voice[]>([]);
   const health = useDograhHealth();
-
-  useEffect(() => {
-    // A failed catalogue leaves the picker empty rather than blocking the
-    // funnel; every other step still works.
-    api.platform.voices().then(setVoices).catch(() => setVoices([]));
-  }, []);
 
   const updateDraft = (patch: Partial<DemoSession>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
-  };
-
-  const setAnswer = (name: string, value: unknown) => {
-    setDraft((prev) => ({
-      ...prev,
-      verticalAnswers: { ...(prev.verticalAnswers ?? {}), [name]: value },
-    }));
   };
 
   useEffect(() => {
@@ -912,6 +629,12 @@ export function DemoPage() {
     });
   }, [step, sessionId, draft, call]);
 
+  /**
+   * One click, straight to the call.
+   *
+   * The agent for a trade is already built and published on the engine, so
+   * there is nothing to wait for between choosing a trade and hearing it.
+   */
   const selectVertical = async (v: Vertical) => {
     setError(null);
     setLoading(true);
@@ -919,70 +642,12 @@ export function DemoPage() {
       const { id } = await api.demo.createSession(v.slug);
       setSessionId(id);
       setVertical(v);
-      setDraft((prev) => ({
-        ...prev,
-        vertical: v.slug,
-        services: v.defaultServices,
-        voice: prev?.voice ?? "aria",
-      }));
-      setStep("business");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start the demo.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const submitBusiness = async () => {
-    if (!sessionId || !draft.businessName?.trim()) {
-      setError("Enter your business name to continue.");
-      return;
-    }
-    setLoading(true);
-    try {
-      await api.demo.updateSession(sessionId, {
-        businessName: draft.businessName.trim(),
-        city: draft.city ?? null,
-        services: draft.services,
-        bookingTool: draft.bookingTool,
-      });
-      setStep("intake");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save details.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const submitIntake = async () => {
-    if (!sessionId) return;
-    setLoading(true);
-    try {
-      await api.demo.updateSession(sessionId, {
-        verticalAnswers: draft.verticalAnswers,
-        fullName: draft.fullName,
-        email: draft.email,
-        phone: draft.phone,
-        demoMode: draft.demoMode,
-      });
-      setStep("voice");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save details.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startCall = async () => {
-    if (!sessionId) return;
-    setLoading(true);
-    try {
-      await api.demo.updateSession(sessionId, { voice: draft.voice });
-      const started = await api.demo.start(sessionId);
+      setDraft((prev) => ({ ...prev, vertical: v.slug, services: v.defaultServices }));
+      const started = await api.demo.start(id);
       setCall(started);
       setStep("live");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start the call.");
+      setError(err instanceof Error ? err.message : "Unable to start the demo.");
     } finally {
       setLoading(false);
     }
@@ -1039,9 +704,10 @@ export function DemoPage() {
     if (draft.email) signupParams.set("demoEmail", draft.email);
     if (draft.fullName) signupParams.set("demoName", draft.fullName);
 
+    // Only the trade carries over now. The demo no longer asks for a business
+    // name or a city, and inventing one to prefill would be worse than an
+    // empty field the visitor fills in with the truth.
     const redirectParams = new URLSearchParams();
-    if (draft.businessName) redirectParams.set("demoBusiness", draft.businessName);
-    if (draft.city) redirectParams.set("demoCity", draft.city);
     if (draft.vertical) redirectParams.set("demoVertical", draft.vertical);
     const redirectSearch = redirectParams.toString();
     signupParams.set(
@@ -1056,16 +722,9 @@ export function DemoPage() {
   };
 
   const goBack = () => {
-    const prev: Record<Step, Step | null> = {
-      vertical: null,
-      business: "vertical",
-      intake: "business",
-      voice: "intake",
-      live: "voice",
-      wrap: "live",
-    };
-    const next = prev[step];
-    if (next) setStep(next);
+    // Only back out of the live call — going "back" from the wrap step would
+    // mean re-running a call the visitor has already had.
+    if (step === "live") setStep("vertical");
   };
 
   if (loading && verticals.length === 0) {
@@ -1105,34 +764,6 @@ export function DemoPage() {
             verticals={verticals}
             loading={loading}
             onSelect={selectVertical}
-          />
-        )}
-        {step === "business" && (
-          <BusinessStep
-            draft={draft}
-            vertical={vertical}
-            onUpdate={updateDraft}
-            onSubmit={submitBusiness}
-            loading={loading}
-          />
-        )}
-        {step === "intake" && (
-          <IntakeStep
-            draft={draft}
-            vertical={vertical}
-            setAnswer={setAnswer}
-            onSubmit={submitIntake}
-            loading={loading}
-          />
-        )}
-        {step === "voice" && (
-          <VoiceStep
-            voices={voices}
-            selectedVoice={draft.voice ?? "aria"}
-            onSelect={(voice) => updateDraft({ voice })}
-            onStart={startCall}
-            loading={loading}
-            turnEnabled={health.turnEnabled}
           />
         )}
         {step === "live" && call && (

@@ -31,6 +31,7 @@ import { backfillCallRecords } from "./dograh/ingest";
 import { reconcileTelephonyConfiguration } from "./platform/telephony";
 import { tenantRoutes } from "./tenant/routes";
 import { demoRoutes } from "./demo/routes";
+import { reconcileDemoAgents } from "./demo/agents";
 
 function validateSettings(settings: AgentSettings): void {
   const required: Array<[keyof AgentSettings, number]> = [
@@ -270,6 +271,17 @@ if (import.meta.main) {
   void reconcileTelephonyConfiguration().catch((error: unknown) => {
     console.error("Telephony reconciliation failed at boot:", error);
   });
+  // One reusable demo agent per live trade. Not awaited for the same reason as
+  // the others; a visitor who beats it gets one provisioned on demand.
+  void reconcileDemoAgents()
+    .then(({ reconciled, failed }) => {
+      console.log(
+        `Demo agents reconciled: ${reconciled} ready${failed ? `, ${failed} failed` : ""}.`,
+      );
+    })
+    .catch((error: unknown) => {
+      console.error("Demo agent reconciliation failed at boot:", error);
+    });
   // Calls taken before `call_records` existed are invisible to the list and
   // the dashboard until they are copied across. Upserts, so re-running is
   // harmless, and not awaited for the same reason as the reconcilers above.

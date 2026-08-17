@@ -151,12 +151,42 @@ export interface DograhManagementClient {
   }): Promise<DograhInitiatedCall>;
 }
 
+/** The account a client authenticates as. */
+export interface DograhCredentials {
+  email: string;
+  password: string;
+  name: string;
+}
+
 export class DograhClient implements DograhManagementClient {
   private sessionToken: string | null = null;
   private authentication: Promise<string> | null = null;
 
+  /**
+   * Which Dograh account this client acts as.
+   *
+   * The platform account is the default so existing callers are unchanged. A
+   * client constructed with a business's own credentials lands in that
+   * business's organization, which is what scopes its workflows, tools and —
+   * the reason this exists — its knowledge base.
+   */
+  constructor(private readonly credentials?: DograhCredentials) {}
+
+  private account(): DograhCredentials {
+    return (
+      this.credentials ?? {
+        email: env.dograhServiceEmail,
+        password: env.dograhServicePassword,
+        name: env.dograhServiceName,
+      }
+    );
+  }
+
   private async authenticate(): Promise<string> {
-    if (env.dograhApiKey) return env.dograhApiKey;
+    // A tenant client must never fall back to the platform API key: that key
+    // authenticates as the platform organization, which would silently undo
+    // the isolation this client exists to provide.
+    if (env.dograhApiKey && !this.credentials) return env.dograhApiKey;
     if (this.sessionToken) return this.sessionToken;
     if (this.authentication) return this.authentication;
 
@@ -170,13 +200,11 @@ export class DograhClient implements DograhManagementClient {
   }
 
   private async loginOrSignup(): Promise<string> {
+    const { email, password, name } = this.account();
     const login = await this.rawRequest<AuthResponse>("/auth/login", {
       method: "POST",
       authenticated: false,
-      body: {
-        email: env.dograhServiceEmail,
-        password: env.dograhServicePassword,
-      },
+      body: { email, password },
     }).catch((error: unknown) => {
       if (error instanceof DograhError && error.status === 401) return null;
       throw error;
@@ -187,11 +215,7 @@ export class DograhClient implements DograhManagementClient {
     const signup = await this.rawRequest<AuthResponse>("/auth/signup", {
       method: "POST",
       authenticated: false,
-      body: {
-        email: env.dograhServiceEmail,
-        password: env.dograhServicePassword,
-        name: env.dograhServiceName,
-      },
+      body: { email, password, name },
     }).catch((error: unknown) => {
       if (error instanceof DograhError && error.status === 409) return null;
       throw error;
@@ -202,10 +226,7 @@ export class DograhClient implements DograhManagementClient {
     const retry = await this.rawRequest<AuthResponse>("/auth/login", {
       method: "POST",
       authenticated: false,
-      body: {
-        email: env.dograhServiceEmail,
-        password: env.dograhServicePassword,
-      },
+      body: { email, password },
     });
     return retry.token;
   }
@@ -213,6 +234,10 @@ export class DograhClient implements DograhManagementClient {
   private async rawRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const authenticated = options.authenticated ?? true;
     const token = authenticated ? await this.authenticate() : null;
+    // A tenant client always holds a session token, never the platform API key,
+    // so it must send a bearer header even on a deployment where the API key is
+    // configured. Sending its session token as `X-API-Key` would simply fail.
+    const usesApiKey = Boolean(env.dograhApiKey) && !this.credentials;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -222,7 +247,7 @@ export class DograhClient implements DograhManagementClient {
         method: options.method ?? "GET",
         headers: {
           ...(token
-            ? env.dograhApiKey
+            ? usesApiKey
               ? { "X-API-Key": token }
               : { Authorization: `Bearer ${token}` }
             : {}),
@@ -241,7 +266,7 @@ export class DograhClient implements DograhManagementClient {
       clearTimeout(timeout);
     }
 
-    if (response.status === 401 && authenticated && !env.dograhApiKey && options.retryAuth !== false) {
+    if (response.status === 401 && authenticated && !usesApiKey && options.retryAuth !== false) {
       this.sessionToken = null;
       return this.rawRequest<T>(path, { ...options, retryAuth: false });
     }
@@ -583,4 +608,29 @@ export class DograhClient implements DograhManagementClient {
   }
 }
 
+/** The platform account. Owns the demo agents and anything not tenant-scoped. */
 export const dograh = new DograhClient();
+
+/**
+ * Clients are cached per business so a workspace logs in to the engine once
+ * rather than on every sync, upload and ingest pass. The cache holds a session
+ * token, not a credential — the credentials are derived on demand — so an entry
+ * going stale costs one re-login, which `rawRequest` already handles on a 401.
+ */
+const tenantClients = new Map<string, DograhClient>();
+
+export function tenantDograhClient(
+  businessId: string,
+  credentials: DograhCredentials,
+): DograhManagementClient {
+  const existing = tenantClients.get(businessId);
+  if (existing) return existing;
+  const client = new DograhClient(credentials);
+  tenantClients.set(businessId, client);
+  return client;
+}
+
+/** Drops a cached client, so an offboarded business leaves nothing behind. */
+export function forgetTenantDograhClient(businessId: string): void {
+  tenantClients.delete(businessId);
+}

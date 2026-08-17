@@ -123,6 +123,10 @@ export const onboardingSteps = [
   "hours",
   "knowledge",
   "widget",
+  // Deliberately before publishing rather than after. A business that has built
+  // its agent and never once been shown a price is a business that finds out
+  // what this costs from a card statement.
+  "plan",
   "review",
 ] as const;
 
@@ -675,6 +679,33 @@ export const tenantRoutes = new Elysia()
           businessId: workspace.business.id,
           actorUserId: workspace.session.user.id,
           action: "business.onboarding.knowledge.complete",
+          targetType: "business_onboarding",
+          targetId: workspace.business.id,
+        });
+      });
+      return { ok: true };
+    },
+  )
+  /**
+   * Records that the workspace has seen the plans and made a choice.
+   *
+   * Choosing the free plan involves no payment provider at all, so there is
+   * nothing else to hang the step's completion on. Upgrading returns through
+   * Stripe, and the page marks the step on the way back.
+   */
+  .post(
+    "/api/b/:slug/onboarding/plan/complete",
+    async ({ params, request }) => {
+      const workspace = await requireWorkspace(request.headers, params.slug);
+      requirePermission(workspace.role, "agent.edit");
+      await ensureTenantRows(workspace.business.id);
+      await db.transaction(async (tx) => {
+        await completeStep(tx, workspace.business.id, "plan");
+        await tx.insert(auditLogs).values({
+          id: randomUUID(),
+          businessId: workspace.business.id,
+          actorUserId: workspace.session.user.id,
+          action: "business.onboarding.plan.complete",
           targetType: "business_onboarding",
           targetId: workspace.business.id,
         });
