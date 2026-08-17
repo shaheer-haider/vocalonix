@@ -88,6 +88,13 @@ services:
       TELNYX_CONNECTION_ID: "${TELNYX_CONNECTION_ID:-}"
       TELNYX_WEBHOOK_PUBLIC_KEY: "${TELNYX_WEBHOOK_PUBLIC_KEY:-}"
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      # Price ids are public identifiers, not secrets — they appear in any
+      # client-side Stripe integration — so they carry real defaults. Without
+      # them a plan is not offered for purchase at all, and this file passed
+      # neither, so the pricing page could only ever say "Talk to us".
+      STRIPE_PRICE_STARTER: "${STRIPE_PRICE_STARTER:-price_1U5Jm8L127qQV0Os9cRk0OqF}"
+      STRIPE_PRICE_PRO: "${STRIPE_PRICE_PRO:-price_1U5JmBL127qQV0OsmJMGgDbl}"
       MAX_OWNED_WORKSPACES: "${MAX_OWNED_WORKSPACES:-50}"
     depends_on:
       vocalonix-db:
@@ -152,6 +159,13 @@ services:
       TELNYX_CONNECTION_ID: "${TELNYX_CONNECTION_ID:-}"
       TELNYX_WEBHOOK_PUBLIC_KEY: "${TELNYX_WEBHOOK_PUBLIC_KEY:-}"
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      # Price ids are public identifiers, not secrets — they appear in any
+      # client-side Stripe integration — so they carry real defaults. Without
+      # them a plan is not offered for purchase at all, and this file passed
+      # neither, so the pricing page could only ever say "Talk to us".
+      STRIPE_PRICE_STARTER: "${STRIPE_PRICE_STARTER:-price_1U5Jm8L127qQV0Os9cRk0OqF}"
+      STRIPE_PRICE_PRO: "${STRIPE_PRICE_PRO:-price_1U5JmBL127qQV0OsmJMGgDbl}"
       MAX_OWNED_WORKSPACES: "${MAX_OWNED_WORKSPACES:-50}"
     depends_on:
       vocalonix-api:
