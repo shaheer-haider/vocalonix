@@ -224,6 +224,22 @@ infisical login
    `Infisical /vocalonix @ prod` and not the legacy secret.
 5. Delete `VOCALONIX_ENV`.
 
+### Keys with no value yet
+
+Infisical refuses to store an empty value, so a key that is deliberately unset
+would simply not appear — and an invisible key is one nobody remembers to fill
+in. `push` writes `REPLACE_ME` for those instead, so every key the app knows
+about is listed in the UI with somewhere obvious to type.
+
+`pull` and the deploy strip it back out, and that is the part that matters:
+`env.ts` reads any non-empty string as a real value. `STRIPE_SECRET_KEY=REPLACE_ME`
+would switch billing on and 502 at checkout; `TELNYX_API_KEY=REPLACE_ME` would
+report telephony as configured and fail on the first call. A key still holding
+the placeholder reaches the box as absent, exactly as it is today, and the
+deploy logs which ones so it stays visible.
+
+`./scripts/secrets.sh check vocalonix` marks them.
+
 ### Day to day
 
 ```bash
