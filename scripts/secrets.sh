@@ -9,7 +9,7 @@
 # `STRIPE_PRICE_STARTER` could be "added" and silently never arrive.
 #
 # Infisical is now the one place a value is edited. The deploy pulls the whole
-# `/vocalonix` folder itself, so a new key needs no workflow or compose change.
+# `/harkbell` folder itself, so a new key needs no workflow or compose change.
 # This script is the same thing by hand: migrating values in, checking what is
 # set, and running something locally with them injected.
 #
@@ -55,7 +55,7 @@ command -v infisical >/dev/null 2>&1 || {
 # has no business holding.
 box_path() {
   case "$1" in
-    vocalonix) echo "/vocalonix" ;;
+    vocalonix) echo "/harkbell" ;;
     dograh)    echo "/dograh" ;;
     *) echo "Unknown box '$1'. Use 'vocalonix' or 'dograh'." >&2; exit 1 ;;
   esac

@@ -311,7 +311,7 @@ into JavaScript every visitor downloads, so a "build-time secret" is not a
 secret. Exactly one exists — `VITE_API_BASE_URL`, a public URL — and that is the
 number it should stay at.
 
-**The Harkbell box's configuration comes from Infisical** (`/vocalonix` @
+**The Harkbell box's configuration comes from Infisical** (`/harkbell` @
 `prod`), pulled by the deploy into that box's `.env`. Change a value there, not
 on the box. The deploy pulls the whole folder, so a new key needs no workflow or
 compose change — which is the point: `STRIPE_PRICE_STARTER` was once set in the

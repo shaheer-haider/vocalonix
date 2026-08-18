@@ -184,7 +184,7 @@ it. Its `.env` is still hand-managed — moving it to Infisical is not done yet.
 ## Server configuration
 
 The Vocalonix box's `.env` is built at deploy time from **Infisical**, folder
-`/vocalonix`, environment `prod`. Edit a value there and the next deploy carries
+`/harkbell`, environment `prod`. Edit a value there and the next deploy carries
 it — do not edit the file on the box, because the next deploy overwrites it and
 in the meantime the change is invisible to everyone else. The
 `--exclude 'deploy/hetzner/*/.env'` in the rsync guards the other direction: an
@@ -198,13 +198,19 @@ nothing failed loudly.
 
 ### First-time setup
 
+`deploy/hetzner/harkbell-secrets-template.env` lists every key the box reads,
+with `REPLACE_ME` placeholders. Import it into Infisical and fill the values in
+the UI — a half-filled import is safe, because `pull` and the deploy strip any
+key still holding the placeholder and it reaches the box unset.
+
+
 ```bash
 brew install infisical/get-cli/infisical
 infisical login
 ```
 
 1. Create a project (`harkbell`) with environment **prod** and a folder
-   **`/vocalonix`**. A separate `/dograh` folder keeps the Dograh box from being
+   **`/harkbell`**. A separate `/dograh` folder keeps the Dograh box from being
    handed Stripe keys it has no business holding.
 2. Migrate the values that already exist, seeding from the **server's** file and
    never a local checkout — those two have diverged before, and a local copy
@@ -221,7 +227,7 @@ infisical login
    project, and put its client id, client secret and the project id into the
    `hetzner` environment as the three secrets listed above.
 4. Deploy. The log line says which source it used — confirm it reads
-   `Infisical /vocalonix @ prod` and not the legacy secret.
+   `Infisical /harkbell @ prod` and not the legacy secret.
 5. Delete `VOCALONIX_ENV`.
 
 ### Keys with no value yet
