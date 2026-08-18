@@ -109,7 +109,7 @@ jobs:
             if [ -n "$token" ] && infisical export \
                  --token="$token" \
                  --projectId="$INFISICAL_PROJECT_ID" \
-                 --env=prod --path=/vocalonix --format=dotenv --silent \
+                 --env=prod --path=/harkbell --format=dotenv --silent \
                  > "$env_file" 2>"$infisical_err"; then
 
               # A key with no value yet is stored as the REPLACE_ME placeholder
@@ -124,7 +124,7 @@ jobs:
               fi
 
               if has_required "$env_file"; then
-                source_desc="Infisical /vocalonix @ prod"
+                source_desc="Infisical /harkbell @ prod"
               fi
             fi
 
