@@ -9,12 +9,13 @@
 # `STRIPE_PRICE_STARTER` could be "added" and silently never arrive.
 #
 # Infisical is now the one place a value is edited. The deploy pulls the whole
-# `/harkbell` folder itself, so a new key needs no workflow or compose change.
+# `/be` folder itself, so a new key needs no workflow or compose change.
 # This script is the same thing by hand: migrating values in, checking what is
 # set, and running something locally with them injected.
 #
-# The Dograh box is not wired up yet — `pull dograh` works, but nothing
-# populates `/dograh` and the pipeline does not touch that server.
+# Folders: /be is the Harkbell app box, /voice is the Dograh box, /ui is the
+# web build. The pipeline only deploys /be; the Dograh box is still brought up
+# by hand, so `pull dograh` writes its .env from /voice for that.
 #
 #   ./scripts/secrets.sh pull  dograh|vocalonix        write that box's .env
 #   ./scripts/secrets.sh push  dograh|vocalonix FILE   one-time migration in
@@ -68,8 +69,8 @@ command -v infisical >/dev/null 2>&1 || {
 # has no business holding.
 box_path() {
   case "$1" in
-    vocalonix) echo "/harkbell" ;;
-    dograh)    echo "/dograh" ;;
+    vocalonix) echo "/be" ;;
+    dograh)    echo "/voice" ;;
     *) echo "Unknown box '$1'. Use 'vocalonix' or 'dograh'." >&2; exit 1 ;;
   esac
 }
@@ -116,6 +117,11 @@ cmd_pull() {
   # readable by anyone else on the machine.
   SCRATCH="$(mktemp)"
   ( umask 077; infisical export "${INF_ARGS[@]}" --format=dotenv > "$SCRATCH" )
+
+  # `export --format=dotenv` single-quotes every value, and docker's --env-file
+  # keeps those quotes literal — NODE_ENV='production' reaches the app as
+  # "'production'". Strip one layer of matching quotes.
+  sed -i.bak -E "s/^([A-Za-z_][A-Za-z0-9_]*)='(.*)'\$/\\1=\\2/" "$SCRATCH" && rm -f "$SCRATCH.bak"
 
   # Strip placeholders before anything can read them as real values.
   local pending

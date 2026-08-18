@@ -109,7 +109,7 @@ jobs:
             if [ -n "$token" ] && infisical export \
                  --token="$token" \
                  --projectId="$INFISICAL_PROJECT_ID" \
-                 --env=prod --path=/harkbell --format=dotenv --silent \
+                 --env=prod --path=/be --format=dotenv --silent \
                  > "$env_file" 2>"$infisical_err"; then
 
               # A key with no value yet is stored as the REPLACE_ME placeholder
@@ -123,8 +123,15 @@ jobs:
                 sed -i -E '/^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$/d' "$env_file"
               fi
 
+              # `export --format=dotenv` wraps every value in single quotes,
+              # and docker's --env-file keeps them LITERAL: NODE_ENV='production'
+              # reaches the app as "'production'" and fails env.ts validation.
+              # Stripping one layer round-trips byte-identical to the stored
+              # values, including ones containing spaces.
+              sed -i -E "s/^([A-Za-z_][A-Za-z0-9_]*)='(.*)'$/\\1=\\2/" "$env_file"
+
               if has_required "$env_file"; then
-                source_desc="Infisical /harkbell @ prod"
+                source_desc="Infisical /be @ prod"
               fi
             fi
 
