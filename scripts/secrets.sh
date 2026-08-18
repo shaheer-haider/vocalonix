@@ -32,6 +32,19 @@ cd "$(dirname "$0")/.."
 
 ENVIRONMENT="${INFISICAL_ENV:-prod}"
 
+# Infisical rejects a secret with an empty value, so a key that is deliberately
+# unset would simply not appear — and an invisible key is one nobody remembers
+# to fill in. `push` writes this placeholder instead, so every key the app knows
+# about is listed in the UI with somewhere obvious to type.
+#
+# It is stripped back out by `pull` and by the deploy, which matters more than it
+# looks: the placeholder is a non-empty string, and `env.ts` reads any non-empty
+# value as real. `TELNYX_API_KEY=REPLACE_ME` would report telephony as
+# configured and fail on the first call; `STRIPE_SECRET_KEY=REPLACE_ME` would
+# turn billing on and 502 at checkout. A key still holding it has to reach a
+# server as absent, exactly as it is today.
+PLACEHOLDER="REPLACE_ME"
+
 command -v infisical >/dev/null 2>&1 || {
   echo "infisical is not installed. brew install infisical/get-cli/infisical" >&2
   exit 1
@@ -91,12 +104,20 @@ cmd_pull() {
   SCRATCH="$(mktemp)"
   ( umask 077; infisical export "${INF_ARGS[@]}" --format=dotenv > "$SCRATCH" )
 
+  # Strip placeholders before anything can read them as real values.
+  local pending
+  pending="$(grep -E "^[A-Za-z_][A-Za-z0-9_]*=${PLACEHOLDER}$" "$SCRATCH" | cut -d= -f1 | tr '\n' ' ' || true)"
+  if [ -n "$pending" ]; then
+    echo "Still unset in Infisical (dropped): $pending"
+    sed -i.bak -E "/^[A-Za-z_][A-Za-z0-9_]*=${PLACEHOLDER}$/d" "$SCRATCH" && rm -f "$SCRATCH.bak"
+  fi
+
   local missing=""
   for key in $(required_keys "$box"); do
     grep -qE "^${key}=" "$SCRATCH" || missing="$missing $key"
   done
   if [ -n "$missing" ]; then
-    echo "Refusing to write $dest — Infisical returned no value for:$missing" >&2
+    echo "Refusing to write $dest — Infisical has no real value for:$missing" >&2
     exit 1
   fi
 
@@ -112,9 +133,23 @@ cmd_push() {
   [ -f "$file" ] || { echo "$file does not exist." >&2; exit 1; }
   set_infisical_args "$box"
 
-  echo "Uploading $(grep -cE '^[A-Za-z_]+=' "$file") values from $file → $(box_path "$box") @ $ENVIRONMENT"
+  # Infisical refuses an empty value and refuses the whole batch on the first
+  # one, so a `.env` with a single unused `TELNYX_API_KEY=` used to abort the
+  # migration partway. Empty values become the placeholder instead: the key
+  # shows up in the UI to be filled in, and `pull` and the deploy strip it back
+  # to absent so nothing ever receives it as a real value.
+  SCRATCH="$(mktemp)"
+  ( umask 077
+    sed -E "s/^([A-Za-z_][A-Za-z0-9_]*)=[[:space:]]*$/\\1=${PLACEHOLDER}/" "$file" \
+      | grep -E '^[A-Za-z_][A-Za-z0-9_]*=.+' > "$SCRATCH" || true )
+
+  local blanked
+  blanked="$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=[[:space:]]*$' "$file" | cut -d= -f1 | tr '\n' ' ' || true)"
+  [ -n "$blanked" ] && echo "Empty -> ${PLACEHOLDER}: $blanked"
+
+  echo "Uploading $(grep -c '=' "$SCRATCH") values from $file → $(box_path "$box") @ $ENVIRONMENT"
   # Values are never printed: `secrets set` masks them unless --show-values.
-  infisical secrets set "${INF_ARGS[@]}" --file "$file" >/dev/null
+  infisical secrets set "${INF_ARGS[@]}" --file "$SCRATCH" >/dev/null
   echo "Done. Verify with: ./scripts/secrets.sh check $box"
 }
 
@@ -127,7 +162,7 @@ cmd_check() {
 
   echo "$(box_path "$box") @ $ENVIRONMENT"
   # Names only — this is the command that is safe to run with somebody watching.
-  grep -oE '^[A-Za-z_][A-Za-z0-9_]*' "$SCRATCH" | sort | sed 's/^/  /'
+  sed -E "s/^([A-Za-z_][A-Za-z0-9_]*)=${PLACEHOLDER}$/\\1  <- still ${PLACEHOLDER}/; s/^([A-Za-z_][A-Za-z0-9_]*)=.*/\\1/" "$SCRATCH" | sort | sed 's/^/  /'
 
   local missing=""
   for key in $(required_keys "$box"); do

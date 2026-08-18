@@ -53,17 +53,18 @@ jobs:
       # The server's .env is the deployment's real configuration, and hand-editing
       # it on the box is how it silently diverged from every other copy: the
       # checked-out mirror said one thing, the running box another, and a
-      # diagnosis built on the wrong one cost hours. GitHub holds it now and the
-      # deploy installs it, so there is one place to change it and no drift.
+      # diagnosis built on the wrong one cost hours. Infisical holds it now and
+      # the deploy installs it, so there is one place to change it and no drift.
+      #
+      # The deploy pulls the whole folder rather than named keys, so adding a
+      # secret in Infisical is the entire change — no workflow edit, no compose
+      # edit. That matters: STRIPE_PRICE_STARTER once existed in the environment
+      # and never reached the container because the compose file did not forward
+      # it, and nothing failed loudly.
       #
       # The rsync exclude below still stands. It guards the opposite direction —
       # an operator's laptop .env must never reach the box — and that is exactly
-      # why this step writes from the secret rather than from the checkout.
-      # Infisical is the one place a value is edited. The deploy pulls the whole
-      # folder, so adding a key there is the entire change — no workflow edit,
-      # no compose edit. That matters: STRIPE_PRICE_STARTER once existed in the
-      # environment and never reached the container because the compose file did
-      # not forward it, and nothing failed loudly.
+      # why this step writes from Infisical rather than from the checkout.
       - name: Install server environment
         env:
           VOCALONIX_ENV: ${{ secrets.VOCALONIX_ENV }}
@@ -95,6 +96,18 @@ jobs:
               --projectId="$INFISICAL_PROJECT_ID" \
               --env=prod --path=/vocalonix --format=dotenv --silent > "$env_file"
             source_desc="Infisical /vocalonix @ prod"
+
+            # A key with no value yet is stored as the REPLACE_ME placeholder so
+            # it is visible in the Infisical UI. It must never reach the box:
+            # env.ts reads any non-empty string as a real value, so
+            # STRIPE_SECRET_KEY=REPLACE_ME would switch billing on and 502 at
+            # checkout, and TELNYX_API_KEY=REPLACE_ME would report telephony as
+            # configured. Dropping it restores exactly today's behaviour: unset.
+            pending="$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$' "$env_file" | cut -d= -f1 | tr '\n' ' ' || true)"
+            if [ -n "$pending" ]; then
+              echo "::notice::Still unset in Infisical, installed as absent: $pending"
+              sed -i -E '/^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$/d' "$env_file"
+            fi
           elif [ -n "${VOCALONIX_ENV:-}" ]; then
             # The pre-Infisical path, kept so a deploy still works before the
             # migration lands. Delete the secret once a deploy is green on
