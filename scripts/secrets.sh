@@ -17,10 +17,10 @@
 # web build. The pipeline only deploys /be; the Dograh box is still brought up
 # by hand, so `pull dograh` writes its .env from /voice for that.
 #
-#   ./scripts/secrets.sh pull  dograh|vocalonix        write that box's .env
-#   ./scripts/secrets.sh push  dograh|vocalonix FILE   one-time migration in
-#   ./scripts/secrets.sh check dograh|vocalonix        names only, no values
-#   ./scripts/secrets.sh run   vocalonix -- CMD        run CMD with them injected
+#   ./scripts/secrets.sh pull  harkbell|dograh        write that box's .env
+#   ./scripts/secrets.sh push  harkbell|dograh FILE   one-time migration in
+#   ./scripts/secrets.sh check harkbell|dograh        names only, no values
+#   ./scripts/secrets.sh run   harkbell -- CMD        run CMD with them injected
 #   ./scripts/secrets.sh merge TARGET SOURCE            fill TARGET's REPLACE_ME
 #                                                       values from SOURCE
 #
@@ -69,16 +69,18 @@ command -v infisical >/dev/null 2>&1 || {
 # has no business holding.
 box_path() {
   case "$1" in
-    vocalonix) echo "/be" ;;
-    dograh)    echo "/voice" ;;
-    *) echo "Unknown box '$1'. Use 'vocalonix' or 'dograh'." >&2; exit 1 ;;
+    harkbell) echo "/be" ;;
+    dograh)   echo "/voice" ;;
+    *) echo "Unknown box '$1'. Use 'harkbell' or 'dograh'." >&2; exit 1 ;;
   esac
 }
 
 box_envfile() {
   case "$1" in
-    vocalonix) echo "deploy/hetzner/vocalonix/.env" ;;
-    dograh)    echo "deploy/hetzner/dograh/.env" ;;
+    # The directory is still named vocalonix — it is the compose project path
+    # on the box, not a label anyone reads.
+    harkbell) echo "deploy/hetzner/vocalonix/.env" ;;
+    dograh)   echo "deploy/hetzner/dograh/.env" ;;
   esac
 }
 
@@ -87,8 +89,8 @@ box_envfile() {
 # minutes later, which is the slowest possible way to learn about it.
 required_keys() {
   case "$1" in
-    vocalonix) echo "AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM" ;;
-    dograh)    echo "" ;;
+    harkbell) echo "AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM" ;;
+    dograh)   echo "" ;;
   esac
 }
 
@@ -109,7 +111,7 @@ cleanup() { rm -f "${SCRATCH:-}" 2>/dev/null; return 0; }
 trap cleanup EXIT INT TERM
 
 cmd_pull() {
-  local box="${1:?usage: secrets.sh pull dograh|vocalonix}"
+  local box="${1:?usage: secrets.sh pull harkbell|dograh}"
   local dest; dest="$(box_envfile "$box")"
   set_infisical_args "$box"
 
@@ -147,8 +149,8 @@ cmd_pull() {
 }
 
 cmd_push() {
-  local box="${1:?usage: secrets.sh push dograh|vocalonix FILE}"
-  local file; file="$(resolve "${2:?usage: secrets.sh push dograh|vocalonix FILE}")"
+  local box="${1:?usage: secrets.sh push harkbell|dograh FILE}"
+  local file; file="$(resolve "${2:?usage: secrets.sh push harkbell|dograh FILE}")"
   [ -f "$file" ] || { echo "$file does not exist." >&2; exit 1; }
   set_infisical_args "$box"
 
@@ -173,7 +175,7 @@ cmd_push() {
 }
 
 cmd_check() {
-  local box="${1:?usage: secrets.sh check dograh|vocalonix}"
+  local box="${1:?usage: secrets.sh check harkbell|dograh}"
   set_infisical_args "$box"
 
   SCRATCH="$(mktemp)"
@@ -192,9 +194,9 @@ cmd_check() {
 }
 
 cmd_run() {
-  local box="${1:?usage: secrets.sh run vocalonix -- CMD}"; shift
+  local box="${1:?usage: secrets.sh run harkbell -- CMD}"; shift
   [ "${1:-}" = "--" ] && shift
-  [ "$#" -gt 0 ] || { echo "usage: secrets.sh run vocalonix -- CMD" >&2; exit 1; }
+  [ "$#" -gt 0 ] || { echo "usage: secrets.sh run harkbell -- CMD" >&2; exit 1; }
   set_infisical_args "$box"
   exec infisical run "${INF_ARGS[@]}" -- "$@"
 }

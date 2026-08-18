@@ -93,7 +93,7 @@ Against an **empty** database, not yours — yours already has the columns:
 ```bash
 docker compose down -v
 docker compose up -d --build --wait
-docker compose logs vocalonix-api | head -40   # migrations run on start
+docker compose logs harkbell-api | head -40   # migrations run on start
 ```
 
 CI does this too: `.github/workflows/ci.yml` runs `db:migrate` against a fresh

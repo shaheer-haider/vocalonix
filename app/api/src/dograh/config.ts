@@ -882,7 +882,7 @@ export function tenantDesiredConfiguration(
       // an unchanged hash, every sync decides "no-op", and every agent keeps
       // calling an address that no longer resolves — able to talk, unable to
       // check availability or book anything, with nothing reported as wrong.
-      toolBaseUrl: env.vocalonixInternalUrl,
+      toolBaseUrl: env.harkbellInternalUrl,
     }),
     name,
     workflowDefinition: built.workflowDefinition,

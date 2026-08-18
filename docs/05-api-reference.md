@@ -193,7 +193,7 @@ Stripe period, or a rolling 30 days when there is no subscription.
 
 No session, no CSRF, no tenancy check beyond `:businessId` — the shared secret
 *is* the authorisation. The URL the engine calls is
-`VOCALONIX_INTERNAL_URL`, and it is part of the config hash, so moving the API
+`HARKBELL_INTERNAL_URL`, and it is part of the config hash, so moving the API
 re-registers every agent. Details in [Voice engine](07-voice-engine.md#agent-tools).
 
 ## Demo funnel

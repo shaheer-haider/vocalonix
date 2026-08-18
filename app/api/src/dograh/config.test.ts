@@ -336,14 +336,14 @@ describe("configuration hash covers the tool address", () => {
     // hashed, a deployment that moves the API leaves every hash unchanged,
     // every sync decides "no-op", and every agent keeps calling an address
     // that no longer resolves — talking fine, unable to book anything.
-    const original = env.vocalonixInternalUrl;
+    const original = env.harkbellInternalUrl;
     const before = desired("business-a").hash;
     try {
-      (env as { vocalonixInternalUrl: string }).vocalonixInternalUrl =
+      (env as { harkbellInternalUrl: string }).harkbellInternalUrl =
         "https://elsewhere.example.com";
       expect(desired("business-a").hash).not.toBe(before);
     } finally {
-      (env as { vocalonixInternalUrl: string }).vocalonixInternalUrl = original;
+      (env as { harkbellInternalUrl: string }).harkbellInternalUrl = original;
     }
   });
 

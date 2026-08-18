@@ -8,18 +8,18 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: "${VOCALONIX_POSTGRES_USER:-vocalonix}"
-      POSTGRES_PASSWORD: "${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}"
-      POSTGRES_DB: "${VOCALONIX_POSTGRES_DB:-vocalonix}"
+      POSTGRES_USER: "${HARKBELL_POSTGRES_USER:-vocalonix}"
+      POSTGRES_PASSWORD: "${HARKBELL_POSTGRES_PASSWORD:-vocalonix}"
+      POSTGRES_DB: "${HARKBELL_POSTGRES_DB:-vocalonix}"
     ports:
-      - "${VOCALONIX_POSTGRES_PORT:-5433}:5432"
+      - "${HARKBELL_POSTGRES_PORT:-5433}:5432"
     volumes:
       - vocalonix_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${VOCALONIX_POSTGRES_USER:-vocalonix} -d ${VOCALONIX_POSTGRES_DB:-vocalonix}",
+          "pg_isready -U ${HARKBELL_POSTGRES_USER:-vocalonix} -d ${HARKBELL_POSTGRES_DB:-vocalonix}",
         ]
       interval: 5s
       timeout: 5s
@@ -52,7 +52,7 @@ services:
       service: ui
     image: dograhai/dograh-ui:${DOGRAH_VERSION:-1.41.0}
 
-  vocalonix-api:
+  harkbell-api:
     build:
       context: .
       dockerfile: app/api/Dockerfile
@@ -60,10 +60,10 @@ services:
     environment:
       PORT: "3001"
       APP_ORIGIN: "${APP_ORIGIN:-http://localhost:3000}"
-      API_PUBLIC_URL: "${VOCALONIX_API_PUBLIC_URL:-http://localhost:3001}"
-      VOCALONIX_INTERNAL_URL: "http://vocalonix-api:3001"
+      API_PUBLIC_URL: "${API_PUBLIC_URL:-http://localhost:3001}"
+      HARKBELL_INTERNAL_URL: "http://harkbell-api:3001"
       NODE_ENV: "${NODE_ENV:-development}"
-      DATABASE_URL: "postgres://${VOCALONIX_POSTGRES_USER:-vocalonix}:${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${VOCALONIX_POSTGRES_DB:-vocalonix}"
+      DATABASE_URL: "postgres://${HARKBELL_POSTGRES_USER:-vocalonix}:${HARKBELL_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${HARKBELL_POSTGRES_DB:-vocalonix}"
       AUTH_SECRET: "${AUTH_SECRET:-dev-only-vocalonix-auth-secret-change-before-production}"
       REQUIRE_EMAIL_VERIFICATION: "${REQUIRE_EMAIL_VERIFICATION:-false}"
       RESEND_API_KEY: "${RESEND_API_KEY:-}"
@@ -125,10 +125,10 @@ services:
     environment:
       PORT: "3001"
       APP_ORIGIN: "${APP_ORIGIN:-http://localhost:3000}"
-      API_PUBLIC_URL: "${VOCALONIX_API_PUBLIC_URL:-http://localhost:3001}"
-      VOCALONIX_INTERNAL_URL: "http://vocalonix-api:3001"
+      API_PUBLIC_URL: "${API_PUBLIC_URL:-http://localhost:3001}"
+      HARKBELL_INTERNAL_URL: "http://harkbell-api:3001"
       NODE_ENV: "${NODE_ENV:-development}"
-      DATABASE_URL: "postgres://${VOCALONIX_POSTGRES_USER:-vocalonix}:${VOCALONIX_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${VOCALONIX_POSTGRES_DB:-vocalonix}"
+      DATABASE_URL: "postgres://${HARKBELL_POSTGRES_USER:-vocalonix}:${HARKBELL_POSTGRES_PASSWORD:-vocalonix}@vocalonix-db:5432/${HARKBELL_POSTGRES_DB:-vocalonix}"
       AUTH_SECRET: "${AUTH_SECRET:-dev-only-vocalonix-auth-secret-change-before-production}"
       REQUIRE_EMAIL_VERIFICATION: "${REQUIRE_EMAIL_VERIFICATION:-false}"
       RESEND_API_KEY: "${RESEND_API_KEY:-}"
@@ -166,7 +166,7 @@ services:
       STRIPE_PRICE_PRO: "${STRIPE_PRICE_PRO:-price_1U5JmBL127qQV0OsmJMGgDbl}"
       MAX_OWNED_WORKSPACES: "${MAX_OWNED_WORKSPACES:-50}"
     depends_on:
-      vocalonix-api:
+      harkbell-api:
         condition: service_healthy
     healthcheck:
       test:
@@ -186,12 +186,12 @@ services:
       context: .
       dockerfile: app/web/Dockerfile
       args:
-        VITE_API_BASE_URL: "${VOCALONIX_API_PUBLIC_URL:-http://localhost:3001}"
+        VITE_API_BASE_URL: "${API_PUBLIC_URL:-http://localhost:3001}"
     restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
-      vocalonix-api:
+      harkbell-api:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3000 >/dev/null || exit 1"]

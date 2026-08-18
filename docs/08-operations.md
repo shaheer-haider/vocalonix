@@ -65,7 +65,6 @@ RESEND_API_KEY=re_...
 EMAIL_FROM=Harkbell <hello@harkbell.com>
 APP_ORIGIN=https://harkbell.com
 API_PUBLIC_URL=https://harkbell.com
-VOCALONIX_API_PUBLIC_URL=https://harkbell.com
 ```
 
 `env.ts` enforces most of this at boot and **refuses to start** otherwise:

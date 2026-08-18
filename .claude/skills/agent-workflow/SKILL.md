@@ -82,7 +82,7 @@ Adding a tool means: a key in `AGENT_TOOL_KEYS`, a spec in `agentToolSpecs`, an
 entry in the node's `nodeToolKeys`, and a handler in `agent/routes.ts` behind
 `requireAgentKey`.
 
-The tool URL is built from `VOCALONIX_INTERNAL_URL` and is **in the config
+The tool URL is built from `HARKBELL_INTERNAL_URL` and is **in the config
 hash** — which is why moving the API automatically re-registers every agent.
 That was a bug fix. Do not optimise it away.
 

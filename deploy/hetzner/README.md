@@ -172,11 +172,10 @@ It needs two things configured once in the GitHub repo:
      # paste ci_deploy_key into the HETZNER_SSH_KEY secret, then delete both files
      ```
    - `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, `INFISICAL_PROJECT_ID` —
-     the machine identity the deploy uses to pull the Vocalonix box's
-     configuration. See [Server configuration](#server-configuration) below.
-   - `VOCALONIX_ENV` — **legacy.** The whole `.env` as one secret. Still
-     honoured when the Infisical credentials are absent, so a deploy works
-     mid-migration. Delete it once a deploy is green on Infisical.
+     the machine identity the deploy uses to pull the Harkbell box's
+     configuration. All three are required — the deploy has no other source of
+     configuration and fails immediately without them. See
+     [Server configuration](#server-configuration) below.
 
 The pipeline does not touch the Dograh server; use the manual steps below for
 it. Its `.env` is still hand-managed — moving it to Infisical is not done yet.
@@ -184,7 +183,7 @@ it. Its `.env` is still hand-managed — moving it to Infisical is not done yet.
 ## Server configuration
 
 The Vocalonix box's `.env` is built at deploy time from **Infisical**, folder
-`/harkbell`, environment `prod`. Edit a value there and the next deploy carries
+`/be`, environment `prod`. Edit a value there and the next deploy carries
 it — do not edit the file on the box, because the next deploy overwrites it and
 in the meantime the change is invisible to everyone else. The
 `--exclude 'deploy/hetzner/*/.env'` in the rsync guards the other direction: an
@@ -198,10 +197,17 @@ nothing failed loudly.
 
 ### First-time setup
 
-`deploy/hetzner/harkbell-secrets-template.env` lists every key the box reads,
-with `REPLACE_ME` placeholders. Import it into Infisical and fill the values in
-the UI — a half-filled import is safe, because `pull` and the deploy strip any
-key still holding the placeholder and it reaches the box unset.
+`deploy/hetzner/infisical/be.env` and `deploy/hetzner/infisical/voice.env` list
+every key each box reads, grouped by whether you generate it, paste it from a
+provider, or set it from your domain. Import one into each folder and fill the
+values in the UI — a half-filled import is safe, because `pull` and the deploy
+strip any key still holding `REPLACE_ME` and it reaches the box unset.
+
+`be.env` is exactly the set of `${VAR}` references in
+`deploy/hetzner/vocalonix/docker-compose.yml`. Keep it that way: a key in
+Infisical that the compose file does not forward is a key that silently never
+arrives, which is how `STRIPE_PRICE_STARTER` was "set" for weeks without ever
+reaching the container.
 
 
 ```bash
@@ -210,7 +216,7 @@ infisical login
 ```
 
 1. Create a project (`harkbell`) with environment **prod** and a folder
-   **`/harkbell`**. A separate `/dograh` folder keeps the Dograh box from being
+   **`/be`**. Separate `/voice` and `/ui` folders keep the Dograh box from being
    handed Stripe keys it has no business holding.
 2. Migrate the values that already exist, seeding from the **server's** file and
    never a local checkout — those two have diverged before, and a local copy
@@ -219,16 +225,15 @@ infisical login
    ```bash
    ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
      'cat /opt/vocalonix/repo/deploy/hetzner/vocalonix/.env' > /tmp/server.env
-   INFISICAL_PROJECT_ID=<id> ./scripts/secrets.sh push vocalonix /tmp/server.env
+   INFISICAL_PROJECT_ID=<id> ./scripts/secrets.sh push harkbell /tmp/server.env
    rm /tmp/server.env
-   ./scripts/secrets.sh check vocalonix      # names only, safe to run anywhere
+   ./scripts/secrets.sh check harkbell      # names only, safe to run anywhere
    ```
 3. Create a **machine identity** with universal auth, give it read access to the
    project, and put its client id, client secret and the project id into the
    `hetzner` environment as the three secrets listed above.
-4. Deploy. The log line says which source it used — confirm it reads
-   `Infisical /harkbell @ prod` and not the legacy secret.
-5. Delete `VOCALONIX_ENV`.
+4. Deploy. The log line reports how many values it installed and from where;
+   confirm it reads `Infisical /be @ prod`.
 
 ### Keys with no value yet
 
@@ -244,14 +249,14 @@ report telephony as configured and fail on the first call. A key still holding
 the placeholder reaches the box as absent, exactly as it is today, and the
 deploy logs which ones so it stays visible.
 
-`./scripts/secrets.sh check vocalonix` marks them.
+`./scripts/secrets.sh check harkbell` marks them.
 
 ### Day to day
 
 ```bash
-./scripts/secrets.sh check vocalonix       # what is set, without values
-./scripts/secrets.sh pull vocalonix        # write a local copy of the box's .env
-./scripts/secrets.sh run vocalonix -- CMD  # run something with them injected
+./scripts/secrets.sh check harkbell       # what is set, without values
+./scripts/secrets.sh pull harkbell        # write a local copy of the box's .env
+./scripts/secrets.sh run harkbell -- CMD  # run something with them injected
 ```
 
 Changing a value is done in the Infisical UI or CLI, then redeployed. The deploy
@@ -278,7 +283,7 @@ ssh -i terraform/.ssh/id_ed25519 root@<vocalonix-ip> \
 ```
 
 Compose recreates only the services whose image actually changed, so a CSS or
-frontend change replaces `vocalonix-web` and leaves `vocalonix-api`, the worker,
+frontend change replaces `vocalonix-web` and leaves `harkbell-api`, the worker,
 the database, and Caddy running — no API downtime.
 
 **A Caddyfile change is the exception, and it fails silently.** The file is
@@ -320,10 +325,9 @@ To enable real email and production mode, set:
 NODE_ENV=production
 RESEND_API_KEY=re_...
 REQUIRE_EMAIL_VERIFICATION=true
-EMAIL_FROM=Vocalonix <hello@yourdomain.com>
+EMAIL_FROM=Harkbell <hello@yourdomain.com>
 APP_ORIGIN=https://yourdomain.com
 API_PUBLIC_URL=https://yourdomain.com
-VOCALONIX_API_PUBLIC_URL=https://yourdomain.com
 ```
 
 and point a real A record to the Vocalonix server IP.
