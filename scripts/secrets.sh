@@ -20,6 +20,8 @@
 #   ./scripts/secrets.sh push  dograh|vocalonix FILE   one-time migration in
 #   ./scripts/secrets.sh check dograh|vocalonix        names only, no values
 #   ./scripts/secrets.sh run   vocalonix -- CMD        run CMD with them injected
+#   ./scripts/secrets.sh merge TARGET SOURCE            fill TARGET's REPLACE_ME
+#                                                       values from SOURCE
 #
 # Auth: `infisical login`, or export INFISICAL_TOKEN (machine identity) and
 # INFISICAL_PROJECT_ID.
@@ -28,7 +30,18 @@
 
 set -euo pipefail
 
+# Captured before the cd: file arguments are relative to wherever the caller
+# ran this from, not to the repo root, and resolving them afterwards silently
+# reported "does not exist" for a file sitting right next to them.
+ORIG_PWD="$PWD"
 cd "$(dirname "$0")/.."
+
+resolve() {
+  case "$1" in
+    /*) printf '%s\n' "$1" ;;
+    *)  printf '%s/%s\n' "$ORIG_PWD" "$1" ;;
+  esac
+}
 
 ENVIRONMENT="${INFISICAL_ENV:-prod}"
 
@@ -129,7 +142,7 @@ cmd_pull() {
 
 cmd_push() {
   local box="${1:?usage: secrets.sh push dograh|vocalonix FILE}"
-  local file="${2:?usage: secrets.sh push dograh|vocalonix FILE}"
+  local file; file="$(resolve "${2:?usage: secrets.sh push dograh|vocalonix FILE}")"
   [ -f "$file" ] || { echo "$file does not exist." >&2; exit 1; }
   set_infisical_args "$box"
 
@@ -180,8 +193,44 @@ cmd_run() {
   exec infisical run "${INF_ARGS[@]}" -- "$@"
 }
 
+# Fills only the keys still holding the placeholder, and only from keys the
+# source actually has. Deliberately one-directional: it never overwrites a value
+# already filled in, so re-running after a partial merge cannot clobber
+# something you typed by hand.
+cmd_merge() {
+  local target; target="$(resolve "${1:?usage: secrets.sh merge TARGET SOURCE}")"
+  local source; source="$(resolve "${2:?usage: secrets.sh merge TARGET SOURCE}")"
+  [ -f "$target" ] || { echo "$target does not exist." >&2; exit 1; }
+  [ -f "$source" ] || { echo "$source does not exist." >&2; exit 1; }
+
+  local filled=0 missing=""
+  while IFS= read -r key; do
+    local val
+    val="$(grep -E "^${key}=" "$source" | tail -1 | cut -d= -f2- || true)"
+    if [ -n "$val" ]; then
+      SCRATCH="$(mktemp)"; chmod 600 "$SCRATCH"
+      while IFS= read -r line; do
+        case "$line" in
+          "${key}=REPLACE_ME") printf '%s=%s\n' "$key" "$val" ;;
+          *) printf '%s\n' "$line" ;;
+        esac
+      done < "$target" > "$SCRATCH"
+      cat "$SCRATCH" > "$target"; rm -f "$SCRATCH"; SCRATCH=""
+      filled=$((filled + 1))
+      echo "  filled $key"
+    else
+      missing="$missing $key"
+    fi
+  done < <(grep -E '^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$' "$target" | cut -d= -f1)
+
+  echo "Filled $filled from $source."
+  [ -n "$missing" ] && echo "Still unset (not in $source):$missing"
+  return 0
+}
+
 case "${1:-}" in
   pull)  shift; cmd_pull "$@" ;;
+  merge) shift; cmd_merge "$@" ;;
   push)  shift; cmd_push "$@" ;;
   check) shift; cmd_check "$@" ;;
   run)   shift; cmd_run "$@" ;;

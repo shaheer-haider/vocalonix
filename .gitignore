@@ -38,3 +38,6 @@ app/web/types/
 .opencode/
 .impeccable/
 .claude/settings.local.json
+
+# Filled-in Infisical upload files. Real keys — never committed.
+deploy/infisical/*.env
