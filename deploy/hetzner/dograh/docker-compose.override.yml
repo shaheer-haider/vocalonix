@@ -6,7 +6,10 @@ services:
     ports:
       - "${DOGRAH_PRIVATE_IP:-10.0.1.3}:8000:8000"
     environment:
-      ENABLE_COTURN: "true"
+      # Read from the environment rather than pinned, because /voice carries an
+      # ENABLE_COTURN key and a hardcoded value here would silently ignore it —
+      # an operator turning coturn off in Infisical would see nothing change.
+      ENABLE_COTURN: "${ENABLE_COTURN:-true}"
       # Lets a deploy count calls in flight before restarting. uvicorn
       # force-closes live call WebSockets on SIGTERM, so restarting without
       # draining cuts every conversation mid-sentence; the engine exposes the

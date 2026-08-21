@@ -16,6 +16,33 @@ Two-server Docker deployment for Vocalonix and Dograh on Hetzner Cloud.
   Caddy serves a Cloudflare Origin Certificate on that hop. `voice.harkbell.com`
   points straight at the Dograh box and gets a normal Let’s Encrypt certificate.
 
+### TLS
+
+The origin certificate lives in Infisical `/tls` as `ORIGIN_CERT_B64` and
+`ORIGIN_KEY_B64`, and the deploy installs it to `/opt/vocalonix/certs` on every
+run. It used to exist only on the box, outside the repo and outside every
+backup, so a teardown destroyed it and rebuilding meant a console visit and a
+hand-copied private key.
+
+Installed unconditionally, not "only if missing" — the conditional version is
+what lets a box keep serving a stale certificate while Infisical holds the
+current one, which is the drift this whole arrangement exists to remove.
+
+Rotating it is one command, and it checks the pair matches before uploading
+anything:
+
+```bash
+./scripts/secrets.sh tls origin.pem origin.key
+```
+
+The deploy refuses to run if either value is missing, still `REPLACE_ME`, not
+valid base64, not a matching pair, or expired. A bad pair otherwise surfaces as
+a Caddy startup failure that reads like a network fault.
+
+The voice box needs none of this: `voice.harkbell.com` is a DNS-only record, so
+its Caddy gets an ordinary Let's Encrypt certificate over HTTP-01 and renews
+itself.
+
 ## First deploy
 
 1. Apply the OpenTofu infrastructure:

@@ -13,9 +13,10 @@
 # This script is the same thing by hand: migrating values in, checking what is
 # set, and running something locally with them injected.
 #
-# Folders: /be is the Harkbell app box, /voice is the Dograh box, /ui is the
-# web build. The pipeline only deploys /be; the Dograh box is still brought up
-# by hand, so `pull dograh` writes its .env from /voice for that.
+# Folders: /be is the Harkbell app box, /voice is the Dograh box, /tls is the
+# origin certificate the app box's Caddy serves, /ui is the web build. Each box
+# has its own pipeline — the app deploys on push, the voice box by hand, because
+# restarting it cuts every call in flight.
 #
 #   ./scripts/secrets.sh pull  harkbell|dograh        write that box's .env
 #   ./scripts/secrets.sh push  harkbell|dograh FILE   one-time migration in
@@ -23,6 +24,7 @@
 #   ./scripts/secrets.sh run   harkbell -- CMD        run CMD with them injected
 #   ./scripts/secrets.sh merge TARGET SOURCE            fill TARGET's REPLACE_ME
 #                                                       values from SOURCE
+#   ./scripts/secrets.sh tls   CERT.pem KEY.pem         upload the origin cert
 #
 # Auth: `infisical login`, or export INFISICAL_TOKEN (machine identity) and
 # INFISICAL_PROJECT_ID.
@@ -236,8 +238,47 @@ cmd_merge() {
   return 0
 }
 
+# Uploads the origin certificate pair to /tls, base64-encoded because dotenv is
+# a one-line-per-value format and a PEM is not. Checks the pair matches first:
+# an unrelated cert and key upload perfectly happily and then fail on the box as
+# a Caddy startup error that reads like a network fault.
+cmd_tls() {
+  local cert; cert="$(resolve "${1:?usage: secrets.sh tls CERT.pem KEY.pem}")"
+  local key;  key="$(resolve "${2:?usage: secrets.sh tls CERT.pem KEY.pem}")"
+  [ -f "$cert" ] || { echo "$cert does not exist." >&2; exit 1; }
+  [ -f "$key" ]  || { echo "$key does not exist." >&2; exit 1; }
+
+  local cert_pub key_pub
+  cert_pub="$(openssl x509 -in "$cert" -noout -pubkey 2>/dev/null | openssl sha256)"
+  key_pub="$(openssl pkey -in "$key" -pubout 2>/dev/null | openssl sha256)"
+  if [ -z "$cert_pub" ] || [ "$cert_pub" != "$key_pub" ]; then
+    echo "$cert and $key are not a matching pair. Refusing to upload." >&2
+    exit 1
+  fi
+  openssl x509 -in "$cert" -noout -checkend 0 >/dev/null 2>&1 || {
+    echo "$cert has already expired. Refusing to upload." >&2; exit 1; }
+
+  INF_ARGS=(--env="$ENVIRONMENT" --path=/tls --silent)
+  [ -n "${INFISICAL_TOKEN:-}" ] && INF_ARGS+=(--token="$INFISICAL_TOKEN")
+  [ -n "${INFISICAL_PROJECT_ID:-}" ] && INF_ARGS+=(--projectId="$INFISICAL_PROJECT_ID")
+
+  # `base64 -w0` is GNU; macOS has no -w and wraps by default, so fold the
+  # newlines out afterwards instead of guessing which base64 this is.
+  SCRATCH="$(mktemp)"
+  ( umask 077
+    printf 'ORIGIN_CERT_B64=%s\n' "$(base64 < "$cert" | tr -d '\n')" >  "$SCRATCH"
+    printf 'ORIGIN_KEY_B64=%s\n'  "$(base64 < "$key"  | tr -d '\n')" >> "$SCRATCH" )
+
+  echo "Uploading the origin pair to /tls @ $ENVIRONMENT"
+  echo "  valid until $(openssl x509 -in "$cert" -noout -enddate | cut -d= -f2)"
+  infisical secrets set "${INF_ARGS[@]}" --file "$SCRATCH" >/dev/null
+  rm -f "$SCRATCH"; SCRATCH=""
+  echo "Done. The next deploy installs it; the box is never touched by hand."
+}
+
 case "${1:-}" in
   pull)  shift; cmd_pull "$@" ;;
+  tls)   shift; cmd_tls "$@" ;;
   merge) shift; cmd_merge "$@" ;;
   push)  shift; cmd_push "$@" ;;
   check) shift; cmd_check "$@" ;;
