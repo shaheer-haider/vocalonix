@@ -9,7 +9,7 @@
 # challenge cannot reach this box through the proxy.
 harkbell.com {
     tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
-    reverse_proxy /api/* vocalonix-api:3001
+    reverse_proxy /api/* harkbell-api:3001
     reverse_proxy /* vocalonix-web:3000
 }
 

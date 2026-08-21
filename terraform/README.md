@@ -46,4 +46,4 @@ ssh -i terraform/.ssh/id_ed25519 ubuntu@<ip>
 
 ## Next step
 
-Install the application stack with Docker Compose on each server. The Dograh server runs the voice services (`api`, `ui`, `postgres`, `redis`, `minio`, `coturn`). The Vocalonix server runs `vocalonix-db`, `vocalonix-api`, `vocalonix-worker`, and `vocalonix-web`, connecting to Dograh over the private network.
+Install the application stack with Docker Compose on each server. The Dograh server runs the voice services (`api`, `ui`, `postgres`, `redis`, `minio`, `coturn`). The Vocalonix server runs `vocalonix-db`, `harkbell-api`, `vocalonix-worker`, and `vocalonix-web`, connecting to Dograh over the private network.

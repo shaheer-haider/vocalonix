@@ -132,7 +132,7 @@ export const app = new Elysia()
   .use(demoRoutes)
   .get("/api/health", () => ({
     status: "ok",
-    service: "vocalonix-api",
+    service: "harkbell-api",
     time: new Date().toISOString(),
   }))
   .get("/api/dograh/status", async ({ request }) => {

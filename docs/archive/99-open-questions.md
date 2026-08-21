@@ -11,7 +11,7 @@ This document captures things that were not verified, ambiguous, or should be re
 | `bun run test` | 23 pass, 0 fail, 188 expect() calls. |
 | `bun run typecheck` | Both `app/api` and `app/web` clean. |
 | `bun run build` | Both `app/api` and `app/web` built; `dist` emitted. |
-| `curl http://localhost:3001/api/health` | `{"status":"ok","service":"vocalonix-api"}`. |
+| `curl http://localhost:3001/api/health` | `{"status":"ok","service":"harkbell-api"}`. |
 | `curl http://localhost:3001/api/dograh/status` | Connected, Dograh 1.41.0, legacy workflow active. |
 | `curl http://localhost:3000` | Returned `index.html` and built assets. |
 | `docker compose ps` | All seven services healthy. |

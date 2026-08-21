@@ -46,7 +46,7 @@ curl -sS "http://localhost:3000/assets/index-XXXX.js" | grep -c 'a string only y
 Zero matches means you are looking at the old build:
 
 ```bash
-docker compose up -d --build --wait vocalonix-api vocalonix-web vocalonix-worker
+docker compose up -d --build --wait harkbell-api vocalonix-web vocalonix-worker
 ```
 
 then hard-reload to bust the cached `index.html`.
@@ -107,7 +107,7 @@ In order, because the answer is usually early:
 4. `outbox_events` — anything `failed`, or `pending` with a high
    `attempt_count`.
 5. The graph on the Dograh dashboard.
-6. `docker compose logs -f vocalonix-api vocalonix-worker api`.
+6. `docker compose logs -f harkbell-api vocalonix-worker api`.
 
 ## Report honestly
 

@@ -7,6 +7,14 @@ services:
       - "${DOGRAH_PRIVATE_IP:-10.0.1.3}:8000:8000"
     environment:
       ENABLE_COTURN: "true"
+      # Lets a deploy count calls in flight before restarting. uvicorn
+      # force-closes live call WebSockets on SIGTERM, so restarting without
+      # draining cuts every conversation mid-sentence; the engine exposes the
+      # count at /api/v1/health/active-calls, but that endpoint is
+      # authenticated and the upstream compose does not forward the secret.
+      # Left unset the endpoint stays shut, and deploy-dograh.yml reports that
+      # it could not check rather than implying it did.
+      DOGRAH_DEVOPS_SECRET: "${DOGRAH_DEVOPS_SECRET:-}"
 
   minio:
     ports:

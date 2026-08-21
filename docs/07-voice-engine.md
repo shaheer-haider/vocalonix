@@ -160,7 +160,7 @@ stateDiagram-v2
 ### What is in the hash
 
 The whole desired configuration, plus `TENANT_CONFIG_VERSION`, plus the agent
-tool URLs — which is why moving the API (`VOCALONIX_INTERNAL_URL`) automatically
+tool URLs — which is why moving the API (`HARKBELL_INTERNAL_URL`) automatically
 re-registers every agent's tools. That was a bug fix, not an accident: the tools
 kept pointing at an address the engine could no longer resolve.
 

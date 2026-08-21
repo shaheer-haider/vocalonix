@@ -202,7 +202,7 @@ echo
 echo "STRIPE_PRICE_STARTER=${PRICE_starter}"
 echo "STRIPE_PRICE_PRO=${PRICE_pro}"
 echo
-echo "The server's .env comes from the VOCALONIX_ENV GitHub secret"
+echo "The server's .env comes from Infisical (/be @ prod)"
 echo "(see .github/workflows/deploy.yml), so add the two lines there and"
 echo "push, or re-run the deploy workflow."
 echo

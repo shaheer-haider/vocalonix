@@ -111,7 +111,7 @@ curl -sS "http://localhost:3000/assets/index-XXXX.js" | grep -c 'a string only y
 If it is missing:
 
 ```bash
-docker compose up -d --build --wait vocalonix-api vocalonix-web vocalonix-worker
+docker compose up -d --build --wait harkbell-api vocalonix-web vocalonix-worker
 ```
 
 and hard-reload the browser to bust the cached `index.html`.

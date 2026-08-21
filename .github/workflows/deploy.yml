@@ -67,7 +67,6 @@ jobs:
       # why this step writes from Infisical rather than from the checkout.
       - name: Install server environment
         env:
-          VOCALONIX_ENV: ${{ secrets.VOCALONIX_ENV }}
           INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
           INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
@@ -78,91 +77,57 @@ jobs:
           infisical_err="$(mktemp)"
           trap 'rm -f "$env_file" "$infisical_err"' EXIT
 
-          has_required() {
-            for key in AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM; do
-              grep -q "^${key}=" "$1" || return 1
-            done
-            return 0
-          }
+          : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID is not set on the hetzner environment}"
+          : "${INFISICAL_CLIENT_SECRET:?INFISICAL_CLIENT_SECRET is not set on the hetzner environment}"
+          : "${INFISICAL_PROJECT_ID:?INFISICAL_PROJECT_ID is not set on the hetzner environment}"
 
-          source_desc=""
+          curl -1sLf 'https://artifacts-cli.infisical.com/setup.deb.sh' | sudo -E bash
+          sudo apt-get update -qq && sudo apt-get install -y infisical
 
-          # Try Infisical, but never let it fail the deploy on its own. The
-          # credentials can be configured before the secrets are populated —
-          # that is the normal state part-way through the migration, and it once
-          # failed a deploy with a 404 for a folder that did not exist yet.
-          # Falling back is what makes the migration safe to do gradually.
-          if [ -n "${INFISICAL_CLIENT_ID:-}" ]; then
-            # Installed here rather than in its own step: the `secrets` context
-            # is not dependably available to a step-level `if:`, so gating a
-            # separate install step on it is a trap.
-            curl -1sLf 'https://artifacts-cli.infisical.com/setup.deb.sh' | sudo -E bash
-            sudo apt-get update -qq && sudo apt-get install -y infisical
+          # `--plain --silent` so only the token reaches stdout; anything else
+          # would be captured into the variable and sent to the server.
+          token="$(infisical login --method=universal-auth \
+            --client-id="$INFISICAL_CLIENT_ID" \
+            --client-secret="$INFISICAL_CLIENT_SECRET" \
+            --plain --silent 2>"$infisical_err")"
 
-            # `--plain --silent` so only the token reaches stdout; anything else
-            # would be captured into the variable and sent to the server.
-            token="$(infisical login --method=universal-auth \
-              --client-id="$INFISICAL_CLIENT_ID" \
-              --client-secret="$INFISICAL_CLIENT_SECRET" \
-              --plain --silent 2>"$infisical_err" || true)"
+          infisical export \
+            --token="$token" \
+            --projectId="$INFISICAL_PROJECT_ID" \
+            --env=prod --path=/be --format=dotenv --silent \
+            > "$env_file" 2>"$infisical_err"
 
-            if [ -n "$token" ] && infisical export \
-                 --token="$token" \
-                 --projectId="$INFISICAL_PROJECT_ID" \
-                 --env=prod --path=/harkbell --format=dotenv --silent \
-                 > "$env_file" 2>"$infisical_err"; then
+          # `export --format=dotenv` wraps every value in single quotes, and
+          # docker's --env-file keeps them LITERAL: NODE_ENV='production'
+          # reaches the app as "'production'" and fails env.ts validation.
+          # Stripping one layer round-trips byte-identical to the stored
+          # values, including ones containing spaces. This runs FIRST: the
+          # placeholder filter below matches a bare REPLACE_ME, and in the
+          # other order it sees REPLACE_ME still in quotes, matches nothing,
+          # and installs the placeholder as a real value.
+          sed -i -E "s/^([A-Za-z_][A-Za-z0-9_]*)='(.*)'$/\\1=\\2/" "$env_file"
 
-              # A key with no value yet is stored as the REPLACE_ME placeholder
-              # so it is visible in the Infisical UI. It must never reach the
-              # box: env.ts reads any non-empty string as a real value, so
-              # STRIPE_SECRET_KEY=REPLACE_ME would switch billing on and 502 at
-              # checkout. Dropping it restores today's behaviour: unset.
-              pending="$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$' "$env_file" | cut -d= -f1 | tr '\n' ' ' || true)"
-              if [ -n "$pending" ]; then
-                echo "::notice::Still unset in Infisical, installed as absent: $pending"
-                sed -i -E '/^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$/d' "$env_file"
-              fi
-
-              if has_required "$env_file"; then
-                source_desc="Infisical /harkbell @ prod"
-              fi
-            fi
-
-            if [ -z "$source_desc" ]; then
-              echo "::warning::Infisical did not return a usable environment; falling back."
-              sed -n '1,5p' "$infisical_err" || true
-            fi
-          fi
-
-          if [ -z "$source_desc" ] && [ -n "${VOCALONIX_ENV:-}" ]; then
-            # The pre-Infisical path, kept so a deploy still works before the
-            # migration lands. Delete the secret once a deploy is green on
-            # Infisical and this branch goes with it.
-            printf '%s\n' "$VOCALONIX_ENV" > "$env_file"
-            source_desc="the legacy VOCALONIX_ENV secret"
-          fi
-
-          if [ -z "$source_desc" ]; then
-            if [ -n "${INFISICAL_CLIENT_ID:-}" ] || [ -n "${VOCALONIX_ENV:-}" ]; then
-              # Something was configured and none of it worked. Leaving the box
-              # on its old environment silently would hide a real misconfiguration.
-              echo "No usable environment from any configured source; refusing to continue." >&2
-              exit 1
-            fi
-            echo "::warning::Neither Infisical nor VOCALONIX_ENV is configured;" \
-                 "leaving the server's .env untouched. See deploy/hetzner/README.md."
-            exit 0
+          # A key with no value yet is stored as the REPLACE_ME placeholder so
+          # it is visible in the Infisical UI. It must never reach the box:
+          # env.ts reads any non-empty string as a real value, so
+          # STRIPE_SECRET_KEY=REPLACE_ME would switch billing on and 502 at
+          # checkout. Dropping it installs the key as absent instead.
+          pending="$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$' "$env_file" | cut -d= -f1 | tr '\n' ' ' || true)"
+          if [ -n "$pending" ]; then
+            echo "::notice::Still unset in Infisical, installed as absent: $pending"
+            sed -i -E '/^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$/d' "$env_file"
           fi
 
           # A truncated or half-populated environment would overwrite a working
           # configuration with one that cannot boot, and the deploy would report
           # it as a health-check timeout several minutes later.
-          if ! has_required "$env_file"; then
-            echo "$source_desc is missing one of AUTH_SECRET/APP_ORIGIN/API_PUBLIC_URL/EMAIL_FROM;" \
-                 "refusing to install a partial environment." >&2
-            exit 1
-          fi
-          echo "Installing $(grep -cE '^[A-Za-z_]' "$env_file") values from $source_desc."
+          for key in AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM; do
+            grep -q "^${key}=" "$env_file" || {
+              echo "/be @ prod has no value for $key; refusing to install a partial environment." >&2
+              exit 1
+            }
+          done
+          echo "Installing $(grep -cE '^[A-Za-z_]' "$env_file") values from Infisical /be @ prod."
 
           # Truncate in place rather than replacing the file. A rename would give
           # it a fresh inode, and anything bind-mounting it would keep serving the

@@ -13,7 +13,7 @@ workflow on that engine; the browser never receives Dograh credentials.
 > **Formerly Vocalonix.** Renamed before any public release — no users, no
 > announcement under the old name. Everything a customer sees says Harkbell.
 > Infrastructure identifiers (this repository, container and image names, the
-> Postgres database and role, `VOCALONIX_*` variables, the widget global) still
+> Postgres database and role, the widget global, the agent-tools header) still
 > read `vocalonix` deliberately: renaming them is an outage risk with no
 > user-visible benefit.
 

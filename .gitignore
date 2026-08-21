@@ -38,3 +38,8 @@ app/web/types/
 .opencode/
 .impeccable/
 .claude/settings.local.json
+
+# Filled-in Infisical upload files. Real keys — never committed.
+# Whole directory, not just *.env: a nested backup dir slipped past the
+# glob and left production secrets untracked-but-committable.
+deploy/infisical/

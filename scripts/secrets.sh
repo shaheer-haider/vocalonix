@@ -9,17 +9,20 @@
 # `STRIPE_PRICE_STARTER` could be "added" and silently never arrive.
 #
 # Infisical is now the one place a value is edited. The deploy pulls the whole
-# `/harkbell` folder itself, so a new key needs no workflow or compose change.
+# `/be` folder itself, so a new key needs no workflow or compose change.
 # This script is the same thing by hand: migrating values in, checking what is
 # set, and running something locally with them injected.
 #
-# The Dograh box is not wired up yet — `pull dograh` works, but nothing
-# populates `/dograh` and the pipeline does not touch that server.
+# Folders: /be is the Harkbell app box, /voice is the Dograh box, /ui is the
+# web build. The pipeline only deploys /be; the Dograh box is still brought up
+# by hand, so `pull dograh` writes its .env from /voice for that.
 #
-#   ./scripts/secrets.sh pull  dograh|vocalonix        write that box's .env
-#   ./scripts/secrets.sh push  dograh|vocalonix FILE   one-time migration in
-#   ./scripts/secrets.sh check dograh|vocalonix        names only, no values
-#   ./scripts/secrets.sh run   vocalonix -- CMD        run CMD with them injected
+#   ./scripts/secrets.sh pull  harkbell|dograh        write that box's .env
+#   ./scripts/secrets.sh push  harkbell|dograh FILE   one-time migration in
+#   ./scripts/secrets.sh check harkbell|dograh        names only, no values
+#   ./scripts/secrets.sh run   harkbell -- CMD        run CMD with them injected
+#   ./scripts/secrets.sh merge TARGET SOURCE            fill TARGET's REPLACE_ME
+#                                                       values from SOURCE
 #
 # Auth: `infisical login`, or export INFISICAL_TOKEN (machine identity) and
 # INFISICAL_PROJECT_ID.
@@ -28,7 +31,18 @@
 
 set -euo pipefail
 
+# Captured before the cd: file arguments are relative to wherever the caller
+# ran this from, not to the repo root, and resolving them afterwards silently
+# reported "does not exist" for a file sitting right next to them.
+ORIG_PWD="$PWD"
 cd "$(dirname "$0")/.."
+
+resolve() {
+  case "$1" in
+    /*) printf '%s\n' "$1" ;;
+    *)  printf '%s/%s\n' "$ORIG_PWD" "$1" ;;
+  esac
+}
 
 ENVIRONMENT="${INFISICAL_ENV:-prod}"
 
@@ -55,16 +69,18 @@ command -v infisical >/dev/null 2>&1 || {
 # has no business holding.
 box_path() {
   case "$1" in
-    vocalonix) echo "/harkbell" ;;
-    dograh)    echo "/dograh" ;;
-    *) echo "Unknown box '$1'. Use 'vocalonix' or 'dograh'." >&2; exit 1 ;;
+    harkbell) echo "/be" ;;
+    dograh)   echo "/voice" ;;
+    *) echo "Unknown box '$1'. Use 'harkbell' or 'dograh'." >&2; exit 1 ;;
   esac
 }
 
 box_envfile() {
   case "$1" in
-    vocalonix) echo "deploy/hetzner/vocalonix/.env" ;;
-    dograh)    echo "deploy/hetzner/dograh/.env" ;;
+    # The directory is still named vocalonix — it is the compose project path
+    # on the box, not a label anyone reads.
+    harkbell) echo "deploy/hetzner/vocalonix/.env" ;;
+    dograh)   echo "deploy/hetzner/dograh/.env" ;;
   esac
 }
 
@@ -73,8 +89,8 @@ box_envfile() {
 # minutes later, which is the slowest possible way to learn about it.
 required_keys() {
   case "$1" in
-    vocalonix) echo "AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM" ;;
-    dograh)    echo "" ;;
+    harkbell) echo "AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM" ;;
+    dograh)   echo "" ;;
   esac
 }
 
@@ -95,7 +111,7 @@ cleanup() { rm -f "${SCRATCH:-}" 2>/dev/null; return 0; }
 trap cleanup EXIT INT TERM
 
 cmd_pull() {
-  local box="${1:?usage: secrets.sh pull dograh|vocalonix}"
+  local box="${1:?usage: secrets.sh pull harkbell|dograh}"
   local dest; dest="$(box_envfile "$box")"
   set_infisical_args "$box"
 
@@ -103,6 +119,11 @@ cmd_pull() {
   # readable by anyone else on the machine.
   SCRATCH="$(mktemp)"
   ( umask 077; infisical export "${INF_ARGS[@]}" --format=dotenv > "$SCRATCH" )
+
+  # `export --format=dotenv` single-quotes every value, and docker's --env-file
+  # keeps those quotes literal — NODE_ENV='production' reaches the app as
+  # "'production'". Strip one layer of matching quotes.
+  sed -i.bak -E "s/^([A-Za-z_][A-Za-z0-9_]*)='(.*)'\$/\\1=\\2/" "$SCRATCH" && rm -f "$SCRATCH.bak"
 
   # Strip placeholders before anything can read them as real values.
   local pending
@@ -128,8 +149,8 @@ cmd_pull() {
 }
 
 cmd_push() {
-  local box="${1:?usage: secrets.sh push dograh|vocalonix FILE}"
-  local file="${2:?usage: secrets.sh push dograh|vocalonix FILE}"
+  local box="${1:?usage: secrets.sh push harkbell|dograh FILE}"
+  local file; file="$(resolve "${2:?usage: secrets.sh push harkbell|dograh FILE}")"
   [ -f "$file" ] || { echo "$file does not exist." >&2; exit 1; }
   set_infisical_args "$box"
 
@@ -154,7 +175,7 @@ cmd_push() {
 }
 
 cmd_check() {
-  local box="${1:?usage: secrets.sh check dograh|vocalonix}"
+  local box="${1:?usage: secrets.sh check harkbell|dograh}"
   set_infisical_args "$box"
 
   SCRATCH="$(mktemp)"
@@ -173,15 +194,51 @@ cmd_check() {
 }
 
 cmd_run() {
-  local box="${1:?usage: secrets.sh run vocalonix -- CMD}"; shift
+  local box="${1:?usage: secrets.sh run harkbell -- CMD}"; shift
   [ "${1:-}" = "--" ] && shift
-  [ "$#" -gt 0 ] || { echo "usage: secrets.sh run vocalonix -- CMD" >&2; exit 1; }
+  [ "$#" -gt 0 ] || { echo "usage: secrets.sh run harkbell -- CMD" >&2; exit 1; }
   set_infisical_args "$box"
   exec infisical run "${INF_ARGS[@]}" -- "$@"
 }
 
+# Fills only the keys still holding the placeholder, and only from keys the
+# source actually has. Deliberately one-directional: it never overwrites a value
+# already filled in, so re-running after a partial merge cannot clobber
+# something you typed by hand.
+cmd_merge() {
+  local target; target="$(resolve "${1:?usage: secrets.sh merge TARGET SOURCE}")"
+  local source; source="$(resolve "${2:?usage: secrets.sh merge TARGET SOURCE}")"
+  [ -f "$target" ] || { echo "$target does not exist." >&2; exit 1; }
+  [ -f "$source" ] || { echo "$source does not exist." >&2; exit 1; }
+
+  local filled=0 missing=""
+  while IFS= read -r key; do
+    local val
+    val="$(grep -E "^${key}=" "$source" | tail -1 | cut -d= -f2- || true)"
+    if [ -n "$val" ]; then
+      SCRATCH="$(mktemp)"; chmod 600 "$SCRATCH"
+      while IFS= read -r line; do
+        case "$line" in
+          "${key}=REPLACE_ME") printf '%s=%s\n' "$key" "$val" ;;
+          *) printf '%s\n' "$line" ;;
+        esac
+      done < "$target" > "$SCRATCH"
+      cat "$SCRATCH" > "$target"; rm -f "$SCRATCH"; SCRATCH=""
+      filled=$((filled + 1))
+      echo "  filled $key"
+    else
+      missing="$missing $key"
+    fi
+  done < <(grep -E '^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$' "$target" | cut -d= -f1)
+
+  echo "Filled $filled from $source."
+  [ -n "$missing" ] && echo "Still unset (not in $source):$missing"
+  return 0
+}
+
 case "${1:-}" in
   pull)  shift; cmd_pull "$@" ;;
+  merge) shift; cmd_merge "$@" ;;
   push)  shift; cmd_push "$@" ;;
   check) shift; cmd_check "$@" ;;
   run)   shift; cmd_run "$@" ;;

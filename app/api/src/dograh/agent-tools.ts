@@ -34,7 +34,7 @@ export interface AgentToolContext {
 }
 
 function toolEndpoint(businessId: string, path: string): string {
-  return `${env.vocalonixInternalUrl}/api/agent-tools/${businessId}/${path}`;
+  return `${env.harkbellInternalUrl}/api/agent-tools/${businessId}/${path}`;
 }
 
 function httpTool(

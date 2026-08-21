@@ -29,10 +29,16 @@ nobody ever used it under the old name.
 | Layer | Name | Change it? |
 |---|---|---|
 | UI, emails, what the agent says on a call | Harkbell | Yes — must be Harkbell |
-| GitHub repo, Docker image/container names, Postgres db + role, `VOCALONIX_*` env vars, `window.VocalonixWidget`, `x-vocalonix-agent-key`, workflow node ids (`vocalonix-start`…) | vocalonix | **No.** Renaming these is an outage with no user-visible benefit |
+| Environment variable names, including everything in Infisical | Harkbell | Yes — `HARKBELL_*`, or no prefix at all where the name already reads plainly (`API_PUBLIC_URL`, `AUTH_SECRET`) |
+| GitHub repo, Docker image/container/volume names, `/opt/vocalonix` on the boxes, Postgres db + role, `window.VocalonixWidget`, `x-vocalonix-agent-key` and the `vocalonix-agent-tools:` hash prefix behind it, workflow node ids (`vocalonix-start`…) | vocalonix | **No.** Renaming these is an outage with no user-visible benefit |
 
 A rename of an infrastructure identifier is never an incidental part of another
 change. If a customer can read it, it says Harkbell. Otherwise leave it alone.
+
+Variable names were the exception, renamed deliberately in one pass while
+production was torn down and Infisical was being seeded — there was no running
+box to break, and the names are the thing the operator reads every day. That
+window is closed; treat them as load-bearing again now.
 
 ---
 

@@ -111,7 +111,7 @@ unauthenticated request getting 401 are the three assertions worth the most.
 proves nothing about a route here:
 
 ```bash
-docker compose up -d --build --wait vocalonix-api vocalonix-worker
+docker compose up -d --build --wait harkbell-api vocalonix-worker
 curl -i -X POST http://localhost:3001/api/b/<slug>/things \
   -H 'content-type: application/json' -b 'vocalonix_session=<token>' -d '{"name":"x"}'
 ```
