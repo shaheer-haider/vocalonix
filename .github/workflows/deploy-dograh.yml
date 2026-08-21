@@ -1,0 +1,209 @@
+name: Deploy Dograh
+
+# Manual only, deliberately. This box runs live calls: a restart cuts every
+# conversation in flight, so the moment is the operator's to choose and never a
+# side effect of merging something. The app deploy stays on push to main
+# because it can be restarted at any time without dropping a call.
+on:
+  workflow_dispatch:
+    inputs:
+      skip_drain:
+        description: "Restart without waiting for calls in flight to finish"
+        type: boolean
+        default: false
+      pull_images:
+        description: "Pull newer engine images before restarting"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-dograh
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: hetzner
+    env:
+      HOST: ${{ secrets.HETZNER_DOGRAH_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The engine's compose file lives inside the submodule
+          # (dograh/deploy/hostinger/docker-compose.yaml), so a shallow
+          # checkout without it syncs a repo the box cannot bring up.
+          submodules: recursive
+
+      - name: Check deploy secrets
+        run: |
+          : "${HOST:?HETZNER_DOGRAH_HOST is not set on the hetzner environment}"
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf 'Host dograh\n  HostName %s\n  User root\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$HOST" >> ~/.ssh/config
+
+      # Same contract as the app deploy: Infisical is the only source, the whole
+      # folder is pulled so a new key needs no workflow edit, and the file is
+      # written from here rather than from the checkout so an operator's laptop
+      # .env can never reach the box.
+      - name: Install engine environment
+        env:
+          INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
+          INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          env_file="$(mktemp)"
+          infisical_err="$(mktemp)"
+          trap 'rm -f "$env_file" "$infisical_err"' EXIT
+
+          : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID is not set on the hetzner environment}"
+          : "${INFISICAL_CLIENT_SECRET:?INFISICAL_CLIENT_SECRET is not set on the hetzner environment}"
+          : "${INFISICAL_PROJECT_ID:?INFISICAL_PROJECT_ID is not set on the hetzner environment}"
+
+          curl -1sLf 'https://artifacts-cli.infisical.com/setup.deb.sh' | sudo -E bash
+          sudo apt-get update -qq && sudo apt-get install -y infisical
+
+          token="$(infisical login --method=universal-auth \
+            --client-id="$INFISICAL_CLIENT_ID" \
+            --client-secret="$INFISICAL_CLIENT_SECRET" \
+            --plain --silent 2>"$infisical_err")"
+
+          infisical export \
+            --token="$token" \
+            --projectId="$INFISICAL_PROJECT_ID" \
+            --env=prod --path=/voice --format=dotenv --silent \
+            > "$env_file" 2>"$infisical_err"
+
+          # Unquote before filtering placeholders — `export --format=dotenv`
+          # single-quotes every value, so a bare-REPLACE_ME match would find
+          # nothing and install the placeholder as a real value. Docker's
+          # --env-file keeps the quotes literal, so this is also what stops
+          # PUBLIC_HOST reaching coturn as "'voice.harkbell.com'".
+          sed -i -E "s/^([A-Za-z_][A-Za-z0-9_]*)='(.*)'$/\\1=\\2/" "$env_file"
+
+          pending="$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$' "$env_file" | cut -d= -f1 | tr '\n' ' ' || true)"
+          if [ -n "$pending" ]; then
+            echo "::notice::Still unset in Infisical, installed as absent: $pending"
+            sed -i -E '/^[A-Za-z_][A-Za-z0-9_]*=REPLACE_ME$/d' "$env_file"
+          fi
+
+          # These have compose defaults — postgres/redissecret/minioadmin — so a
+          # missing value does not fail, it silently ships a public box with a
+          # published-in-the-repo database password. They have to be present.
+          for key in POSTGRES_PASSWORD REDIS_PASSWORD MINIO_ROOT_PASSWORD OSS_JWT_SECRET TURN_SECRET PUBLIC_HOST TURN_HOST; do
+            grep -q "^${key}=" "$env_file" || {
+              echo "/voice @ prod has no value for $key; refusing to install a partial environment." >&2
+              exit 1
+            }
+          done
+
+          echo "PUBLIC_HOST=$(grep '^PUBLIC_HOST=' "$env_file" | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "Installing $(grep -cE '^[A-Za-z_]' "$env_file") values from Infisical /voice @ prod."
+
+          # Truncated in place, not replaced: a new inode would leave anything
+          # bind-mounting the old one serving stale content.
+          ssh dograh \
+            'set -eu; f=/opt/vocalonix/repo/deploy/hetzner/dograh/.env; mkdir -p "$(dirname "$f")"; umask 077; cat > "$f"; chmod 600 "$f"' \
+            < "$env_file"
+
+      - name: Sync repo to server
+        run: |
+          rsync -az \
+            --exclude .git --exclude .terraform --exclude node_modules --exclude dist \
+            --exclude 'terraform/.ssh' --exclude 'terraform/*.tfstate*' \
+            --exclude '.env' --exclude 'deploy/hetzner/*/.env' \
+            . dograh:/opt/vocalonix/repo
+
+      # Restarting mid-call cuts the conversation: uvicorn force-closes live call
+      # WebSockets on SIGTERM (close code 1012). The engine exposes its in-flight
+      # count for exactly this, but the endpoint is authenticated and the count
+      # only reaches us when DOGRAH_DEVOPS_SECRET is set in /voice and forwarded
+      # by our compose override. Unset, there is nothing to read — say so rather
+      # than imply the restart was checked.
+      - name: Wait for calls in flight to finish
+        if: ${{ !inputs.skip_drain }}
+        run: |
+          set -euo pipefail
+          secret="$(ssh dograh "grep '^DOGRAH_DEVOPS_SECRET=' /opt/vocalonix/repo/deploy/hetzner/dograh/.env | cut -d= -f2-" || true)"
+          if [ -z "$secret" ]; then
+            echo "::warning::DOGRAH_DEVOPS_SECRET is not set in /voice, so calls in flight cannot be counted. Restarting without draining."
+            exit 0
+          fi
+          for attempt in $(seq 1 30); do
+            count="$(curl -fsS --max-time 10 -H "x-dograh-devops-secret: $secret" \
+              "https://$PUBLIC_HOST/api/v1/health/active-calls" | grep -o '[0-9]\+' | head -1 || echo "")"
+            if [ -z "$count" ]; then
+              echo "::warning::Could not read the in-flight count; restarting without draining."
+              exit 0
+            fi
+            if [ "$count" = "0" ]; then
+              echo "No calls in flight."
+              exit 0
+            fi
+            echo "$count call(s) in flight (attempt $attempt/30)..."
+            sleep 10
+          done
+          echo "Calls still in flight after 5 minutes. Re-run with skip_drain to restart anyway." >&2
+          exit 1
+
+      - name: Restart the engine
+        env:
+          PULL: ${{ inputs.pull_images }}
+        run: |
+          ssh dograh /bin/bash -s <<EOF
+          set -eu
+          cd /opt/vocalonix/repo
+          docker network create traefik-proxy 2>/dev/null || true
+
+          ENGINE="-f dograh/deploy/hostinger/docker-compose.yaml -f deploy/hetzner/dograh/docker-compose.override.yml"
+          ENVF="--env-file deploy/hetzner/dograh/.env"
+
+          # Project names are pinned rather than derived from the compose file's
+          # directory. Derived, they depend on where the repo happens to sit, and
+          # the caddy stack attaches to hostinger_app-network by name — so a
+          # different checkout path silently splits the two stacks onto networks
+          # that cannot see each other, and the proxy 502s with both halves "up".
+          if [ "$PULL" = "true" ]; then
+            docker compose -p hostinger \$ENGINE \$ENVF pull
+          fi
+          docker compose -p hostinger \$ENGINE \$ENVF up -d --wait
+
+          # Caddy is recreated unconditionally for the same reason as the app
+          # box: the Caddyfile is bind-mounted as a single file, rsync replaces
+          # rather than edits, so after a sync the host path is a new inode while
+          # the container still serves the old one. Nothing in the container spec
+          # changed, so compose would leave it alone and the edit would deploy
+          # green and change nothing.
+          docker compose -p dograh -f deploy/hetzner/dograh/docker-compose.caddy.yml \$ENVF \
+            up -d --force-recreate caddy
+          EOF
+
+      - name: Verify deployment
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            if curl -fsS --max-time 10 -o /dev/null "https://$PUBLIC_HOST/api/v1/health"; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "Engine health did not become reachable over TLS at https://$PUBLIC_HOST" >&2
+              ssh dograh 'docker ps --format "{{.Names}}\t{{.Status}}"' || true
+              exit 1
+            fi
+            echo "Waiting for TLS/health (attempt $attempt)..."
+            sleep 10
+          done
+          health="$(curl -fsS "https://$PUBLIC_HOST/api/v1/health")"
+          echo "$health"
+          # turn_enabled false means coturn did not come up, and the failure is
+          # invisible in the product: calls connect and then carry no audio for
+          # anyone behind a symmetric NAT.
+          case "$health" in
+            *'"turn_enabled":true'*) ;;
+            *) echo "::warning::turn_enabled is not true — calls may connect with no audio." ;;
+          esac

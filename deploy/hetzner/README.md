@@ -177,8 +177,31 @@ It needs two things configured once in the GitHub repo:
      configuration and fails immediately without them. See
      [Server configuration](#server-configuration) below.
 
-The pipeline does not touch the Dograh server; use the manual steps below for
-it. Its `.env` is still hand-managed — moving it to Infisical is not done yet.
+   - `HETZNER_DOGRAH_HOST` — SSH target for the voice box. The same key opens
+     both servers, so only the address is extra.
+
+## The two pipelines
+
+| Workflow | Trigger | Box | Configuration |
+|---|---|---|---|
+| `deploy.yml` | push to `main`, or manual | Harkbell app | Infisical `/be` |
+| `deploy-dograh.yml` | **manual only** | Dograh voice | Infisical `/voice` |
+
+The voice deploy is manual on purpose. That box runs live calls, and restarting
+it force-closes every call WebSocket in flight — uvicorn sends close code 1012
+and the caller hears the line die mid-sentence. Choosing the moment has to be a
+deliberate act, not a side effect of merging something. The app box has no such
+constraint: it can restart at any time without dropping a call.
+
+It takes two inputs. `pull_images` fetches newer engine images before
+restarting — leave it off unless you are deliberately taking a new Dograh
+version, because it is the one thing here that can change engine behaviour.
+`skip_drain` restarts without waiting for calls in flight.
+
+Draining only works when `DOGRAH_DEVOPS_SECRET` is set in `/voice`: the count
+lives behind an authenticated endpoint, and the upstream compose does not
+forward the secret, so `docker-compose.override.yml` does. Left unset, the
+deploy says it could not check rather than implying it waited.
 
 ## Server configuration
 
