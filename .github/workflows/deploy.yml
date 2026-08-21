@@ -65,7 +65,7 @@ jobs:
       # The rsync exclude below still stands. It guards the opposite direction —
       # an operator's laptop .env must never reach the box — and that is exactly
       # why this step writes from Infisical rather than from the checkout.
-      - name: Install server environment
+      - name: Install server configuration
         env:
           INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
           INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
@@ -156,6 +156,83 @@ jobs:
           ssh hetzner \
             'set -eu; f=/opt/vocalonix/repo/deploy/hetzner/vocalonix/.env; umask 077; cat > "$f"; chmod 600 "$f"' \
             < "$env_file"
+
+          # ── Origin certificate ──────────────────────────────────────────────
+          # Caddy secures the Cloudflare→origin hop with a Cloudflare Origin
+          # Certificate. It used to live only at /opt/vocalonix/certs — outside
+          # the repo, outside every backup — so tearing the box down destroyed
+          # it and rebuilding meant a console visit and a hand-copied key. It
+          # comes from Infisical now, like everything else.
+          #
+          # Its own folder rather than /be: /be is written wholesale to the
+          # box's .env and forwarded to containers, and a TLS private key has no
+          # business in an application container's environment.
+          #
+          # Base64 because dotenv is a one-line-per-value format and a PEM is
+          # multi-line. Stored raw it would need \n escaping that has to survive
+          # two shells and a sed — the same class of bug as the quoting above.
+          cert_dir="$(mktemp -d)"
+          trap 'rm -rf "$cert_dir"; rm -f "$env_file" "$infisical_err"' EXIT
+
+          infisical export \
+            --token="$token" \
+            --projectId="$INFISICAL_PROJECT_ID" \
+            --env=prod --path=/tls --format=dotenv --silent \
+            > "$cert_dir/tls.env" 2>"$infisical_err" || {
+              echo "Could not read Infisical /tls @ prod; Caddy cannot start without the origin certificate." >&2
+              sed -n '1,5p' "$infisical_err" || true
+              exit 1
+            }
+          sed -i -E "s/^([A-Za-z_][A-Za-z0-9_]*)='(.*)'$/\1=\2/" "$cert_dir/tls.env"
+
+          # REPLACE_ME is checked by name rather than left to fail later: it is
+          # not valid base64, so without this the step dies inside `base64 -d`
+          # with no message at all and the log shows only a bare exit 1.
+          for key in ORIGIN_CERT_B64 ORIGIN_KEY_B64; do
+            value="$(grep "^${key}=" "$cert_dir/tls.env" | cut -d= -f2- || true)"
+            if [ -z "$value" ] || [ "$value" = "REPLACE_ME" ]; then
+              echo "Infisical /tls @ prod has no value for $key. Caddy is configured" >&2
+              echo "for a Cloudflare Origin Certificate and will not start without one." >&2
+              exit 1
+            fi
+          done
+
+          decode() {
+            grep "^$1=" "$cert_dir/tls.env" | cut -d= -f2- | base64 -d > "$2" 2>/dev/null || {
+              echo "$1 in /tls is not valid base64." >&2
+              exit 1
+            }
+          }
+          decode ORIGIN_CERT_B64 "$cert_dir/origin.pem"
+          decode ORIGIN_KEY_B64  "$cert_dir/origin.key"
+          chmod 600 "$cert_dir/origin.key"
+
+          # A cert and key that do not belong together make Caddy fail at
+          # startup with a TLS error that reads like a network fault — minutes
+          # and one red herring away from the actual cause.
+          cert_pub="$(openssl x509 -in "$cert_dir/origin.pem" -noout -pubkey 2>/dev/null | openssl sha256)"
+          key_pub="$(openssl pkey -in "$cert_dir/origin.key" -pubout 2>/dev/null | openssl sha256)"
+          if [ -z "$cert_pub" ] || [ "$cert_pub" != "$key_pub" ]; then
+            echo "ORIGIN_CERT_B64 and ORIGIN_KEY_B64 in /tls are not a matching pair." >&2
+            exit 1
+          fi
+
+          # Origin Certificates run to 15 years, so an expired one means nobody
+          # has looked at this in a very long time. Saying so here beats serving
+          # it and having Cloudflare 526 the entire site.
+          if ! openssl x509 -in "$cert_dir/origin.pem" -noout -checkend 0 >/dev/null 2>&1; then
+            echo "The origin certificate in /tls has expired." >&2
+            exit 1
+          fi
+          echo "Origin certificate valid until $(openssl x509 -in "$cert_dir/origin.pem" -noout -enddate | cut -d= -f2)."
+
+          # Installed on every deploy, never conditionally. "Only if missing" is
+          # exactly what lets a box keep serving a stale certificate while
+          # Infisical holds the current one — the drift this whole migration
+          # exists to remove. Caddy is force-recreated below regardless, so
+          # rewriting an identical file costs nothing.
+          tar -C "$cert_dir" -cf - origin.pem origin.key | ssh hetzner \
+            'set -eu; umask 077; mkdir -p /opt/vocalonix/certs; tar -C /opt/vocalonix/certs -xf -; chmod 644 /opt/vocalonix/certs/origin.pem; chmod 600 /opt/vocalonix/certs/origin.key'
 
       - name: Sync repo to server
         run: |
