@@ -153,8 +153,13 @@ jobs:
           # old one — the trap that made Caddyfile edits invisible for a day.
           # The remote script is an argument, not a heredoc: ssh's stdin has to
           # stay free to carry the file itself.
+          # mkdir -p, because this runs *before* the rsync: on a box that has
+          # never been deployed to, the directory does not exist yet and the
+          # redirect fails with "No such file or directory". Every previous
+          # deploy landed on a box an earlier one had already populated, so the
+          # first genuinely fresh server is what surfaced it.
           ssh hetzner \
-            'set -eu; f=/opt/vocalonix/repo/deploy/hetzner/vocalonix/.env; umask 077; cat > "$f"; chmod 600 "$f"' \
+            'set -eu; f=/opt/vocalonix/repo/deploy/hetzner/vocalonix/.env; mkdir -p "$(dirname "$f")"; umask 077; cat > "$f"; chmod 600 "$f"' \
             < "$env_file"
 
           # ── Origin certificate ──────────────────────────────────────────────

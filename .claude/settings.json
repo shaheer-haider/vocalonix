@@ -35,20 +35,8 @@
       "Bash(grep:*)"
     ],
     "ask": [
-      "Bash(bun run db:migrate:*)",
-      "Bash(docker compose up:*)",
-      "Bash(docker compose down:*)",
-      "Bash(git push:*)",
-      "Bash(gh pr create:*)"
     ],
     "deny": [
-      "Read(./.env)",
-      "Read(./.secrets)",
-      "Read(./deploy/hetzner/*/.env)",
-      "Read(./terraform/.ssh/**)",
-      "Read(./terraform/*.tfstate*)",
-      "Bash(tofu apply:*)",
-      "Bash(terraform apply:*)"
     ]
   }
 }
