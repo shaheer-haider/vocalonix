@@ -182,7 +182,7 @@ it. Its `.env` is still hand-managed — moving it to Infisical is not done yet.
 
 ## Server configuration
 
-The Vocalonix box's `.env` is built at deploy time from **Infisical**, folder
+The Harkbell box's `.env` is built at deploy time from **Infisical**, folder
 `/be`, environment `prod`. Edit a value there and the next deploy carries
 it — do not edit the file on the box, because the next deploy overwrites it and
 in the meantime the change is invisible to everyone else. The
