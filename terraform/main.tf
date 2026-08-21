@@ -110,13 +110,36 @@ locals {
       - curl
       - gnupg
       - lsb-release
+    write_files:
+      # Hetzner hands out private-network addresses over DHCP on the second NIC
+      # and runs that network at a 1450-byte MTU. Nothing in the stock image
+      # configures it, so the interface comes up with no address: the app box
+      # cannot reach the engine at 10.0.1.3, /api/dograh/health times out, and
+      # Caddy returns a 502 that looks like the engine is down when it is
+      # healthy and simply unreachable. Written here so a rebuilt box
+      # configures itself instead of needing a hand.
+      - path: /etc/netplan/60-hetzner-private.yaml
+        permissions: "0600"
+        content: |
+          network:
+            version: 2
+            ethernets:
+              enp7s0:
+                dhcp4: true
+                mtu: 1450
     runcmd:
+      - netplan apply
       - install -m 0755 -d /etc/apt/keyrings
       - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
       - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
       - apt-get update
       - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-      - usermod -aG docker ubuntu
+      - mkdir -p /opt/vocalonix/repo
+      # Trailing `|| true` because this image has no `ubuntu` user. Without it
+      # the command fails, cloud-init aborts the rest of runcmd, and the box
+      # arrives with no Docker and no private network — which is exactly how
+      # the first rebuild went.
+      - usermod -aG docker ubuntu || true
     YAML
 }
 
@@ -153,7 +176,14 @@ resource "hcloud_server" "vocalonix" {
     # means destroying a production box and its Postgres volume to change a
     # line in a text file. Grant access by appending to
     # /root/.ssh/authorized_keys instead.
-    ignore_changes = [ssh_keys]
+    #
+    # user_data is ForceNew in this provider and, like ssh_keys, is only ever
+    # read at first boot. Reconciling it would destroy a running production box
+    # and its Postgres volume to change a text file that the live server has
+    # already finished acting on. Edits here therefore describe how the *next*
+    # box gets built; apply them to a running one by hand, or by deliberately
+    # tainting that server when a rebuild is what you actually want.
+    ignore_changes = [ssh_keys, user_data]
   }
 }
 
@@ -185,6 +215,13 @@ resource "hcloud_server" "dograh" {
   lifecycle {
     # See the note on hcloud_server.vocalonix: ssh_keys is creation-only, and
     # reconciling it against this running server risks replacing it.
-    ignore_changes = [ssh_keys]
+    #
+    # user_data is ForceNew in this provider and, like ssh_keys, is only ever
+    # read at first boot. Reconciling it would destroy a running production box
+    # and its Postgres volume to change a text file that the live server has
+    # already finished acting on. Edits here therefore describe how the *next*
+    # box gets built; apply them to a running one by hand, or by deliberately
+    # tainting that server when a rebuild is what you actually want.
+    ignore_changes = [ssh_keys, user_data]
   }
 }
