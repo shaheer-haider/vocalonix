@@ -121,12 +121,31 @@ jobs:
           # A truncated or half-populated environment would overwrite a working
           # configuration with one that cannot boot, and the deploy would report
           # it as a health-check timeout several minutes later.
-          for key in AUTH_SECRET APP_ORIGIN API_PUBLIC_URL EMAIL_FROM; do
-            grep -q "^${key}=" "$env_file" || {
-              echo "/be @ prod has no value for $key; refusing to install a partial environment." >&2
-              exit 1
-            }
+          #
+          # The list is read out of the compose file rather than written here,
+          # because a hand-kept copy is the thing that drifts: this check used to
+          # name four keys while the compose file interpolated thirteen with no
+          # default, so nine could go missing, reach the container as the empty
+          # string, and fail env.ts validation at boot with nothing pointing at
+          # the cause. `${VAR}` (no `:-`) is exactly the set with no fallback.
+          compose="deploy/hetzner/vocalonix/docker-compose.yml"
+          required="$(grep -oE '\$\{[A-Za-z_][A-Za-z0-9_]*\}' "$compose" | tr -d '${}' | sort -u)"
+
+          # Has a default, but the default is worse than a failure: absent, every
+          # container agrees the database password is the literal "vocalonix"
+          # and the stack comes up healthy on a public box.
+          required="$required HARKBELL_POSTGRES_PASSWORD"
+
+          missing=""
+          for key in $required; do
+            grep -q "^${key}=" "$env_file" || missing="$missing $key"
           done
+          if [ -n "$missing" ]; then
+            echo "Infisical /be @ prod is missing:$missing" >&2
+            echo "Each of these either has no default in $compose or has a dangerous one," >&2
+            echo "so installing this environment would break the box quietly. Refusing." >&2
+            exit 1
+          fi
           echo "Installing $(grep -cE '^[A-Za-z_]' "$env_file") values from Infisical /be @ prod."
 
           # Truncate in place rather than replacing the file. A rename would give
