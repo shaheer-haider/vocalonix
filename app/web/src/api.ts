@@ -2,20 +2,16 @@ import { edenTreaty } from "@elysiajs/eden";
 
 import type { App } from "../../api/src/index";
 import type {
-  AgentResponse,
-  AgentSettings,
   BusinessPhoneNumber,
   AvailableNumber,
   BusinessPhoneResponse,
   DemoSession,
   DemoStartResponse,
-  DocumentItem,
   DograhHealth,
   PlatformStatus,
   PooledNumber,
   Vertical,
   VoiceCatalogueEntry,
-  WidgetResponse,
   BillingStatus,
   PublicPricing,
 } from "./types";
@@ -462,28 +458,6 @@ export interface TenantWidget {
 }
 
 export const api = {
-  status: async () =>
-    unwrap(await client.api.dograh.status.get()),
-  getAgent: async (): Promise<AgentResponse> =>
-    unwrap(await client.api.agent.get()),
-  updateAgent: async (settings: AgentSettings): Promise<AgentResponse> =>
-    unwrap(await client.api.agent.put(settings)),
-  getWidget: async (): Promise<WidgetResponse> =>
-    unwrap(await client.api.agent.widget.get()),
-  listDocuments: async (): Promise<{ documents: DocumentItem[] }> =>
-    unwrap(await client.api.knowledge.get()),
-  uploadDocument: async (
-    file: File,
-    retrievalMode: "full_document" | "chunked",
-  ) =>
-    unwrap(
-      await client.api.knowledge.post({
-        file,
-        retrievalMode,
-      }),
-    ),
-  deleteDocument: async (documentUuid: string) =>
-    unwrap(await client.api.knowledge[documentUuid].delete()),
   auth: {
     signup: async (input: {
       name: string;

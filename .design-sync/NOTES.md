@@ -1,4 +1,4 @@
-# design-sync notes — @vocalonix/web
+# design-sync notes — @harkbell/web
 
 Repo-specific gotchas for future `/design-sync` runs. Read this before re-syncing.
 

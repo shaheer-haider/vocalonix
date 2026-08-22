@@ -272,10 +272,10 @@ conversations, contacts and knowledge gaps.
       plan. That leaves a single busy business needing 800 minutes with a choice
       between paying 3x for two businesses it cannot use and going quiet, and it
       is the reason the exhausted-minutes email has nothing better to offer than
-      an upgrade. The original design had it (`docs/design/claude-export/
-      Vocalonix Settings.dc.html` shows "300 minutes for £15, added to this
-      cycle only"); it was never built. Needs a one-off Stripe price, a checkout
-      flow and a credit column, so it is a feature rather than a copy fix.
+      an upgrade. The pre-launch design mockups had it — a "top up 300 minutes,
+      added to this cycle only" control on the settings screen — and it was
+      never built. Needs a one-off Stripe price, a checkout flow and a credit
+      column, so it is a feature rather than a copy fix.
 - [ ] **Check the margin before the first real invoice.** Essential earns
       $0.098 per answered minute and Pro earns $0.075, so Pro has the *thinner*
       margin per minute. Whether that is comfortable depends entirely on
@@ -285,8 +285,11 @@ conversations, contacts and knowledge gaps.
 - [ ] **Held slots and a waitlist** on bookings.
 - [ ] Rate limiting is in-memory only; move to a shared store when the API
       scales past one instance.
-- [ ] Retire the legacy single-workflow path in `dograh/workflow.ts` and its
-      `/api/agent*` endpoints.
+- [x] Retired the legacy single-workflow path. `dograh/workflow.ts` is gone
+      along with `/api/dograh/status`, `/api/agent*` and `/api/knowledge*`, and
+      the six client helpers in `api.ts` that had zero call sites. It predated
+      multi-tenancy, was session-guarded but **not** tenant-scoped, and `index.ts`
+      went from 295 lines to 101 — every route now lives in a plugin module.
 
 ## Next, in order
 

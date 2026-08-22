@@ -1,4 +1,4 @@
-# Building with the Vocalonix kit
+# Building with the Harkbell kit
 
 A warm "paper and ink" system: cream surfaces, near-black ink, a single brick-red
 accent, and three handwritten/monospace faces. Everything is driven by CSS custom
@@ -51,7 +51,7 @@ classes before inventing anything:
 | `design-grid` | Two-column panel grid |
 | `modal-header` | Title + close row inside a `Modal` |
 | `nav-item`, `nav-item--active`, `nav-label` | Sidebar link styling |
-| `wordmark` | The Vocalonix wordmark in the display face |
+| `wordmark` | The Harkbell wordmark in the display face |
 | `data-table` | Grid-based table rows |
 
 `h1`/`h2`/`h3` and `p` are already styled globally — write plain headings and

@@ -111,7 +111,7 @@ cross-tenant leak waiting to be found.
 1. **CORS** — `@elysiajs/cors` against `env.appOrigins`.
 2. **Route plugin** — `index.ts` composes `authRoutes`, `agentToolRoutes`,
    `platformRoutes`, `tenantRoutes`, `workspaceRoutes`, `billingRoutes`,
-   `demoRoutes`, then its own legacy handlers.
+   `demoRoutes`. It defines no routes of its own but `/api/health`.
 3. **Body validation** — Elysia's `t.Object({...})` in the route's second
    argument. A failure is caught by `onError` as `VALIDATION` → `422`.
 4. **Auth and tenancy** — as above.

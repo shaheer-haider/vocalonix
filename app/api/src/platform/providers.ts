@@ -3,7 +3,7 @@
  * the environment.
  *
  * Before this existed the operator had to open the Dograh dashboard and paste
- * STT/LLM/TTS keys by hand, and nothing in Vocalonix knew whether they had. Now
+ * STT/LLM/TTS keys by hand, and nothing in Harkbell knew whether they had. Now
  * the API reconciles at boot and on demand: it resolves a stack from the keys,
  * pushes it, and records the result so the readiness panel can tell the
  * operator exactly what is missing.

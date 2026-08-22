@@ -37,7 +37,6 @@ role is enough.
 | GET | `/api/platform/voices` | — | The voice catalogue with preview filenames |
 | GET | `/api/platform/status` | 🍪 | The readiness panel: `callsReady` plus a check per subsystem (engine, WebRTC, speech, telephony, email, insights), each naming the env var that fixes it |
 | POST | `/api/platform/recheck` | 🍪 | Force a provider reconciliation and re-report |
-| GET | `/api/dograh/status` | 🍪 | Legacy — engine health plus the single legacy workflow |
 
 ## Authentication
 
@@ -234,18 +233,3 @@ Public, no signup, rate limited to 10 sessions/min per IP.
 
 A score of 4–5 redirects to `/signup` carrying the demo answers so onboarding
 starts pre-filled.
-
-## Legacy — do not extend
-
-Predates multi-tenancy. Session-guarded but **not** tenant-scoped: they operate
-on one global workflow through `dograh/workflow.ts`. Slated for removal.
-
-| Method | Path |
-|---|---|
-| GET / PUT | `/api/agent` |
-| GET | `/api/agent/widget` |
-| GET / POST | `/api/knowledge` |
-| DELETE | `/api/knowledge/:documentUuid` |
-| GET | `/api/dograh/status` |
-
-New work uses `/api/b/:slug/*`.

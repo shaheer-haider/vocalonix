@@ -17,8 +17,10 @@ description: Add or change a Harkbell API endpoint. Use whenever work touches ap
 | Sign-in, sessions | `app/api/src/auth/routes.ts` | `/api/auth/…` |
 | The public demo funnel | `app/api/src/demo/routes.ts` | |
 
-Never add to the legacy `/api/agent*` or `/api/knowledge*` handlers in
-`index.ts` — that path predates multi-tenancy and is slated for removal.
+`index.ts` composes plugins and nothing else. A route defined there rather
+than in a plugin module is how the pre-multi-tenancy handlers survived as long
+as they did: session-guarded, never tenant-scoped, and invisible in every
+review because nobody looked in the composition root for routes.
 
 A new plugin file must be registered with `.use(...)` in
 `app/api/src/index.ts`.

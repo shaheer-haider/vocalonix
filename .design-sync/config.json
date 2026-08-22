@@ -1,8 +1,8 @@
 {
   "projectId": "d0a59015-5a31-4fea-9c9a-0e86c1a7d26a",
   "shape": "package",
-  "pkg": "@vocalonix/web",
-  "globalName": "Vocalonix",
+  "pkg": "@harkbell/web",
+  "globalName": "Harkbell",
   "buildCmd": "cd app/web && ./node_modules/.bin/tsc -p tsconfig.json --declaration --emitDeclarationOnly --noEmit false --outDir types",
   "srcDir": "src",
   "tsconfig": "tsconfig.json",
