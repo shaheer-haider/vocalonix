@@ -3,7 +3,7 @@
  *
  * Dograh already speaks Telnyx: an organisation-level telephony configuration
  * holds the credentials, and each phone number under it carries an
- * `inbound_workflow_id` that decides which agent answers. Vocalonix provisions
+ * `inbound_workflow_id` that decides which agent answers. Harkbell provisions
  * that configuration once from the environment, then maps numbers to
  * businesses one row at a time.
  *

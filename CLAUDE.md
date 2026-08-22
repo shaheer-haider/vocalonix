@@ -95,8 +95,8 @@ Harkbell Postgres `5433`.
 ```
 app/api/src/
   index.ts            Elysia app: CORS, error mapping, plugin composition,
-                      boot reconcilers. Also the legacy single-workflow
-                      /api/agent* + /api/knowledge* endpoints (see §9).
+                      boot reconcilers. 101 lines — every route lives in a
+                      plugin module.
   env.ts              zod-validated environment. Refuses to boot if invalid.
   errors.ts           ApiError(status, code, message) — the only error you throw.
   worker.ts           Background loop: outbox, run ingestion, heartbeat.
@@ -128,8 +128,7 @@ app/api/src/
                       generator + hashing), tenant.ts (sync state machine),
                       ingest.ts (pull runs → call_records, contacts, gaps),
                       agent-tools.ts (tool registration), extract.ts (LLM
-                      transcript mining), errors.ts (failure classification),
-                      workflow.ts (legacy single-workflow path — §9).
+                      transcript mining), errors.ts (failure classification).
   demo/               Public no-signup demo funnel and its throwaway workflow.
   db/                 client.ts, schema.ts, migrate.ts.
 
@@ -288,13 +287,13 @@ pass" is not evidence that a route works. See [`docs/09-testing.md`](docs/09-tes
 | Thing | Status |
 |---|---|
 | `routes/notifications.tsx` | A **prototype**. 305 lines of `useState`, zero API calls, no endpoints, no tables. Nothing persists, nothing is ever sent. Do not build on it or cite it as a feature. |
-| `dograh/workflow.ts` + `/api/agent*`, `/api/knowledge*` in `index.ts` | The **legacy single-workflow path** from before multi-tenancy. Session-guarded but not tenant-scoped. Slated for removal. Never route new work through it. |
 | Rate limiting | In-memory. Correct for one API instance, silently useless behind two. Move to a shared store before scaling out. |
 | `VOICE_STACK` | Production was moved to `realtime` on 2026-08-16 chasing latency, against the recommendation in `STATUS.md`, and the first test call truncated mid-sentence. Decide this on measurement, not preference. |
 | `app/web/types/` | Generated `.d.ts`, gitignored. Never hand-edit. |
 | Voice previews | 32 kbps AAC `.m4a` in `app/web/public/voices/`. Keep the format — the WAVs were 4.3 MB across the set. |
 | `dograh/ui/public/embed/dograh-widget.js` | Still served at `/embed/dograh-widget.js` so snippets published before our widget existed keep working. Do not delete. |
 | Vite env | Reads `VITE_*` from the **repo-root** `.env` (`envDir` in `vite.config.ts`), not from `app/web`. |
+| `bun.lockb` | Written by whatever Bun you have locally. Docker and CI both pin **1.1.45**, and a lockfile saved by a newer Bun fails there with `Outdated lockfile version: failed to parse lockfile` — while typecheck, tests and build all stay green locally. If you must regenerate it, do it in the pinned image: `docker run --rm -v "$PWD:/w" -w /w oven/bun:1.1.45-alpine bun install --lockfile-only`. |
 
 ---
 

@@ -10,4 +10,4 @@ const database = drizzle(client);
 await migrate(database, { migrationsFolder: "./drizzle" });
 await client.end();
 
-console.log("Vocalonix database migrations applied.");
+console.log("Harkbell database migrations applied.");
