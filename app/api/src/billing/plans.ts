@@ -27,6 +27,53 @@ export const UNLIMITED = Number.POSITIVE_INFINITY;
  */
 export const PHONE_NUMBERS_PER_BUSINESS = 1;
 
+/**
+ * What a receptionist call actually costs in minutes, used to translate an
+ * allowance into the unit the buyer thinks in.
+ *
+ * Nobody running a plumbing business thinks in minutes; they think in calls
+ * answered. "What counts as a minute?" being the first question on the pricing
+ * page is the evidence — a page should not have to explain its own unit.
+ *
+ * An estimate, and marked as one everywhere it is shown. **Replace it with the
+ * measured figure once there is real traffic**: the query is a median over
+ * `call_records.duration_seconds`. Quoting calls a customer does not get is the
+ * kind of promise this codebase has already had to walk back once.
+ */
+export const AVERAGE_CALL_MINUTES = 2.5;
+
+/**
+ * The launch offer, or null once it is over.
+ *
+ * Nullable rather than deleted so that ending it is one line here instead of an
+ * edit to the pricing page, the landing page and the onboarding plan step —
+ * which is the same reason plan copy lives in this file at all.
+ *
+ * The price promise keeps itself: Stripe holds a subscription on the price it
+ * was created with, and a price's amount cannot be edited. Raising the price
+ * therefore means creating a **new** Stripe price and pointing
+ * `STRIPE_PRICE_STARTER` at it, which leaves every founding subscription
+ * exactly where it is. Do not migrate existing subscriptions onto the new
+ * price; that is the one action that would break this.
+ */
+export interface FoundingOffer {
+  /** Plan the launch price applies to. */
+  planId: PlanId;
+  /** How many businesses keep it. */
+  limit: number;
+  /** What that plan costs once the founding places are gone, in minor units. */
+  futureAmountCents: number;
+  /** Days in which a new subscription can be refunded in full. */
+  refundDays: number;
+}
+
+export const FOUNDING_OFFER: FoundingOffer | null = {
+  planId: "starter",
+  limit: 50,
+  futureAmountCents: 9900,
+  refundDays: 30,
+};
+
 export type PlanId = "free" | "starter" | "pro";
 
 export interface Plan {
@@ -176,6 +223,22 @@ export function planByPriceId(priceId: string | null): Plan | null {
   return (
     Object.values(PLANS).find((plan) => plan.priceId === priceId) ?? null
   );
+}
+
+/**
+ * Roughly how many calls an allowance covers.
+ *
+ * Rounded down and to something a person would say out loud — "about 200
+ * calls" rather than "200.0". Rounding *down* on purpose: an allowance that
+ * covers slightly more than advertised is a good surprise, and the reverse is a
+ * complaint.
+ */
+export function estimatedCallsFor(plan: Plan): number | null {
+  if (plan.monthlyMinutes === UNLIMITED) return null;
+  const calls = Math.floor(plan.monthlyMinutes / AVERAGE_CALL_MINUTES);
+  if (calls < 20) return calls;
+  const step = calls < 100 ? 5 : calls < 500 ? 10 : 50;
+  return Math.floor(calls / step) * step;
 }
 
 /** Plans a customer can actually buy on this deployment. */

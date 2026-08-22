@@ -11,11 +11,13 @@ import { requirePermission, requireWorkspace } from "../workspace/context";
 import { accountForBusiness, type BillingAccount } from "./account";
 import { businessAllowance } from "./limits";
 import {
+  FOUNDING_OFFER,
   FREE_PLAN,
   PHONE_NUMBERS_PER_BUSINESS,
   PLANS,
   UNLIMITED,
   effectivePlan,
+  estimatedCallsFor,
   planByPriceId,
   planById,
   purchasablePlans,
@@ -104,6 +106,9 @@ function planShape(plan: ReturnType<typeof planById>) {
     businesses: plan.businesses === UNLIMITED ? null : plan.businesses,
     additionalBusinessCents: plan.additionalBusinessCents,
     phoneNumbersPerBusiness: plan.phoneNumber ? PHONE_NUMBERS_PER_BUSINESS : 0,
+    // Derived here rather than written into the copy, so the two cannot say
+    // different things after somebody changes an allowance.
+    estimatedCalls: estimatedCallsFor(plan),
     seats: plan.seats === UNLIMITED ? null : plan.seats,
     tagline: plan.tagline,
     features: plan.features,
@@ -199,12 +204,24 @@ export const billingRoutes = new Elysia()
    * page rather than a checkout button that 409s.
    */
   .get("/api/plans", () => {
+    const offerPlan = FOUNDING_OFFER ? PLANS[FOUNDING_OFFER.planId] : null;
     return {
       billingEnabled: Boolean(env.stripeSecretKey),
       plans: Object.values(PLANS).map((plan) => ({
         ...planShape(plan),
         purchasable: plan.priceId !== null,
       })),
+      // Withheld when the plan it applies to cannot actually be bought here.
+      // Announcing a launch price on a deployment with no Stripe key would be
+      // an offer with no way to accept it.
+      offer:
+        FOUNDING_OFFER && offerPlan?.priceId
+          ? {
+              ...FOUNDING_OFFER,
+              planName: offerPlan.name,
+              amountCents: offerPlan.amountCents,
+            }
+          : null,
     };
   })
   .get("/api/b/:slug/billing", async ({ params, request }) => {

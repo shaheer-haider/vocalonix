@@ -225,6 +225,12 @@ export interface BillingPlan {
   additionalBusinessCents: number | null;
   /** Numbers each business may hold: one on a paid plan, zero on Free. */
   phoneNumbersPerBusiness: number;
+  /**
+   * Roughly how many calls the allowance covers, or null when unlimited.
+   * Derived from the allowance on the server so the two cannot disagree, and
+   * always presented as an estimate.
+   */
+  estimatedCalls: number | null;
   seats: number | null;
   /** Display copy, served from the catalogue so it cannot drift per surface. */
   tagline: string;
@@ -237,9 +243,25 @@ export interface PublicPlan extends BillingPlan {
   purchasable: boolean;
 }
 
+/**
+ * The launch offer, or null once it is over or when the plan it applies to
+ * cannot be bought on this deployment.
+ */
+export interface FoundingOffer {
+  planId: string;
+  planName: string;
+  /** What founding customers pay and keep paying, in minor units. */
+  amountCents: number;
+  /** What the plan costs once the founding places are gone. */
+  futureAmountCents: number;
+  limit: number;
+  refundDays: number;
+}
+
 export interface PublicPricing {
   billingEnabled: boolean;
   plans: PublicPlan[];
+  offer: FoundingOffer | null;
 }
 
 export interface BillingStatus {
