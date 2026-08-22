@@ -182,6 +182,18 @@ conversations, contacts and knowledge gaps.
       registered address is worse than a missing one. Have both documents read
       by a lawyer; they are written to be accurate about what the product
       actually does, which is not the same as being legal advice.
+- [ ] **Open: `hello@harkbell.com` cannot receive mail.** `harkbell.com` has no
+      MX record. Sending is fully set up — DKIM on `resend._domainkey`, SPF and
+      a bounce MX on `send.harkbell.com`, DMARC at `p=none` — but nothing comes
+      back the other way. That address is now the contact route on the pricing
+      page, in the billing panel, in the footer of every public page, and in the
+      "reply to this email" line the largest plan gets when it runs out of
+      minutes. It is also the `rua=` target of our own DMARC reports. Until it
+      has a mailbox, all of those bounce.
+
+      Cloudflare Email Routing is free, the DNS is already there, and forwarding
+      to a personal address takes about five minutes. It needs the operator:
+      the destination address has to be confirmed from its own inbox.
 - [ ] **Open:** uptime monitoring on `/api/health` and the worker heartbeat.
 - [ ] **Open:** a real call against the rebuilt stack. Everything below the call
       itself is verified; the call is not.
