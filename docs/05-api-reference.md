@@ -150,7 +150,7 @@ whether it is dialable at all.
 | GET | `/api/b/:slug/phone` | 🏢 | | Numbers this business holds, plus `phoneIncluded` and `planName` |
 | GET | `/api/b/:slug/phone/available` | 🏢 | | Search the Telnyx inventory. Plan-gated |
 | POST | `/api/b/:slug/phone` | 🏢 | `agent.edit` | Buy, bind and route. Plan-gated and plan-limited |
-| GET | `/api/b/:slug/phone/pool` | 🏢 | | Numbers the platform already owns, including release history |
+| GET | `/api/b/:slug/phone/pool` | 🏢 | `agent.edit` | Numbers the platform already owns, including release history. Plan-gated |
 | POST | `/api/b/:slug/phone/:phoneNumberId/release` | 🏢 | `agent.edit` | Keeps the number on the platform account rather than handing it back to the carrier |
 
 Two separate rules, and two error codes. `PLAN_PHONE_NOT_INCLUDED` (402) means

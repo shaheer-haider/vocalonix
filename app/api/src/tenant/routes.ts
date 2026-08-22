@@ -842,6 +842,9 @@ export const tenantRoutes = new Elysia()
   .get("/api/b/:slug/phone/pool", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "agent.edit");
+    // Gated with the search above, for the same reason: a plan that cannot
+    // claim a number has no business browsing the ones on offer.
+    await assertCanAddPhoneNumber(workspace.business);
     return { numbers: await listPooledNumbers(workspace.business.id) };
   })
   /**
