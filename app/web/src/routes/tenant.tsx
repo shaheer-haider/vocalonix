@@ -2796,8 +2796,16 @@ function PhoneTab({
 
         {/* Said here rather than at the moment of purchase. Letting somebody
             search numbers, pick one they like and only then meet a 402 is a
-            worse way to learn what their plan includes. */}
-        {phone && phone.available && !phone.phoneIncluded ? (
+            worse way to learn what their plan includes.
+
+            Not shown to a business that already holds a number. Limits are
+            enforced at acquisition, so a downgrade keeps the number it already
+            has — and "answers on your website only" printed directly above a
+            live, ringing number is simply wrong. */}
+        {phone &&
+        phone.available &&
+        !phone.phoneIncluded &&
+        phone.numbers.length === 0 ? (
           <Alert variant="info">
             The {phone.planName} plan answers on your website only. Move up a
             plan and this agent gets a number of its own, with warm transfer and
