@@ -1,6 +1,6 @@
 # Harkbell — Product Status & Roadmap
 
-_Last updated: 2026-08-17_
+_Last updated: 2026-08-22_
 
 > This file answers **what is built and what is next**. For how any of it works,
 > see [`docs/`](docs/README.md); for the rules of changing it, see
@@ -27,14 +27,17 @@ docker compose up -d --build --wait
 | A real phone number | `TELNYX_API_KEY` |
 | Real sign-in emails | `RESEND_API_KEY` + a verified sending domain |
 
-> **Production currently contradicts this section.** `VOICE_STACK=realtime` was
-> set on the Harkbell box on 2026-08-16 to chase response latency, putting
-> production back on Gemini Live — the stack this document identifies below as
-> the top launch blocker. The first test call after the change showed the agent
-> truncated mid-sentence ("Is there anything") and the caller asking "Huh?",
-> which is consistent with the transcript problems described below. Either
-> re-qualify that stack with measurements or revert to `VOICE_STACK=auto`;
-> do not leave the decision resting on an unmeasured latency hunch.
+> **Resolved on 2026-08-22.** `VOICE_STACK=realtime` had been set on
+> 2026-08-16 to chase response latency, putting production back on Gemini Live —
+> the stack this document identifies below as the top launch blocker. The first
+> test call after that change showed the agent truncated mid-sentence ("Is there
+> anything") and the caller asking "Huh?".
+>
+> Production was torn down and rebuilt on 2026-08-21/22, and the value came back
+> as `auto` in Infisical `/be`. It stays there until somebody has latency
+> measurements to justify moving it — the previous change rested on a hunch and
+> cost a broken test call. **No call has yet been placed against the rebuilt
+> stack**, so `auto` is the documented default here, not a measured result.
 
 **Use the pipeline stack for launch.** With `DEEPGRAM_API_KEY` present,
 `VOICE_STACK=auto` runs Deepgram speech-to-text → an LLM → Deepgram speech-out.
@@ -121,24 +124,43 @@ conversations, contacts and knowledge gaps.
 
 ## Deployment checklist (needs the operator)
 
-- [ ] Speech keys in `.env` (see the table above) — the setup panel confirms.
-- [ ] `STRIPE_PRICE_STARTER` / `STRIPE_PRICE_PRO` on the server. Without them a
-      paid plan is not offered for purchase at all — `/pricing` and the
-      onboarding plan step both fall back to "Talk to us", which is honest but
-      unbuyable. `./scripts/stripe-bootstrap.sh` creates the products and
-      prices and prints the two lines; run it with the key whose mode the
-      server actually uses, because a test price id does not resolve against a
-      live key.
-- [ ] `TELNYX_API_KEY` if you want phone numbers, plus
-      `TELNYX_WEBHOOK_PUBLIC_KEY` in production so webhooks are verified.
-- [ ] Resend API key + verified sending domain (`RESEND_API_KEY`, `EMAIL_FROM`).
-- [ ] `REQUIRE_EMAIL_VERIFICATION=true` in production.
-- [ ] Unique production `AUTH_SECRET` (enforced at boot).
-- [ ] HTTPS `API_PUBLIC_URL` / `APP_ORIGIN` (enforced at boot).
-- [ ] Database backups + a tested restore path.
-- [ ] Uptime monitoring on `/api/health` and the worker heartbeat.
-- [ ] Run a single API instance (rate limiting is in-memory) or add a shared
-      store before scaling out.
+> **Production was rebuilt from scratch on 2026-08-22** after the previous boxes
+> were destroyed. Configuration now lives entirely in Infisical (`/be`, `/voice`,
+> `/tls`) and both boxes are deployed by pipeline — nothing is edited on a
+> server. The checklist below is kept as the definition of "configured"; the
+> boxes currently satisfy every line except the three marked open.
+>
+> | | |
+> |---|---|
+> | App | `harkbell.com` → `2.29.14.150` (Cloudflare-proxied) |
+> | Voice | `voice.harkbell.com` → `2.29.8.106` (DNS-only, Let's Encrypt) |
+> | Engine | Dograh 1.41.0, `turn_enabled: true` |
+> | Deploy | `deploy.yml` on push; `deploy-dograh.yml` manual only |
+
+- [x] Speech keys — Gemini, Deepgram and OpenAI are set in Infisical `/be`.
+- [x] `STRIPE_PRICE_STARTER` / `STRIPE_PRICE_PRO` — `/api/plans` reports both
+      paid plans `purchasable: true` against the live deployment. Without them
+      `/pricing` and the onboarding plan step fall back to "Talk to us", which
+      is honest but unbuyable. `./scripts/stripe-bootstrap.sh` regenerates them;
+      run it with the key whose mode the server uses, because a test price id
+      does not resolve against a live key — and the current keys are **test
+      mode**, so going live means re-running it and replacing both ids.
+- [x] `STRIPE_WEBHOOK_SECRET` — the endpoint did not exist at all until
+      2026-08-22, so every subscription event was being dropped and a paid plan
+      would never have been applied. Created against
+      `https://harkbell.com/api/billing/webhook` for the three
+      `customer.subscription.*` events the handler reads.
+- [x] `TELNYX_API_KEY` and `TELNYX_CONNECTION_ID`.
+      `TELNYX_WEBHOOK_PUBLIC_KEY` is deliberately unset — `platform/telephony.ts`
+      derives it from the API key.
+- [x] Resend key and `EMAIL_FROM`, `REQUIRE_EMAIL_VERIFICATION=true`, unique
+      `AUTH_SECRET`, HTTPS origins — all enforced at boot and the box boots.
+- [ ] **Open:** database backups + a tested restore path. Nothing is backed up
+      today, on a box whose Postgres volume is the only copy.
+- [ ] **Open:** uptime monitoring on `/api/health` and the worker heartbeat.
+- [ ] **Open:** a real call against the rebuilt stack. Everything below the call
+      itself is verified; the call is not.
+- [x] Single API instance, so the in-memory rate limiter is still correct.
 
 ## What is left
 
