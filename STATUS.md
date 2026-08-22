@@ -239,6 +239,21 @@ conversations, contacts and knowledge gaps.
       Until then knowledge stays tenant-safe because the generator pins
       `document_uuids` on every node that can retrieve, which is now asserted
       by `config.test.ts` rather than left to whoever adds the next node.
+- [ ] **Minute top-ups, and the hole between $49 and $149.** There is no way to
+      buy more minutes — the only path past a spent allowance is moving up a
+      plan. That leaves a single busy business needing 800 minutes with a choice
+      between paying 3x for two businesses it cannot use and going quiet, and it
+      is the reason the exhausted-minutes email has nothing better to offer than
+      an upgrade. The original design had it (`docs/design/claude-export/
+      Vocalonix Settings.dc.html` shows "300 minutes for £15, added to this
+      cycle only"); it was never built. Needs a one-off Stripe price, a checkout
+      flow and a credit column, so it is a feature rather than a copy fix.
+- [ ] **Check the margin before the first real invoice.** Essential earns
+      $0.098 per answered minute and Pro earns $0.075, so Pro has the *thinner*
+      margin per minute. Whether that is comfortable depends entirely on
+      whether `VOICE_STACK` resolves to `pipeline` (Deepgram Aura-2, cheap) or
+      `realtime` (several times more). The readiness panel reports which; decide
+      the price on that number rather than on the plan table looking tidy.
 - [ ] **Held slots and a waitlist** on bookings.
 - [ ] Rate limiting is in-memory only; move to a shared store when the API
       scales past one instance.
