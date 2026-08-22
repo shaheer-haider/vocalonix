@@ -12,11 +12,11 @@
  * credentials — the two get different scrutiny when a sender is misconfigured.
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { sendEmail } from "../auth/email";
 import { db } from "../db/client";
-import { users } from "../db/schema";
+import { businessPhoneNumbers, users } from "../db/schema";
 import { env } from "../env";
 import { businessesForAccount, type BillingAccount } from "./account";
 import type { Plan } from "./plans";
@@ -26,10 +26,34 @@ import type { Plan } from "./plans";
  * several businesses but buys one subscription, so any of them reaches the
  * same billing panel; the hub is the honest fallback when it owns none yet.
  */
-async function billingLink(accountId: string): Promise<string> {
-  const owned = await businessesForAccount(accountId).catch(() => []);
+function billingLink(owned: Array<{ slug: string }>): string {
   const path = owned[0] ? `/app/${owned[0].slug}/account` : "/app";
   return new URL(path, env.appOrigin).toString();
+}
+
+/**
+ * Whether a number actually stops ringing, which is not the same as whether
+ * the plan includes one.
+ *
+ * A business keeps its number through a downgrade — limits are enforced at
+ * acquisition and nothing releases a number automatically — so an account that
+ * dropped to Free still has a phone going quiet. Reading the plan flag here
+ * would have told exactly those people only their website was affected.
+ */
+async function holdsLiveNumber(
+  businessIds: string[],
+): Promise<boolean> {
+  if (businessIds.length === 0) return false;
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(businessPhoneNumbers)
+    .where(
+      and(
+        inArray(businessPhoneNumbers.businessId, businessIds),
+        isNull(businessPhoneNumbers.releasedAt),
+      ),
+    );
+  return Number(row?.count ?? 0) > 0;
 }
 
 function escapeHtml(value: string): string {
@@ -46,12 +70,11 @@ function minutes(value: number): string {
 }
 
 /**
- * Where the agent went quiet. Free answers on the website only, so telling a
- * Free account that its phone number has stopped answering describes a number
- * it was never sold.
+ * Where the agent goes quiet. Telling an account that its phone number stopped
+ * answering when it never had one describes something that did not happen.
  */
-function channels(plan: Plan): string {
-  return plan.phoneNumber
+function channels(hasPhone: boolean): string {
+  return hasPhone
     ? "on your website and on your phone number"
     : "on your website";
 }
@@ -66,13 +89,14 @@ function approachingCopy(
   plan: Plan,
   minutesUsed: number,
   greeting: string,
+  hasPhone: boolean,
 ): NoticeCopy {
   return {
     subject: `Harkbell: ${minutes(minutesUsed)} of your ${minutes(plan.monthlyMinutes)} minutes are used`,
     lines: [
       greeting,
       `Your agent has answered ${minutes(minutesUsed)} of the ${minutes(plan.monthlyMinutes)} minutes included on ${plan.name}.`,
-      `When the allowance is spent the agent stops answering ${channels(plan)}, until the period rolls over or you move up a plan.`,
+      `When the allowance is spent the agent stops answering ${channels(hasPhone)}, until the period rolls over or you move up a plan.`,
       "Nothing is charged automatically. Moving up a plan is the only thing that adds minutes.",
     ],
     action: "Review your usage",
@@ -83,12 +107,13 @@ function exhaustedCopy(
   plan: Plan,
   minutesUsed: number,
   greeting: string,
+  hasPhone: boolean,
 ): NoticeCopy {
   return {
     subject: "Your Harkbell agent has stopped answering",
     lines: [
       greeting,
-      `Your agent has used all ${minutes(plan.monthlyMinutes)} minutes included on ${plan.name} and has stopped answering ${channels(plan)}.`,
+      `Your agent has used all ${minutes(plan.monthlyMinutes)} minutes included on ${plan.name} and has stopped answering ${channels(hasPhone)}.`,
       "Callers will not reach it until the period rolls over or you move up a plan. Moving up brings it back on straight away.",
       `Minutes answered this period: ${minutes(minutesUsed)}.`,
     ],
@@ -122,13 +147,18 @@ export async function sendUsageNotice(input: {
       return;
     }
 
+    const owned = await businessesForAccount(input.account.id).catch(() => []);
+    const hasPhone = await holdsLiveNumber(owned.map((row) => row.id)).catch(
+      () => input.plan.phoneNumber,
+    );
+
     const firstName = owner.name.trim().split(/\s+/)[0] ?? "";
     const greeting = firstName ? `Hi ${firstName},` : "Hi,";
     const copy =
       input.level === 100
-        ? exhaustedCopy(input.plan, input.minutesUsed, greeting)
-        : approachingCopy(input.plan, input.minutesUsed, greeting);
-    const link = await billingLink(input.account.id);
+        ? exhaustedCopy(input.plan, input.minutesUsed, greeting, hasPhone)
+        : approachingCopy(input.plan, input.minutesUsed, greeting, hasPhone);
+    const link = billingLink(owned);
 
     await sendEmail({
       to: owner.email,
