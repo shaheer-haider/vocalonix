@@ -2794,6 +2794,20 @@ function PhoneTab({
           </Alert>
         ) : null}
 
+        {/* Said here rather than at the moment of purchase. Letting somebody
+            search numbers, pick one they like and only then meet a 402 is a
+            worse way to learn what their plan includes. */}
+        {phone && phone.available && !phone.phoneIncluded ? (
+          <Alert variant="info">
+            The {phone.planName} plan answers on your website only. Move up a
+            plan and this agent gets a number of its own, with warm transfer and
+            outbound callbacks.{" "}
+            <Link to="/app/$businessSlug/account" params={{ businessSlug: slug }}>
+              See plans
+            </Link>
+          </Alert>
+        ) : null}
+
         {!published ? (
           <Alert variant="warn">
             Publish this agent first — a number can only be pointed at a live
@@ -2840,14 +2854,18 @@ function PhoneTab({
               </li>
             ))}
           </ul>
-        ) : (
+        ) : phone?.phoneIncluded === false ? null : (
           <EmptyState title="No phone number yet">
             Pick a number below and it is yours — we buy it and point it at this
             agent. Nothing to set up with a phone company.
           </EmptyState>
         )}
 
-        {canEdit && phone?.available && published && !phone.atNumberLimit ? (
+        {canEdit &&
+        phone?.available &&
+        phone.phoneIncluded &&
+        published &&
+        !phone.atNumberLimit ? (
           <div className="phone-picker">
             <PooledNumbers
               claiming={claiming}

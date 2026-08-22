@@ -2357,6 +2357,9 @@ p {
 
 .landing-footer {
   display: flex;
+  /* Six items now that the legal pages and a contact address are in here, which
+     is more than fits one line on a phone. */
+  flex-wrap: wrap;
   gap: 18px;
   justify-content: center;
   padding-top: 30px;
@@ -2364,6 +2367,94 @@ p {
   color: var(--ink-4);
   font-family: var(--mono);
   font-size: 0.6875rem;
+}
+
+.auth-consent {
+  margin: 12px 0 0;
+  color: var(--ink-4);
+  font-family: var(--kalam);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Terms and Privacy.
+   Long-form documents somebody has to be able to actually read, so the measure
+   is capped near 68 characters and the type is a shade larger than the marketing
+   pages rather than a shade smaller. */
+.legal-head {
+  max-width: 34rem;
+  padding: 30px 0 6px;
+  display: grid;
+  gap: 10px;
+}
+
+.legal-head h1 {
+  margin: 0;
+  font-family: var(--hand);
+  font-size: clamp(1.875rem, 4vw, 2.5rem);
+  line-height: 1.1;
+}
+
+.legal-head p {
+  margin: 0;
+  color: var(--ink-2);
+  font-family: var(--kalam);
+  font-size: 1.0625rem;
+}
+
+.legal-updated {
+  color: var(--ink-4);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.legal-prose {
+  max-width: 38rem;
+  padding: 18px 0 40px;
+  color: var(--ink-2);
+  font-family: var(--kalam);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+.legal-prose h2 {
+  margin: 32px 0 10px;
+  color: var(--ink);
+  font-family: var(--hand);
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.legal-prose h3 {
+  margin: 22px 0 8px;
+  color: var(--ink);
+  font-family: var(--label);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.legal-prose p {
+  margin: 0 0 14px;
+}
+
+.legal-prose ul {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.legal-prose strong {
+  color: var(--ink);
+}
+
+/* The sub-processor list carries a name, a place and a sentence, so it needs
+   more room between entries than a list of clauses. */
+.legal-prose .legal-list {
+  gap: 12px;
 }
 
 /* Pricing.

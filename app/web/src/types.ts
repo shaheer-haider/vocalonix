@@ -181,6 +181,10 @@ export interface BusinessPhoneResponse {
   voiceSelectable: boolean;
   canManage: boolean;
   atNumberLimit: boolean;
+  /** False on a plan that answers on the website only. */
+  phoneIncluded: boolean;
+  /** The plan's display name, for the copy that explains why. */
+  planName: string;
 }
 
 /**
@@ -219,7 +223,7 @@ export interface BillingPlan {
   businesses: number | null;
   /** Monthly cost of a business beyond the allowance, or null if not sold. */
   additionalBusinessCents: number | null;
-  /** A product rule, the same on every plan. */
+  /** Numbers each business may hold: one on a paid plan, zero on Free. */
   phoneNumbersPerBusiness: number;
   seats: number | null;
   /** Display copy, served from the catalogue so it cannot drift per surface. */

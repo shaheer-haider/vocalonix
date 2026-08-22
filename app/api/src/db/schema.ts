@@ -230,6 +230,19 @@ export const billingAccounts = pgTable(
      * the previous behaviour of not enforcing the limit at all.
      */
     callsSuspendedAt: timestamp("calls_suspended_at", { withTimezone: true }),
+    /**
+     * The highest usage threshold the owner has already been emailed about:
+     * 0 for none, 80 for the approaching warning, 100 for the stopped-answering
+     * notice.
+     *
+     * Stored because the worker re-measures every minute and would otherwise
+     * send the same warning on every sweep. It falls back down when usage does,
+     * and that is deliberately what re-arms it for the next period rather than
+     * a stored period start: a Free account is measured over a rolling 30 days,
+     * which never resets on a date, so a date-keyed reset would have re-armed
+     * paid accounts only and left Free warned exactly once, forever.
+     */
+    usageNoticeLevel: integer("usage_notice_level").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

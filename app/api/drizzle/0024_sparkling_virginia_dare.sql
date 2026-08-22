@@ -1,0 +1,1 @@
+ALTER TABLE "billing_accounts" ADD COLUMN "usage_notice_level" integer DEFAULT 0 NOT NULL;

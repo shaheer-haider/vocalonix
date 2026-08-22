@@ -147,11 +147,27 @@ whether it is dialable at all.
 
 | Method | Path | Auth | Permission | Notes |
 |---|---|---|---|---|
-| GET | `/api/b/:slug/phone` | 🏢 | | Numbers this business holds |
-| GET | `/api/b/:slug/phone/available` | 🏢 | | Search the Telnyx inventory |
-| POST | `/api/b/:slug/phone` | 🏢 | `agent.edit` | Buy, bind and route. Plan-limited |
+| GET | `/api/b/:slug/phone` | 🏢 | | Numbers this business holds, plus `phoneIncluded` and `planName` |
+| GET | `/api/b/:slug/phone/available` | 🏢 | | Search the Telnyx inventory. Plan-gated |
+| POST | `/api/b/:slug/phone` | 🏢 | `agent.edit` | Buy, bind and route. Plan-gated and plan-limited |
 | GET | `/api/b/:slug/phone/pool` | 🏢 | | Numbers the platform already owns, including release history |
 | POST | `/api/b/:slug/phone/:phoneNumberId/release` | 🏢 | `agent.edit` | Keeps the number on the platform account rather than handing it back to the carrier |
+
+Two separate rules, and two error codes. `PLAN_PHONE_NOT_INCLUDED` (402) means
+the plan answers on the website only — a number is a recurring carrier charge,
+so a free tier that hands one to every signup pays it forever against thirty
+minutes a month. `PLAN_LIMIT_PHONE_NUMBERS` (402) means the business already has
+its one number.
+
+The gate is checked on the **search** as well as the purchase, so a plan without
+numbers is told before somebody picks one they cannot have; the purchase stays
+guarded regardless, because the search is a courtesy and not the check. Both are
+acquisition-only — a business that already holds a number keeps it through a
+downgrade, and nothing releases one automatically.
+
+That single gate is also what makes the paid feature copy true: warm transfer
+requires a live PSTN leg and `placeOutboundCall` refuses without a number, so
+gating the number gates both.
 
 ## Billing
 
@@ -182,6 +198,14 @@ POST to a public URL. A deleted subscription drops the workspace to Free.
 
 Usage is minutes summed from `call_records.duration_seconds` over the current
 Stripe period, or a rolling 30 days when there is no subscription.
+
+The worker emails the account owner at 80% of the allowance and again when it is
+spent, recording how far it has got in `billing_accounts.usage_notice_level` so
+the same warning is not resent on every sweep. The level falls back down when
+usage does, which is what re-arms it for the next period — see
+[`docs/04-data-model.md`](04-data-model.md). Suspension without a warning was the
+product contradicting its own promise: the agent stopped answering and the only
+way to find out was to log in.
 
 ## Agent tools — the engine calling us
 

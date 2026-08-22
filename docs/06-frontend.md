@@ -45,6 +45,8 @@ product name and browser history becomes ambiguous.
 |---|---|---|
 | `/` | `LandingPage` | public |
 | `/demo` | `DemoPage` | public |
+| `/pricing` | `PricingPage` | public |
+| `/terms`, `/privacy` | `legal.tsx` | public |
 | `/login`, `/signup`, `/magic`, `/verify-email` | `public.tsx` | public |
 | `/invite/$token` | `InvitationPage` | public page, signed-in acceptance |
 | `/app` | `AppHomePage` | session |
@@ -78,6 +80,7 @@ The route files are large. These are the landmarks.
 | `routes/demo.tsx` | ~1150 | The funnel as a step machine: `VerticalStep`, `BusinessStep`, `IntakeStep`, `VoiceStep`, `LiveCall`, `WrapStep` |
 | `routes/contacts.tsx` | ~860 | Contacts list, import, detail |
 | `routes/public.tsx` | ~615 | Landing and all auth screens |
+| `routes/legal.tsx` | ~440 | Terms of Service and Privacy Policy. The operator's legal entity, registered address and governing law live in one `OPERATOR` constant at the top; blank renders the document *without* those clauses rather than with invented ones |
 | `routes/conversations.tsx` | ~480 | Call list and transcript view |
 | `routes/account.tsx` | ~230 | `/app` hub, account, security |
 | `routes/notifications.tsx` | ~305 | **Prototype only** |

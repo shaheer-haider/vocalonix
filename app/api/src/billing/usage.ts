@@ -23,6 +23,7 @@ import {
   businessesForAccount,
   type BillingAccount,
 } from "./account";
+import { sendUsageNotice } from "./notices";
 import { UNLIMITED, effectivePlan } from "./plans";
 
 /**
@@ -112,6 +113,8 @@ export async function usageForBusinessAccount(
 export interface UsageReconciliation {
   changed: boolean;
   suspended: boolean;
+  /** The threshold an email was sent for on this pass, if any. */
+  notified: UsageNoticeLevel | null;
 }
 
 export type SuspensionAction = "suspend" | "resume" | "none";
@@ -135,6 +138,54 @@ export function suspensionDecision(
   return exhausted ? "suspend" : "resume";
 }
 
+/** Where the warning email lands, as a percentage of the allowance. */
+export const USAGE_WARNING_PERCENT = 80;
+
+/** 0 = nothing owed, 80 = running out, 100 = stopped answering. */
+export type UsageNoticeLevel = 0 | 80 | 100;
+
+export function usageNoticeLevelFor(
+  allowanceMinutes: number,
+  minutesUsed: number,
+): UsageNoticeLevel {
+  // An unlimited plan has no threshold to cross, and a zero allowance would
+  // otherwise read as permanently exhausted and mail on the account's very
+  // first sweep.
+  if (allowanceMinutes === UNLIMITED || allowanceMinutes <= 0) return 0;
+  if (minutesUsed >= allowanceMinutes) return 100;
+  // Multiplied rather than divided: 80% of 30 minutes is 24 exactly, and the
+  // float form of that comparison is the kind of thing that fires a minute
+  // early on one plan and a minute late on another.
+  if (minutesUsed * 100 >= allowanceMinutes * USAGE_WARNING_PERCENT) return 80;
+  return 0;
+}
+
+/**
+ * Which usage email is owed, if any.
+ *
+ * Only ever notifies on the way **up**. The worker re-measures every minute, so
+ * without the stored level the same warning would go out sixty times an hour;
+ * and because the level is allowed to fall again when usage does, a new period
+ * re-arms the warning without anything having to know when the period started.
+ * That matters because a Free account is measured over a rolling 30 days and
+ * has no period start to key off at all.
+ *
+ * A jump straight from nothing to exhausted — one long call — sends only the
+ * exhausted mail. Nobody needs to be told they are near a limit they are
+ * already past.
+ */
+export function usageNoticeDecision(
+  allowanceMinutes: number,
+  minutesUsed: number,
+  lastNotifiedLevel: number,
+): { level: UsageNoticeLevel; notify: 80 | 100 | null } {
+  const level = usageNoticeLevelFor(allowanceMinutes, minutesUsed);
+  return {
+    level,
+    notify: level > lastNotifiedLevel && level !== 0 ? level : null,
+  };
+}
+
 /**
  * Brings an account's ability to answer calls in line with what it has spent.
  *
@@ -155,7 +206,7 @@ export async function reconcileAccountUsage(
   } else {
     account = accountOrId;
   }
-  if (!account) return { changed: false, suspended: false };
+  if (!account) return { changed: false, suspended: false, notified: null };
 
   const suspended = account.callsSuspendedAt !== null;
   const plan = effectivePlan(account);
@@ -164,24 +215,57 @@ export async function reconcileAccountUsage(
     account.planPeriodEnd,
   );
   const action = suspensionDecision(plan.monthlyMinutes, minutesUsed, suspended);
+  const notice = usageNoticeDecision(
+    plan.monthlyMinutes,
+    minutesUsed,
+    account.usageNoticeLevel,
+  );
 
-  if (action === "none") return { changed: false, suspended };
+  // The warning fires while the account is still answering, so the early exit
+  // has to consider the notice as well as the suspension. Returning on
+  // `action === "none"` alone is what would have kept the 80% mail from ever
+  // being sent, since crossing 80% changes nothing about suspension.
+  if (action === "none" && notice.level === account.usageNoticeLevel) {
+    return { changed: false, suspended, notified: null };
+  }
 
-  const owned = await businessesForAccount(account.id);
-  for (const business of owned) {
-    if (action === "suspend") await suspendBusinessCalls(business.id);
-    else await resumeBusinessCalls(business.id);
+  if (action !== "none") {
+    const owned = await businessesForAccount(account.id);
+    for (const business of owned) {
+      if (action === "suspend") await suspendBusinessCalls(business.id);
+      else await resumeBusinessCalls(business.id);
+    }
   }
 
   await db
     .update(billingAccounts)
     .set({
-      callsSuspendedAt: action === "suspend" ? new Date() : null,
+      ...(action === "none"
+        ? {}
+        : { callsSuspendedAt: action === "suspend" ? new Date() : null }),
+      usageNoticeLevel: notice.level,
       updatedAt: new Date(),
     })
     .where(eq(billingAccounts.id, account.id));
 
-  return { changed: true, suspended: action === "suspend" };
+  // Sent after the level is recorded, never before. `sendUsageNotice` swallows
+  // its own failures, so the worst case here is one mail nobody receives —
+  // whereas notifying first and failing to record would resend the same warning
+  // on every sweep, once a minute, forever.
+  if (notice.notify !== null) {
+    await sendUsageNotice({
+      account,
+      plan,
+      minutesUsed,
+      level: notice.notify,
+    });
+  }
+
+  return {
+    changed: action !== "none",
+    suspended: action === "none" ? suspended : action === "suspend",
+    notified: notice.notify,
+  };
 }
 
 /**
@@ -203,6 +287,11 @@ export async function reconcileAllUsage(): Promise<number> {
           result.suspended
             ? `Suspended calls for account ${account.id}: plan minutes spent.`
             : `Resumed calls for account ${account.id}: back inside plan minutes.`,
+        );
+      }
+      if (result.notified !== null) {
+        console.log(
+          `Emailed account ${account.id} at ${result.notified}% of its plan minutes.`,
         );
       }
     } catch (caught) {

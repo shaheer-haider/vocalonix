@@ -25,7 +25,7 @@ import {
   type TenantSettingsResponse,
 } from "../api";
 import { useAuth } from "../auth/AuthProvider";
-import { AuthShell } from "../components/shell";
+import { AuthShell, CONTACT_EMAIL } from "../components/shell";
 import {
   Alert,
   Box,
@@ -1340,6 +1340,10 @@ function WorkspaceBilling({ slug }: { slug: string }) {
       ? Math.min(100, Math.round((used / included) * 100))
       : 0;
   const overLimit = included !== null && used >= included;
+  // 80%, matching USAGE_WARNING_PERCENT in the API. Multiplied rather than
+  // divided for the same reason it is there.
+  const nearLimit =
+    included !== null && !overLimit && used * 100 >= included * 80;
 
   return (
     <section className="account-section">
@@ -1380,6 +1384,14 @@ function WorkspaceBilling({ slug }: { slug: string }) {
                 {included} minutes are spent. Upgrade below and it comes back on
                 straight away.
               </Alert>
+            ) : nearLimit ? (
+              // The same threshold the worker emails on, so the panel and the
+              // inbox never disagree about whether somebody was warned.
+              <Alert variant="warn">
+                {used} of {included} minutes used. When they are gone the agent
+                stops answering until the period rolls over or you move up a
+                plan.
+              </Alert>
             ) : null}
 
             <p className="auth-card-copy">
@@ -1415,7 +1427,11 @@ function WorkspaceBilling({ slug }: { slug: string }) {
                     status.extraBusinesses > 0
                       ? ` (${status.extraBusinesses} added)`
                       : ""
-                  }. Each has its own phone number.`}
+                  }.${
+                    status.plan.phoneNumbersPerBusiness > 0
+                      ? " Each has its own phone number."
+                      : " This plan answers on your website only."
+                  }`}
             </p>
 
             {status.periodEnd ? (
@@ -1436,8 +1452,9 @@ function WorkspaceBilling({ slug }: { slug: string }) {
 
             {!status.configured ? (
               <p className="auth-card-copy">
-                Online billing isn&apos;t enabled for this workspace yet.
-                Contact support to change your plan.
+                Online billing isn&apos;t enabled for this workspace yet. Email{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> to change
+                your plan.
               </p>
             ) : null}
           </Box>

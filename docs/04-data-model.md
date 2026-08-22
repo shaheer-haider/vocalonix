@@ -76,6 +76,13 @@ its paid extras for free.
 `calls_suspended_at` marks an account that has spent its minutes; every business
 it owns is suspended together, because they share one allowance.
 
+`usage_notice_level` is the highest threshold the owner has already been emailed
+about — 0, 80 or 100. The worker re-measures every minute, so without it the
+same warning would go out sixty times an hour. It is allowed to fall back down
+when usage does, and that is what re-arms the warning for the next period: an
+account on Free is measured over a rolling 30 days and has no period start to
+reset on, so a date-keyed reset would have re-armed paid accounts only.
+
 ### `businesses`
 The tenant. `slug` is unique and is how every workspace route addresses it.
 Soft-deleted via `deleted_at` — `requireWorkspace` filters on it, so a deleted

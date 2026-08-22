@@ -105,9 +105,17 @@ conversations, contacts and knowledge gaps.
   several businesses: Free and Essential include one, Pro includes three and
   sells further ones at $19 a month. Minutes pool across the account and
   suspension moves every business together, because they share one allowance.
-  One business gets exactly one phone number — a product rule rather than a plan
-  lever, so more numbers means more businesses. Seats are per business: 2 on
-  Free, 10 on Essential, unlimited on Pro.
+  A business that may hold a number holds exactly one — how many is a product
+  rule, so more numbers means more businesses; **whether** is a plan lever, and
+  Free answers on the website only. That gate is also what makes warm transfer
+  and outbound callbacks true of the paid plans, since both are refused without
+  a live number. Seats are per business: 2 on Free, 10 on Essential, unlimited
+  on Pro.
+- **Nobody finds out their agent stopped answering by accident.** The worker
+  emails the account owner at 80% of the plan's minutes and again when they are
+  spent, and the billing panel warns at the same threshold. Before this the
+  agent went silent with no warning of any kind, which contradicted the one
+  thing the product promises.
 - **A demo that starts in one click.** Picking a trade starts the call; contact
   details are asked for afterwards, when there is a reason to give them. The
   funnel used to ask nine fields across four screens before a visitor heard
@@ -161,6 +169,19 @@ conversations, contacts and knowledge gaps.
       successful upload. The restore was exercised on 2026-08-22: pulled back
       from R2, restored into a scratch database, 27 tables and 24 migration
       records intact, matching production.
+- [x] Terms of Service and Privacy Policy, published at `/terms` and `/privacy`,
+      linked from the footer of every public page and from the signup form at
+      the point of agreement. Stripe asks for both before an account leaves test
+      mode, and the product records call audio, transcripts and callers' contact
+      details, which puts it squarely in GDPR/CCPA territory.
+
+      **Needs the operator before live payments:** `OPERATOR` at the top of
+      `app/web/src/routes/legal.tsx` holds the legal entity, registered address
+      and governing law. All three are blank, and blank renders the document
+      *without* those clauses rather than with invented ones — a wrong
+      registered address is worse than a missing one. Have both documents read
+      by a lawyer; they are written to be accurate about what the product
+      actually does, which is not the same as being legal advice.
 - [ ] **Open:** uptime monitoring on `/api/health` and the worker heartbeat.
 - [ ] **Open:** a real call against the rebuilt stack. Everything below the call
       itself is verified; the call is not.

@@ -103,7 +103,7 @@ function planShape(plan: ReturnType<typeof planById>) {
     monthlyMinutes: plan.monthlyMinutes === UNLIMITED ? null : plan.monthlyMinutes,
     businesses: plan.businesses === UNLIMITED ? null : plan.businesses,
     additionalBusinessCents: plan.additionalBusinessCents,
-    phoneNumbersPerBusiness: PHONE_NUMBERS_PER_BUSINESS,
+    phoneNumbersPerBusiness: plan.phoneNumber ? PHONE_NUMBERS_PER_BUSINESS : 0,
     seats: plan.seats === UNLIMITED ? null : plan.seats,
     tagline: plan.tagline,
     features: plan.features,

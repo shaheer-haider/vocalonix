@@ -161,11 +161,39 @@ describe("the catalogue matches what the pricing page promises", () => {
     expect(PLANS.pro.additionalBusinessCents).toBe(1900);
   });
 
-  test("one business gets exactly one phone number, on every plan", () => {
-    // A product rule rather than a plan lever: more numbers means more
-    // businesses. If this ever becomes per-plan again, the pricing copy and
-    // `assertCanAddPhoneNumber` both have to change with it.
+  test("a business that may hold a number holds exactly one", () => {
+    // How many is a product rule and the same everywhere; whether is the plan
+    // lever below. More numbers means more businesses.
     expect(PHONE_NUMBERS_PER_BUSINESS).toBe(1);
+  });
+
+  test("only paid plans may claim a phone number", () => {
+    // A number is a recurring carrier charge. Free answering on the website
+    // costs us nothing per signup; a free number does not.
+    expect(PLANS.free.phoneNumber).toBe(false);
+    expect(PLANS.starter.phoneNumber).toBe(true);
+    expect(PLANS.pro.phoneNumber).toBe(true);
+  });
+
+  test("no plan advertises a phone number it cannot claim", () => {
+    // The bug this replaces: Essential sold "Warm transfer to a person" and Pro
+    // sold "Outbound callbacks from your own number" while both worked on Free,
+    // because nothing was gated at all. Both need a live number, so the number
+    // gate is what makes the copy true — and this is the assertion that keeps
+    // the two from drifting apart again.
+    for (const plan of Object.values(PLANS)) {
+      const mentionsNumber = plan.features.some((feature) =>
+        /phone number|outbound|transfer/i.test(feature),
+      );
+      if (mentionsNumber) expect(plan.phoneNumber).toBe(true);
+    }
+  });
+
+  test("every paid plan opens by carrying the tier below it", () => {
+    // The cards read as a ladder rather than three unrelated lists, and a
+    // reader should not have to diff them to see what upgrading buys.
+    expect(PLANS.starter.features[0]).toBe("Everything in Free");
+    expect(PLANS.pro.features[0]).toBe(`Everything in ${PLANS.starter.name}`);
   });
 
   test("the stored plan id is not the display name", () => {
