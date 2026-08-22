@@ -1344,6 +1344,18 @@ function WorkspaceBilling({ slug }: { slug: string }) {
   // divided for the same reason it is there.
   const nearLimit =
     included !== null && !overLimit && used * 100 >= included * 80;
+  // Mirrors `nextPlanUp` on the server. "Upgrade below" is a dead end on the
+  // largest plan, which is the same class of bug as a button that goes nowhere:
+  // there is nothing below to click.
+  const higherPlan =
+    included === null
+      ? null
+      : ((status?.available ?? [])
+          .filter(
+            (plan) =>
+              plan.monthlyMinutes === null || plan.monthlyMinutes > included,
+          )
+          .sort((a, b) => a.amountCents - b.amountCents)[0] ?? null);
 
   return (
     <section className="account-section">
@@ -1380,17 +1392,28 @@ function WorkspaceBilling({ slug }: { slug: string }) {
 
             {status.callsSuspendedAt ? (
               <Alert variant="error">
-                Your agent has stopped answering — this plan&apos;s{" "}
-                {included} minutes are spent. Upgrade below and it comes back on
-                straight away.
+                Your agent has stopped answering — this plan&apos;s {included}{" "}
+                minutes are spent.{" "}
+                {higherPlan ? (
+                  <>
+                    Move up to {higherPlan.name} below and it comes back on
+                    straight away.
+                  </>
+                ) : (
+                  <>
+                    This is our largest plan — email{" "}
+                    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> and
+                    we will get you answering again today.
+                  </>
+                )}
               </Alert>
             ) : nearLimit ? (
               // The same threshold the worker emails on, so the panel and the
               // inbox never disagree about whether somebody was warned.
               <Alert variant="warn">
                 {used} of {included} minutes used. When they are gone the agent
-                stops answering until the period rolls over or you move up a
-                plan.
+                stops answering until the period rolls over
+                {higherPlan ? ` or you move up to ${higherPlan.name}` : ""}.
               </Alert>
             ) : null}
 

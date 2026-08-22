@@ -182,3 +182,32 @@ export function planByPriceId(priceId: string | null): Plan | null {
 export function purchasablePlans(): Plan[] {
   return Object.values(PLANS).filter((plan) => plan.priceId !== null);
 }
+
+/**
+ * The cheapest of `candidates` that would actually give this plan more minutes.
+ *
+ * Pure, and separate from the catalogue lookup below, because the interesting
+ * case is not "which plan" but "no plan" — and that answer depends on the
+ * environment, which a unit test cannot set.
+ */
+export function higherPlanThan(plan: Plan, candidates: Plan[]): Plan | null {
+  return (
+    candidates
+      .filter((candidate) => candidate.monthlyMinutes > plan.monthlyMinutes)
+      .sort((a, b) => a.amountCents - b.amountCents)[0] ?? null
+  );
+}
+
+/**
+ * The plan to point somebody at when they have run out, or null when there is
+ * nowhere to point them.
+ *
+ * Every "you have run out, upgrade" message needs this. The top plan has
+ * nowhere to go, and telling somebody on it to move up is the same dead end as
+ * a "Talk to us" button pointing at the signup form. It is null on a deployment
+ * with no Stripe price ids too, where nothing can be bought at all — there the
+ * honest instruction really is "email us".
+ */
+export function nextPlanUp(plan: Plan): Plan | null {
+  return higherPlanThan(plan, purchasablePlans());
+}

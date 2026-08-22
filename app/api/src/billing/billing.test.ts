@@ -10,8 +10,11 @@ import {
   PLANS,
   UNLIMITED,
   effectivePlan,
+  higherPlanThan,
   isEntitled,
+  nextPlanUp,
   planById,
+  purchasablePlans,
 } from "./plans";
 
 const SECRET = "whsec_test_secret";
@@ -187,6 +190,33 @@ describe("the catalogue matches what the pricing page promises", () => {
       );
       if (mentionsNumber) expect(plan.phoneNumber).toBe(true);
     }
+  });
+
+  test("the upgrade to offer climbs the ladder and stops at the top", () => {
+    // Every "you have run out, upgrade" message asks this. Telling somebody on
+    // the largest plan to move up is the same dead end as a button that goes
+    // nowhere — there is nothing to click.
+    const all = Object.values(PLANS);
+    expect(higherPlanThan(PLANS.free, all)?.id).toBe("starter");
+    expect(higherPlanThan(PLANS.starter, all)?.id).toBe("pro");
+    expect(higherPlanThan(PLANS.pro, all)).toBeNull();
+  });
+
+  test("the cheapest sufficient upgrade wins, not the first listed", () => {
+    const all = Object.values(PLANS);
+    // Pro has more minutes than Free too, so an unsorted implementation could
+    // answer "Pro" here and quote $149 to somebody who needs $49.
+    expect(higherPlanThan(PLANS.free, all)?.amountCents).toBe(
+      PLANS.starter.amountCents,
+    );
+  });
+
+  test("there is nowhere to upgrade when nothing can be bought", () => {
+    // Which is the case in this test run: no Stripe price ids are set, so
+    // `purchasablePlans()` is empty. A deployment with billing switched off
+    // must not tell people to move up a plan they cannot buy.
+    expect(purchasablePlans()).toHaveLength(0);
+    expect(nextPlanUp(PLANS.free)).toBeNull();
   });
 
   test("every paid plan opens by carrying the tier below it", () => {

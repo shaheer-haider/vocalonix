@@ -19,7 +19,7 @@ import { db } from "../db/client";
 import { businessPhoneNumbers, users } from "../db/schema";
 import { env } from "../env";
 import { businessesForAccount, type BillingAccount } from "./account";
-import type { Plan } from "./plans";
+import { nextPlanUp, type Plan } from "./plans";
 
 /**
  * Where to send somebody who wants to act on the mail. An account can own
@@ -91,15 +91,20 @@ function approachingCopy(
   greeting: string,
   hasPhone: boolean,
 ): NoticeCopy {
+  const higher = nextPlanUp(plan);
   return {
     subject: `Harkbell: ${minutes(minutesUsed)} of your ${minutes(plan.monthlyMinutes)} minutes are used`,
     lines: [
       greeting,
       `Your agent has answered ${minutes(minutesUsed)} of the ${minutes(plan.monthlyMinutes)} minutes included on ${plan.name}.`,
-      `When the allowance is spent the agent stops answering ${channels(hasPhone)}, until the period rolls over or you move up a plan.`,
-      "Nothing is charged automatically. Moving up a plan is the only thing that adds minutes.",
+      higher
+        ? `When the allowance is spent the agent stops answering ${channels(hasPhone)}, until the period rolls over or you move up to ${higher.name}.`
+        : `When the allowance is spent the agent stops answering ${channels(hasPhone)}, until the period rolls over. ${plan.name} is our largest plan, so reply to this email and we will sort out more minutes with you.`,
+      higher
+        ? "Nothing is charged automatically. Moving up a plan is the only thing that adds minutes."
+        : "Nothing is charged automatically, and we will not bill you for going over.",
     ],
-    action: "Review your usage",
+    action: higher ? "Review your usage" : "Review your usage and reply here",
   };
 }
 
@@ -109,15 +114,18 @@ function exhaustedCopy(
   greeting: string,
   hasPhone: boolean,
 ): NoticeCopy {
+  const higher = nextPlanUp(plan);
   return {
     subject: "Your Harkbell agent has stopped answering",
     lines: [
       greeting,
       `Your agent has used all ${minutes(plan.monthlyMinutes)} minutes included on ${plan.name} and has stopped answering ${channels(hasPhone)}.`,
-      "Callers will not reach it until the period rolls over or you move up a plan. Moving up brings it back on straight away.",
+      higher
+        ? `Callers will not reach it until the period rolls over or you move up to ${higher.name}. Moving up brings it back on straight away.`
+        : `Callers will not reach it until the period rolls over. ${plan.name} is our largest plan — reply to this email and we will get you answering again today.`,
       `Minutes answered this period: ${minutes(minutesUsed)}.`,
     ],
-    action: "Move up a plan",
+    action: higher ? `Move up to ${higher.name}` : "Open your billing panel",
   };
 }
 
