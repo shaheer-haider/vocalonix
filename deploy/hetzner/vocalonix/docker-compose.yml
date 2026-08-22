@@ -192,6 +192,33 @@ services:
     networks:
       - app-network
 
+  # Off-box backups. The Postgres volume above was the only copy of every
+  # booking, contact and transcript this product has ever produced.
+  #
+  # Nothing depends_on this service, deliberately: a backup problem must never
+  # be able to take the product down. It fails loudly in its own logs instead.
+  harkbell-backup:
+    build:
+      context: ../../..
+      dockerfile: deploy/hetzner/vocalonix/Dockerfile.backup
+    restart: unless-stopped
+    environment:
+      PGHOST: "vocalonix-db"
+      PGUSER: "${HARKBELL_POSTGRES_USER:-vocalonix}"
+      PGPASSWORD: "${HARKBELL_POSTGRES_PASSWORD:-vocalonix}"
+      PGDATABASE: "${HARKBELL_POSTGRES_DB:-vocalonix}"
+      R2_ACCESS_KEY_ID: "${R2_ACCESS_KEY_ID:-}"
+      R2_SECRET_ACCESS_KEY: "${R2_SECRET_ACCESS_KEY:-}"
+      R2_ENDPOINT: "${R2_ENDPOINT:-}"
+      R2_BUCKET: "${R2_BUCKET:-}"
+      BACKUP_INTERVAL_HOURS: "${BACKUP_INTERVAL_HOURS:-6}"
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-14}"
+    depends_on:
+      vocalonix-db:
+        condition: service_healthy
+    networks:
+      - app-network
+
 volumes:
   vocalonix_postgres_data:
   caddy-data:

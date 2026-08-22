@@ -1,0 +1,14 @@
+# pg_dump has to match the server it dumps, so this starts from the same image
+# the database runs on rather than pinning a client version separately — a
+# mismatch fails at restore time, which is the worst moment to find out.
+FROM postgres:16-alpine
+
+# rclone rather than the AWS CLI: one small binary that speaks S3, and the
+# official aws-cli image has no pg_dump, which would mean two containers and a
+# shared volume to do one job.
+RUN apk add --no-cache rclone
+
+COPY deploy/hetzner/vocalonix/backup.sh /usr/local/bin/backup.sh
+RUN chmod +x /usr/local/bin/backup.sh
+
+ENTRYPOINT ["/usr/local/bin/backup.sh"]

@@ -16,6 +16,47 @@ Two-server Docker deployment for Vocalonix and Dograh on Hetzner Cloud.
   Caddy serves a Cloudflare Origin Certificate on that hop. `voice.harkbell.com`
   points straight at the Dograh box and gets a normal Let’s Encrypt certificate.
 
+### Backups
+
+`harkbell-backup` dumps Postgres to Cloudflare R2 every 6 hours and keeps 14
+days. It runs as a compose service rather than a host cron, because everything
+on this box comes from Infisical through the deploy and a timer would be server
+state no pipeline owns.
+
+Nothing `depends_on` it, deliberately — a backup problem must never be able to
+take the product down. It fails loudly in its own logs instead:
+
+```bash
+docker logs vocalonix-harkbell-backup-1 --tail 20
+```
+
+Each run refuses to upload a dump under 1 KB and runs `pg_restore --list` over
+the archive first, so a truncated or corrupt dump fails at backup time rather
+than at the moment it is needed. Old backups are pruned **only after** a
+successful upload, so a run that cannot reach R2 never deletes the history it
+failed to add to.
+
+**Restoring.** This has been tested end to end — restore into a scratch
+database first and compare, never straight over the live one:
+
+```bash
+# on the box
+docker run --rm --entrypoint sh --network vocalonix_app-network \
+  -e RCLONE_CONFIG_R2_TYPE=s3 -e RCLONE_CONFIG_R2_PROVIDER=Cloudflare \
+  -e RCLONE_CONFIG_R2_ACCESS_KEY_ID=... -e RCLONE_CONFIG_R2_SECRET_ACCESS_KEY=... \
+  -e RCLONE_CONFIG_R2_ENDPOINT=https://<account>.r2.cloudflarestorage.com \
+  -e RCLONE_CONFIG_R2_REGION=auto -v /tmp/restore:/out \
+  vocalonix-harkbell-backup -c 'rclone copy r2:harkbell-backups/postgres/ /out/'
+
+docker exec vocalonix-vocalonix-db-1 psql -U vocalonix -d postgres -c 'create database restore_test'
+docker cp /tmp/restore/<file>.dump vocalonix-vocalonix-db-1:/tmp/r.dump
+docker exec vocalonix-vocalonix-db-1 pg_restore -U vocalonix -d restore_test /tmp/r.dump
+# compare table counts against the live database, then promote deliberately
+```
+
+The credentials are in Infisical `/be` (`R2_*`), so the deploy carries them and
+there is nothing to configure on the server.
+
 ### TLS
 
 The origin certificate lives in Infisical `/tls` as `ORIGIN_CERT_B64` and

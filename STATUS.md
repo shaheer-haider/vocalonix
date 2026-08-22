@@ -155,8 +155,12 @@ conversations, contacts and knowledge gaps.
       derives it from the API key.
 - [x] Resend key and `EMAIL_FROM`, `REQUIRE_EMAIL_VERIFICATION=true`, unique
       `AUTH_SECRET`, HTTPS origins — all enforced at boot and the box boots.
-- [ ] **Open:** database backups + a tested restore path. Nothing is backed up
-      today, on a box whose Postgres volume is the only copy.
+- [x] Database backups + a tested restore path. `harkbell-backup` dumps
+      Postgres to Cloudflare R2 every 6 hours, keeps 14 days, verifies each
+      archive with `pg_restore --list` before uploading, and prunes only after a
+      successful upload. The restore was exercised on 2026-08-22: pulled back
+      from R2, restored into a scratch database, 27 tables and 24 migration
+      records intact, matching production.
 - [ ] **Open:** uptime monitoring on `/api/health` and the worker heartbeat.
 - [ ] **Open:** a real call against the rebuilt stack. Everything below the call
       itself is verified; the call is not.
