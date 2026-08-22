@@ -38,8 +38,8 @@ const SUBPROCESSORS = [
   },
   {
     name: "Cloudflare, Inc.",
-    where: "Global; backups in the European Union",
-    what: "DNS, TLS, content delivery, and encrypted off-site database backups.",
+    where: "Global",
+    what: "DNS, TLS, content delivery, and encrypted off-site database backups in R2.",
   },
   {
     name: "Telnyx LLC",
@@ -262,9 +262,9 @@ export function TermsPage() {
         reasonable to do so we will warn you first.
       </p>
       <p>
-        After closure we delete your data on the schedule in the{" "}
-        <Link to="/privacy">Privacy Policy</Link>. Export anything you want to
-        keep before you close.
+        After closure we stop processing your data, and we erase it on request —
+        see the <Link to="/privacy">Privacy Policy</Link> for what is kept and
+        for how long. Export anything you want to keep before you close.
       </p>
 
       <h2>12. Availability</h2>
@@ -424,8 +424,8 @@ export function PrivacyPage() {
       <h2>5. Who else sees it</h2>
       <p>
         We use the providers below to run Harkbell. Each gets only what it needs
-        for its part, each is bound by a contract, and none of them may use your
-        data for their own purposes.
+        for its part, and each is used under terms that restrict it to
+        processing on our behalf rather than for its own purposes.
       </p>
       <ul className="legal-list">
         {SUBPROCESSORS.map((processor) => (
@@ -447,7 +447,7 @@ export function PrivacyPage() {
       <h2>6. Where it is held</h2>
       <p>
         Your database, your recordings and your transcripts live on servers in
-        Helsinki, Finland. Encrypted backups are stored in the European Union.
+        Helsinki, Finland. Encrypted backups are held in Cloudflare R2.
       </p>
       <p>
         Some of the providers above are in the United States, so call audio and
@@ -458,16 +458,22 @@ export function PrivacyPage() {
       <h2>7. How long we keep it</h2>
       <ul>
         <li>
-          <strong>Account and business data</strong> — while your account is
-          open, then deleted within 30 days of closure.
+          <strong>Contacts and knowledge</strong> — you delete these from the
+          dashboard whenever you like, and they go immediately.
         </li>
         <li>
-          <strong>Call recordings and transcripts</strong> — until you delete
-          them, or until your account closes.
+          <strong>Account and business data</strong> — kept while your account is
+          open. Deleting a business removes it from the product at once; ask us
+          and we will erase the underlying records.
+        </li>
+        <li>
+          <strong>Call recordings and transcripts</strong> — kept for as long as
+          the business exists, so that you can go back to a call months later.
+          Ask us to erase them and we will.
         </li>
         <li>
           <strong>Backups</strong> — rolling, and never more than 14 days old, so
-          deleted data leaves the backups within 14 days too.
+          anything erased leaves the backups within 14 days too.
         </li>
         <li>
           <strong>Billing records</strong> — kept as long as tax law requires,
@@ -477,6 +483,10 @@ export function PrivacyPage() {
           <strong>Server logs</strong> — a short rolling window for security.
         </li>
       </ul>
+      <p>
+        We do not delete your calls on a timer. If you would rather they were
+        not kept indefinitely, tell us and we will erase them.
+      </p>
 
       <h2>8. Your rights</h2>
       <p>
