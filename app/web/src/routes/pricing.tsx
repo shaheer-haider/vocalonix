@@ -3,7 +3,13 @@ import { Link } from "@tanstack/react-router";
 
 import { api } from "../api";
 import { useAuth } from "../auth/AuthProvider";
+import {
+  CONTACT_EMAIL,
+  MarketingFooter,
+  MarketingNav,
+} from "../components/shell";
 import { Alert, Box, LoadingState, Pill } from "../components/ui";
+import { useDograhHealth } from "../hooks/useDograhHealth";
 import type { PublicPlan, PublicPricing } from "../types";
 
 /** Whole dollars unless the price genuinely has cents. */
@@ -100,11 +106,11 @@ const faqs = [
   },
   {
     q: "What happens when I run out?",
-    a: "The agent stops answering until the month rolls over or you upgrade. We never bill you for going over without asking first.",
+    a: "We email you when you are at 80%, and again the moment they are gone. The agent then stops answering until the period rolls over or you move up a plan. There is no overage charge — we would rather stop than send you a bill you did not agree to.",
   },
   {
     q: "Do I need a phone number?",
-    a: "No. The website widget works on its own, and it is the fastest way to hear the agent on your own site. Add a number whenever you want one — every business includes one.",
+    a: "No. The website widget works on its own, and it is the fastest way to hear the agent on your own site. The free plan answers there only; a number of its own — with warm transfer and outbound callbacks — comes with Essential and Pro, one per business.",
   },
   {
     q: "What if I run more than one business?",
@@ -119,30 +125,12 @@ const faqs = [
 export function PricingPage() {
   const auth = useAuth();
   const { pricing, error } = usePricing();
+  const { turnEnabled } = useDograhHealth();
   const isAuthenticated = auth.status === "authenticated";
 
   return (
     <div className="landing-page">
-      <header className="landing-nav">
-        <Link to="/" className="wordmark">
-          harkbell
-        </Link>
-        <nav className="landing-nav__links">
-          <Link to="/demo">Hear it now</Link>
-          {isAuthenticated ? (
-            <Link to="/app" className="ui-button ui-button--primary">
-              Open app
-            </Link>
-          ) : (
-            <>
-              <Link to="/login">Log in</Link>
-              <Link to="/signup" className="ui-button ui-button--primary">
-                Start setup
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+      <MarketingNav />
 
       <section className="landing-hero">
         <Pill variant="accent">Pricing</Pill>
@@ -175,22 +163,38 @@ export function PricingPage() {
                   >
                     Start free
                   </Link>
-                ) : (
+                ) : plan.purchasable ? (
                   <Link
                     to={isAuthenticated ? "/app" : "/signup"}
                     className={`ui-button${
                       plan.highlighted ? " ui-button--primary" : ""
                     }`}
                   >
-                    {plan.purchasable ? `Choose ${plan.name}` : "Talk to us"}
+                    Choose {plan.name}
                   </Link>
+                ) : (
+                  // "Talk to us" pointed at /signup, which is not talking to
+                  // anybody. A plan with no price id cannot be bought online,
+                  // so the only honest action is an address that reaches a
+                  // person.
+                  <a
+                    href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+                      `Harkbell ${plan.name}`,
+                    )}`}
+                    className={`ui-button${
+                      plan.highlighted ? " ui-button--primary" : ""
+                    }`}
+                  >
+                    Email us about {plan.name}
+                  </a>
                 )
               }
             />
             {!pricing.billingEnabled ? (
               <p className="landing-hero__note">
-                Card payments are not switched on yet — get in touch and we will
-                set your workspace up directly.
+                Card payments are not switched on yet — email{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> and we
+                will set your workspace up directly.
               </p>
             ) : null}
           </section>
@@ -208,21 +212,37 @@ export function PricingPage() {
             </div>
           </section>
 
+          {/* The page has to close on something. When the voice engine cannot
+              take a call, "Hear it now" is a link to a demo that will not dial,
+              so the close becomes the free plan instead of disappearing. */}
           <section className="landing-section landing-cta">
-            <h2>Hear it before you decide.</h2>
-            <div className="landing__actions">
-              <Link to="/demo" className="ui-button ui-button--primary">
-                Hear it now →
-              </Link>
-            </div>
+            {turnEnabled ? (
+              <>
+                <h2>Hear it before you decide.</h2>
+                <div className="landing__actions">
+                  <Link to="/demo" className="ui-button ui-button--primary">
+                    Hear it now →
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2>Start free, and hear it on your own site.</h2>
+                <div className="landing__actions">
+                  <Link
+                    to={isAuthenticated ? "/app" : "/signup"}
+                    className="ui-button ui-button--primary"
+                  >
+                    {isAuthenticated ? "Open app →" : "Start setup →"}
+                  </Link>
+                </div>
+              </>
+            )}
           </section>
         </>
       ) : null}
 
-      <footer className="landing-footer">
-        <span>© 2026 Harkbell</span>
-        <Link to="/demo">Hear it now</Link>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }

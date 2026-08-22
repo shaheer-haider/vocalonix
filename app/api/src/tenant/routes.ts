@@ -43,7 +43,9 @@ import {
   isAllowedDocumentFilename,
   matchesDocumentSignature,
 } from "../uploads";
+import { accountForBusiness } from "../billing/account";
 import { assertCanAddPhoneNumber } from "../billing/limits";
+import { effectivePlan } from "../billing/plans";
 import { requirePermission, requireWorkspace } from "../workspace/context";
 import { can } from "../workspace/permissions";
 import {
@@ -736,7 +738,7 @@ export const tenantRoutes = new Elysia()
    */
   .get("/api/b/:slug/phone", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
-    const [numbers, telephony, providers, settings] = await Promise.all([
+    const [numbers, telephony, providers, settings, account] = await Promise.all([
       listBusinessPhoneNumbers(workspace.business.id),
       telephonyStatus(),
       providerStatus(),
@@ -745,7 +747,9 @@ export const tenantRoutes = new Elysia()
         .from(businessAgentSettings)
         .where(eq(businessAgentSettings.businessId, workspace.business.id))
         .limit(1),
+      accountForBusiness(workspace.business.id),
     ]);
+    const plan = effectivePlan(account);
     return {
       numbers,
       transferPhone: settings[0]?.transferPhone ?? "",
@@ -756,6 +760,10 @@ export const tenantRoutes = new Elysia()
       canManage: can(workspace.role, "agent.edit"),
       // A business gets one number; the picker hides itself once it has one.
       atNumberLimit: numbers.length > 0,
+      // Reported so the picker can say "not on this plan" up front rather than
+      // letting somebody choose a number and meet a 402 at the last step.
+      phoneIncluded: plan.phoneNumber,
+      planName: plan.name,
     };
   })
   /**
@@ -768,6 +776,10 @@ export const tenantRoutes = new Elysia()
     async ({ params, query, request }) => {
       const workspace = await requireWorkspace(request.headers, params.slug);
       requirePermission(workspace.role, "agent.edit");
+      // The same gate as the purchase below, applied a step earlier so that a
+      // plan without numbers is told before it picks one it cannot have. The
+      // purchase stays guarded regardless — this is a courtesy, not the check.
+      await assertCanAddPhoneNumber(workspace.business);
       const numbers = await searchAvailableNumbers({
         countryCode: query.country ?? "US",
         areaCode: query.areaCode,
@@ -830,6 +842,9 @@ export const tenantRoutes = new Elysia()
   .get("/api/b/:slug/phone/pool", async ({ params, request }) => {
     const workspace = await requireWorkspace(request.headers, params.slug);
     requirePermission(workspace.role, "agent.edit");
+    // Gated with the search above, for the same reason: a plan that cannot
+    // claim a number has no business browsing the ones on offer.
+    await assertCanAddPhoneNumber(workspace.business);
     return { numbers: await listPooledNumbers(workspace.business.id) };
   })
   /**

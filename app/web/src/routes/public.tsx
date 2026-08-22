@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { ApiClientError, api } from "../api";
 import { useAuth } from "../auth/AuthProvider";
-import { AuthShell } from "../components/shell";
+import { AuthShell, MarketingFooter, MarketingNav } from "../components/shell";
 import { Alert, Box, Button, Pill, TextField } from "../components/ui";
 import { useDograhHealth } from "../hooks/useDograhHealth";
 import { money, usePricing } from "./pricing";
@@ -67,7 +67,7 @@ const landingChannels = [
     title: "Real phone number",
     pill: "Live",
     live: true,
-    body: "Point a number at the same agent and it answers every call on it — with warm transfer to a person when the caller asks.",
+    body: "Point a number at the same agent and it answers every call on it, with warm transfer to a person when the caller asks. Included from Essential up.",
   },
   {
     title: "SMS & email",
@@ -77,10 +77,15 @@ const landingChannels = [
   },
 ];
 
+/**
+ * Three facts the hero does not already make. Two of these used to restate the
+ * note directly under the headline word for word, which reads as padding rather
+ * than evidence.
+ */
 const landingStats = [
-  { value: "24/7", label: "answers on your site, day or night" },
+  { value: "24/7", label: "answering, including nights and weekends" },
   { value: "1 line", label: "of embed code from publish to live" },
-  { value: "1 afternoon", label: "from sign-up to live on the site" },
+  { value: "$0", label: "to hear it answering on your own site" },
 ];
 
 /**
@@ -118,29 +123,7 @@ export function LandingPage() {
 
   return (
     <div className="landing-page">
-      <header className="landing-nav">
-        <Link to="/" className="wordmark">
-          harkbell
-        </Link>
-        <nav className="landing-nav__links">
-          {turnEnabled ? (
-            <Link to="/demo">Hear it now</Link>
-          ) : null}
-          <Link to="/pricing">Pricing</Link>
-          {isAuthenticated ? (
-            <Link to="/app" className="ui-button ui-button--primary">
-              Open app
-            </Link>
-          ) : (
-            <>
-              <Link to="/login">Log in</Link>
-              <Link to="/signup" className="ui-button ui-button--primary">
-                Start setup
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+      <MarketingNav />
 
       <section className="landing-hero">
         <Pill variant="accent">For appointment businesses</Pill>
@@ -162,8 +145,8 @@ export function LandingPage() {
           ) : null}
         </div>
         <p className="landing-hero__note">
-          Live in an afternoon · works on your site before you add a number ·
-          cancel in two clicks
+          No card to start · works on your site before you add a number · cancel
+          in two clicks
         </p>
       </section>
 
@@ -200,7 +183,10 @@ export function LandingPage() {
             <ol>
               <li>Answered in two rings, by name, with your prices.</li>
               <li>The caller hears real answers from your knowledge.</li>
-              <li>A transcript and anything unanswered is flagged for 8am.</li>
+              <li>
+                A transcript, and anything it could not answer, are waiting in
+                your dashboard.
+              </li>
             </ol>
           </Box>
         </div>
@@ -215,31 +201,24 @@ export function LandingPage() {
         ))}
       </section>
 
+      {/* One close, not two. A pricing call to action immediately followed by a
+          sign-up call to action asked the same question twice and gave the page
+          two endings. */}
       <section className="landing-section landing-cta">
         <p className="eyebrow">Pricing</p>
-        <h2>Free until it earns its keep.</h2>
+        <h2>Put a voice on your website this afternoon.</h2>
         <p className="landing-pricing-note">{pricingSummary}</p>
         <div className="landing__actions">
+          <Link to={primaryHref} className="ui-button ui-button--primary">
+            {primaryLabel}
+          </Link>
           <Link to="/pricing" className="ui-button">
             See pricing
           </Link>
         </div>
       </section>
 
-      <section className="landing-section landing-cta">
-        <h2>Put a voice on your website this afternoon.</h2>
-        <div className="landing__actions">
-          <Link to={primaryHref} className="ui-button ui-button--primary">
-            {primaryLabel}
-          </Link>
-        </div>
-      </section>
-
-      <footer className="landing-footer">
-        <span>© 2026 Harkbell</span>
-        <Link to="/pricing">Pricing</Link>
-        {turnEnabled ? <Link to="/demo">Hear it now</Link> : null}
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }
@@ -420,6 +399,13 @@ export function SignupPage() {
           >
             Create account →
           </Button>
+          {/* At the point of agreement, not buried in a footer. Both documents
+              are also what Stripe asks for before an account leaves test mode. */}
+          <p className="auth-consent">
+            By creating an account you agree to our{" "}
+            <Link to="/terms">Terms of Service</Link> and{" "}
+            <Link to="/privacy">Privacy Policy</Link>.
+          </p>
         </Box>
       </form>
       <p className="auth-switch">

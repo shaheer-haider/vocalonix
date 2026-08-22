@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
 import { PLANS, UNLIMITED } from "./plans";
-import { suspensionDecision, usageWindowStart } from "./usage";
+import {
+  USAGE_WARNING_PERCENT,
+  suspensionDecision,
+  usageNoticeDecision,
+  usageNoticeLevelFor,
+  usageWindowStart,
+} from "./usage";
 
 describe("suspensionDecision", () => {
   test("stops a workspace that has spent its allowance", () => {
@@ -61,5 +67,112 @@ describe("usageWindowStart", () => {
     const start = usageWindowStart(stale);
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     expect(Math.abs(start.getTime() - thirtyDaysAgo)).toBeLessThan(1000);
+  });
+});
+
+describe("usageNoticeLevelFor", () => {
+  test("says nothing until the warning threshold", () => {
+    expect(usageNoticeLevelFor(500, 0)).toBe(0);
+    expect(usageNoticeLevelFor(500, 399)).toBe(0);
+  });
+
+  test("warns exactly on the threshold, not a minute after", () => {
+    // 80% of 500 is 400. An off-by-one here is the difference between a
+    // warning and no warning for a whole class of plan.
+    expect(usageNoticeLevelFor(500, 400)).toBe(80);
+  });
+
+  test("warns on a threshold that is not a round number of minutes", () => {
+    // Free is 30 minutes, so the threshold is 24 exactly. The float form of
+    // this comparison is what would drift.
+    expect(usageNoticeLevelFor(30, 23)).toBe(0);
+    expect(usageNoticeLevelFor(30, 24)).toBe(80);
+  });
+
+  test("reports exhaustion from the minute the allowance is met", () => {
+    expect(usageNoticeLevelFor(500, 500)).toBe(100);
+    expect(usageNoticeLevelFor(500, 900)).toBe(100);
+  });
+
+  test("has no threshold on an unlimited plan", () => {
+    expect(usageNoticeLevelFor(UNLIMITED, 10_000_000)).toBe(0);
+  });
+
+  test("treats a zero allowance as nothing to warn about", () => {
+    // Otherwise an account on a zero-minute plan is mailed "you have stopped
+    // answering" on its very first sweep, before it has done anything.
+    expect(usageNoticeLevelFor(0, 0)).toBe(0);
+  });
+
+  test("agrees with the constant the copy is written against", () => {
+    expect(USAGE_WARNING_PERCENT).toBe(80);
+  });
+});
+
+describe("usageNoticeDecision", () => {
+  test("sends the warning the first time the threshold is crossed", () => {
+    expect(usageNoticeDecision(500, 400, 0)).toEqual({ level: 80, notify: 80 });
+  });
+
+  test("does not send it again on the next sweep", () => {
+    // The worker re-measures every minute; this is the whole reason the level
+    // is stored rather than derived.
+    expect(usageNoticeDecision(500, 420, 80)).toEqual({
+      level: 80,
+      notify: null,
+    });
+  });
+
+  test("escalates from warned to exhausted", () => {
+    expect(usageNoticeDecision(500, 500, 80)).toEqual({
+      level: 100,
+      notify: 100,
+    });
+  });
+
+  test("sends only the exhausted mail when both are crossed at once", () => {
+    // One long call can take an account from comfortable to spent. Telling
+    // somebody they are close to a limit they have already passed is noise.
+    expect(usageNoticeDecision(500, 500, 0)).toEqual({
+      level: 100,
+      notify: 100,
+    });
+  });
+
+  test("stays quiet once exhausted", () => {
+    expect(usageNoticeDecision(500, 900, 100)).toEqual({
+      level: 100,
+      notify: null,
+    });
+  });
+
+  test("re-arms when usage falls back, as at a new period", () => {
+    // The level drops with no mail sent, which is what lets the next period
+    // warn again. A rolling 30-day window has no period start to reset on, so
+    // this is the only thing that re-arms a Free account.
+    expect(usageNoticeDecision(500, 10, 100)).toEqual({
+      level: 0,
+      notify: null,
+    });
+    expect(usageNoticeDecision(500, 400, 0)).toEqual({
+      level: 80,
+      notify: 80,
+    });
+  });
+
+  test("re-arms after an upgrade without mailing about the old plan", () => {
+    // Free spent 30 of 30 and was mailed at 100. Buying Essential puts the
+    // same 30 minutes against 500, which must not send anything at all.
+    expect(usageNoticeDecision(PLANS.starter.monthlyMinutes, 30, 100)).toEqual({
+      level: 0,
+      notify: null,
+    });
+  });
+
+  test("never mails an unlimited plan", () => {
+    expect(usageNoticeDecision(UNLIMITED, 10_000_000, 0)).toEqual({
+      level: 0,
+      notify: null,
+    });
   });
 });

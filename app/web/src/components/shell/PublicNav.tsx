@@ -3,6 +3,13 @@ import { Link } from "@tanstack/react-router";
 import { useAuth } from "../../auth/AuthProvider";
 import { useDograhHealth } from "../../hooks/useDograhHealth";
 
+/**
+ * The nav for `PageShell`, which today means the design system page.
+ *
+ * The marketing pages use `MarketingNav` instead — different chrome, different
+ * styling. Keep the labels in step with it: two navs offering the same product
+ * under two different button labels is how this drifted the first time.
+ */
 export function TopNav() {
   const auth = useAuth();
   const { turnEnabled } = useDograhHealth();
@@ -13,9 +20,10 @@ export function TopNav() {
       <Link to="/" className="wordmark" aria-label="Harkbell home">
         harkbell
       </Link>
+      {/* These were anchors to `/#how-it-works` and `/#widget`, and neither
+          section has ever existed on the landing page — both scrolled nowhere. */}
       <nav aria-label="Public navigation">
-        <a href="/#how-it-works">How it works</a>
-        <a href="/#widget">Widget</a>
+        <Link to="/pricing">Pricing</Link>
       </nav>
       {/* The demo is the conversion path, so it stays visible at every width —
           the section links collapse below 980px, this does not. */}
@@ -35,7 +43,7 @@ export function TopNav() {
               Log in
             </Link>
             <Link to="/signup" className="ui-button ui-button--primary">
-              Create account
+              Start setup
             </Link>
           </>
         )}

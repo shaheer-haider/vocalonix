@@ -20,9 +20,10 @@ import { env } from "../env";
 export const UNLIMITED = Number.POSITIVE_INFINITY;
 
 /**
- * One business, one phone number — a product rule rather than a plan lever, so
- * it is a constant and not a per-plan field. More numbers means more
- * businesses, which is what the `businesses` allowance sells.
+ * One business, one phone number. How *many* numbers a business may hold is a
+ * product rule and the same on every plan; **whether** it may hold one at all
+ * is `Plan.phoneNumber`. More numbers means more businesses, which is what the
+ * `businesses` allowance sells.
  */
 export const PHONE_NUMBERS_PER_BUSINESS = 1;
 
@@ -44,8 +45,18 @@ export interface Plan {
   amountCents: number;
   /** Answered-call minutes included per period, pooled across the account. */
   monthlyMinutes: number;
-  /** Businesses the account may run at once, each with its own phone number. */
+  /** Businesses the account may run at once. */
   businesses: number;
+  /**
+   * Whether this plan may claim a phone number at all.
+   *
+   * A number is a recurring carrier charge against a real account, so giving
+   * one away with a free tier means every signup can hold one indefinitely on
+   * thirty minutes a month. It is also the single gate behind warm transfer and
+   * outbound callbacks — both are refused without a live number — so this one
+   * flag is what makes the Essential feature list true rather than aspirational.
+   */
+  phoneNumber: boolean;
   /**
    * Charged monthly for each business beyond the included allowance, or null
    * when the plan does not sell extras at all.
@@ -73,14 +84,15 @@ export const PLANS: Record<PlanId, Plan> = {
     amountCents: 0,
     monthlyMinutes: 30,
     businesses: 1,
+    phoneNumber: false,
     additionalBusinessCents: null,
     seats: 2,
     tagline: "Hear it on your own website before you pay anything.",
     features: [
       "30 answered minutes a month",
-      "One business, with its own phone number",
       "Website widget and browser calls",
       "Bookings, callbacks and transcripts",
+      "Knowledge gaps collected in your dashboard",
       "2 team members",
     ],
   },
@@ -93,14 +105,15 @@ export const PLANS: Record<PlanId, Plan> = {
     amountCents: 4900,
     monthlyMinutes: 500,
     businesses: 1,
+    phoneNumber: true,
     additionalBusinessCents: null,
     seats: 10,
     tagline: "Everything one business needs to stop missing calls.",
     features: [
+      "Everything in Free",
       "500 answered minutes a month",
-      "One business, with its own phone number",
-      "Warm transfer to a person",
-      "Knowledge gaps flagged for the morning",
+      "A real phone number that rings your agent",
+      "Warm transfer to a person, and outbound callbacks",
       "10 team members",
     ],
     highlighted: true,
@@ -112,14 +125,15 @@ export const PLANS: Record<PlanId, Plan> = {
     amountCents: 14900,
     monthlyMinutes: 2000,
     businesses: 3,
+    phoneNumber: true,
     additionalBusinessCents: 1900,
     seats: UNLIMITED,
     tagline: "For a group of locations under one roof.",
     features: [
+      "Everything in Essential",
       "2,000 answered minutes a month",
-      "Three businesses, each with its own phone number",
+      "Three businesses, each with its own number and team",
       "$19 a month for each business after that",
-      "Outbound callbacks from your own number",
       "Unlimited team members",
     ],
   },
@@ -167,4 +181,33 @@ export function planByPriceId(priceId: string | null): Plan | null {
 /** Plans a customer can actually buy on this deployment. */
 export function purchasablePlans(): Plan[] {
   return Object.values(PLANS).filter((plan) => plan.priceId !== null);
+}
+
+/**
+ * The cheapest of `candidates` that would actually give this plan more minutes.
+ *
+ * Pure, and separate from the catalogue lookup below, because the interesting
+ * case is not "which plan" but "no plan" — and that answer depends on the
+ * environment, which a unit test cannot set.
+ */
+export function higherPlanThan(plan: Plan, candidates: Plan[]): Plan | null {
+  return (
+    candidates
+      .filter((candidate) => candidate.monthlyMinutes > plan.monthlyMinutes)
+      .sort((a, b) => a.amountCents - b.amountCents)[0] ?? null
+  );
+}
+
+/**
+ * The plan to point somebody at when they have run out, or null when there is
+ * nowhere to point them.
+ *
+ * Every "you have run out, upgrade" message needs this. The top plan has
+ * nowhere to go, and telling somebody on it to move up is the same dead end as
+ * a "Talk to us" button pointing at the signup form. It is null on a deployment
+ * with no Stripe price ids too, where nothing can be bought at all — there the
+ * honest instruction really is "email us".
+ */
+export function nextPlanUp(plan: Plan): Plan | null {
+  return higherPlanThan(plan, purchasablePlans());
 }

@@ -139,6 +139,10 @@ app/web/src/
   api.ts              Eden treaty client + every request/response type (1k lines).
   routes/
     public.tsx        Landing, login, signup, magic link, verify email.
+    pricing.tsx       Public pricing page + the PlanGrid the app reuses.
+    legal.tsx         Terms and Privacy. The operator's entity, address and
+                      governing law are one OPERATOR constant at the top —
+                      blank omits the clause rather than inventing it.
     demo.tsx          The public demo funnel.
     account.tsx       /app hub, account, security.
     business.tsx      Workspace shell + nav, create business, dashboard,

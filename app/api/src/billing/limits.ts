@@ -59,13 +59,30 @@ export async function assertCanAddBusiness(
 }
 
 /**
- * One business, one number. This is a product rule rather than a plan lever, so
- * every plan enforces the same ceiling and buying a second number means buying
- * another business.
+ * Whether this business may claim a number, and then how many.
+ *
+ * Two separate rules. The first is a plan lever: a number is a recurring
+ * carrier charge on a real account, and a free tier that hands one to every
+ * signup pays that charge forever against thirty minutes a month. The second is
+ * a product rule — one business, one number — and is the same on every plan.
+ *
+ * Acquisition only, like every other limit here. A business that already holds
+ * a number keeps it through a downgrade; nothing in this file ever releases
+ * one, and a released number is not something a customer gets back.
  */
 export async function assertCanAddPhoneNumber(business: {
   id: string;
 }): Promise<void> {
+  const account = await accountForBusiness(business.id);
+  const plan = effectivePlan(account);
+  if (!plan.phoneNumber) {
+    throw new ApiError(
+      402,
+      "PLAN_PHONE_NOT_INCLUDED",
+      `The ${plan.name} plan answers on your website only. Move up a plan to give this business a phone number of its own.`,
+    );
+  }
+
   const [row] = await db
     .select({ count: sql<number>`count(*)` })
     .from(businessPhoneNumbers)

@@ -52,6 +52,8 @@ const WorkspaceNotificationsPage = lazyPage(() => import("./routes/notifications
 const TenantOnboardingPage = lazyPage(() => import("./routes/tenant"), "TenantOnboardingPage");
 const TenantSettingsPage = lazyPage(() => import("./routes/tenant"), "TenantSettingsPage");
 const DemoPage = lazyPage(() => import("./routes/demo"), "DemoPage");
+const TermsPage = lazyPage(() => import("./routes/legal"), "TermsPage");
+const PrivacyPage = lazyPage(() => import("./routes/legal"), "PrivacyPage");
 
 /**
  * Shared by every guarded route. `loadSession` is cached, so this costs a
@@ -86,6 +88,18 @@ const pricingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/pricing",
   component: PricingPage,
+});
+
+const termsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/terms",
+  component: TermsPage,
+});
+
+const privacyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/privacy",
+  component: PrivacyPage,
 });
 
 const loginRoute = createRoute({
@@ -288,6 +302,8 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   demoRoute,
   pricingRoute,
+  termsRoute,
+  privacyRoute,
   loginRoute,
   signupRoute,
   magicLinkRoute,
@@ -345,6 +361,8 @@ const ROUTE_TITLES: Array<[RegExp, string]> = [
   [/^\/verify-email/, "Verify your email"],
   [/^\/invite\//, "You've been invited"],
   [/^\/design-system/, "Design system"],
+  [/^\/terms/, "Terms of Service"],
+  [/^\/privacy/, "Privacy Policy"],
   [/^\/account\/security/, "Security"],
   [/^\/account/, "Account"],
   [/\/settings\/knowledge/, "Knowledge"],
