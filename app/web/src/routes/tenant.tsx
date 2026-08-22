@@ -1782,6 +1782,7 @@ function PlanStep({
         <PlanGrid
           plans={pricing.plans}
           currentPlanId={status?.plan.id}
+          offer={pricing.offer}
           action={(plan) =>
             plan.amountCents === 0 ? (
               <Button

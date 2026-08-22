@@ -251,6 +251,22 @@ conversations, contacts and knowledge gaps.
       Until then knowledge stays tenant-safe because the generator pins
       `document_uuids` on every node that can retrieve, which is now asserted
       by `config.test.ts` rather than left to whoever adds the next node.
+- [ ] **The founding offer has an end, and ending it takes a deliberate act.**
+      `FOUNDING_OFFER` in `billing/plans.ts` promises the first 50 businesses
+      Essential at $49 for as long as they stay, $99 after. Two things follow.
+
+      Counting is manual: nothing tracks how many places are left, deliberately,
+      because a live counter stuck at "50 of 50 remaining" advertises that
+      nobody has bought yet. Check `select count(*) from billing_accounts where
+      plan_name = 'starter' and plan_status in ('active','trialing')` before
+      deciding it is over, then set `FOUNDING_OFFER` to null — one line, and
+      every surface stops showing it.
+
+      Raising the price means creating a **new** Stripe price and pointing
+      `STRIPE_PRICE_STARTER` at it. Stripe holds each subscription on the price
+      it was created with and a price's amount cannot be edited, so founding
+      customers stay at $49 on their own. Do not migrate existing subscriptions
+      onto the new price — that is the single action that breaks the promise.
 - [ ] **Minute top-ups, and the hole between $49 and $149.** There is no way to
       buy more minutes — the only path past a spent allowance is moving up a
       plan. That leaves a single busy business needing 800 minutes with a choice

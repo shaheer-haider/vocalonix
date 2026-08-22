@@ -10,6 +10,7 @@ import { AuthShell, MarketingFooter, MarketingNav } from "../components/shell";
 import { Alert, Box, Button, Pill, TextField } from "../components/ui";
 import { useDograhHealth } from "../hooks/useDograhHealth";
 import { money, usePricing } from "./pricing";
+import type { PublicPricing } from "../types";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email."),
@@ -93,9 +94,11 @@ const landingStats = [
  * allowance or the entry price cannot leave the landing page quoting a number
  * the pricing page contradicts. Falls back to copy with no figures in it if the
  * request fails — a vaguer sentence beats a wrong one.
+ *
+ * Takes the catalogue rather than fetching it, because the page needs the offer
+ * from the same response and two hooks would mean two requests for one payload.
  */
-function usePricingSummary(): string {
-  const { pricing } = usePricing();
+function pricingSummary(pricing: PublicPricing | null): string {
   if (!pricing) {
     return "Start free, and pay only when it is answering enough calls to be worth it.";
   }
@@ -116,7 +119,9 @@ function usePricingSummary(): string {
 export function LandingPage() {
   const auth = useAuth();
   const { isLoading, turnEnabled } = useDograhHealth();
-  const pricingSummary = usePricingSummary();
+  const { pricing } = usePricing();
+  const summary = pricingSummary(pricing);
+  const offer = pricing?.offer ?? null;
   const isAuthenticated = auth.status === "authenticated";
   const primaryHref = isAuthenticated ? "/app" : "/signup";
   const primaryLabel = isAuthenticated ? "Open app →" : "Start setup →";
@@ -144,6 +149,16 @@ export function LandingPage() {
             </Link>
           ) : null}
         </div>
+        {/* Directly under the buttons, because the price is the next thing a
+            visitor wants after "what is this" and before anything else on the
+            page. */}
+        {offer ? (
+          <p className="landing-hero__offer">
+            <strong>Founding offer</strong> — the first {offer.limit} businesses
+            keep {money(offer.amountCents)} a month for as long as they stay.{" "}
+            {money(offer.futureAmountCents)} after that.
+          </p>
+        ) : null}
         <p className="landing-hero__note">
           No card to start · works on your site before you add a number · cancel
           in two clicks
@@ -207,7 +222,7 @@ export function LandingPage() {
       <section className="landing-section landing-cta">
         <p className="eyebrow">Pricing</p>
         <h2>Put a voice on your website this afternoon.</h2>
-        <p className="landing-pricing-note">{pricingSummary}</p>
+        <p className="landing-pricing-note">{summary}</p>
         <div className="landing__actions">
           <Link to={primaryHref} className="ui-button ui-button--primary">
             {primaryLabel}

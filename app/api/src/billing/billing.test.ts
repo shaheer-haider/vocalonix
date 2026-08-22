@@ -5,11 +5,14 @@ import { describe, expect, test } from "bun:test";
 import { businessAllowance } from "./limits";
 import { subscriptionUpdate, verifyStripeSignature } from "./routes";
 import {
+  AVERAGE_CALL_MINUTES,
+  FOUNDING_OFFER,
   FREE_PLAN,
   PHONE_NUMBERS_PER_BUSINESS,
   PLANS,
   UNLIMITED,
   effectivePlan,
+  estimatedCallsFor,
   higherPlanThan,
   isEntitled,
   nextPlanUp,
@@ -224,6 +227,36 @@ describe("the catalogue matches what the pricing page promises", () => {
     // reader should not have to diff them to see what upgrading buys.
     expect(PLANS.starter.features[0]).toBe("Everything in Free");
     expect(PLANS.pro.features[0]).toBe(`Everything in ${PLANS.starter.name}`);
+  });
+
+  test("call estimates round down, never up", () => {
+    // An allowance that covers slightly more than advertised is a good
+    // surprise. The reverse is a complaint, and this product has already had
+    // to walk back one claim it could not keep.
+    for (const plan of Object.values(PLANS)) {
+      const calls = estimatedCallsFor(plan);
+      if (calls === null) continue;
+      expect(calls * AVERAGE_CALL_MINUTES).toBeLessThanOrEqual(
+        plan.monthlyMinutes,
+      );
+    }
+  });
+
+  test("call estimates are numbers a person would say out loud", () => {
+    expect(estimatedCallsFor(PLANS.free)).toBe(12);
+    expect(estimatedCallsFor(PLANS.starter)).toBe(200);
+    expect(estimatedCallsFor(PLANS.pro)).toBe(800);
+  });
+
+  test("the founding offer names a real plan and is actually an offer", () => {
+    if (!FOUNDING_OFFER) return;
+    const plan = PLANS[FOUNDING_OFFER.planId];
+    expect(plan).toBeDefined();
+    // If the future price were not higher, the whole thing is a countdown to
+    // nothing — and the landing page would be promising urgency it cannot back.
+    expect(FOUNDING_OFFER.futureAmountCents).toBeGreaterThan(plan.amountCents);
+    expect(FOUNDING_OFFER.limit).toBeGreaterThan(0);
+    expect(FOUNDING_OFFER.refundDays).toBeGreaterThan(0);
   });
 
   test("the stored plan id is not the display name", () => {

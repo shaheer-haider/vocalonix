@@ -203,9 +203,16 @@ export function TermsPage() {
           over — there is no overage charge, because there is no overage.
         </li>
         <li>
-          Subscriptions renew monthly until cancelled. Cancel any time from the
-          billing portal; you keep what you have paid for until the end of that
-          period, and we do not refund part-months.
+          <strong>
+            A new subscription can be cancelled for a full refund within 30
+            days.
+          </strong>{" "}
+          Email us and we will refund it — no reason needed.
+        </li>
+        <li>
+          After that, subscriptions renew monthly until cancelled. Cancel any
+          time from the billing portal; you keep what you have paid for until
+          the end of that period, and we do not refund part-months.
         </li>
         <li>
           Prices are in US dollars and exclude any tax we are required to add. We

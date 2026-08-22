@@ -2276,6 +2276,64 @@ p {
   font-size: 1.0625rem;
 }
 
+/* Sits between the buttons and the fine print: the price is the next thing a
+   visitor wants, and it should not be the same weight as "cancel in two
+   clicks". */
+.landing-hero__offer {
+  margin: 0;
+  max-width: 520px;
+  padding: 8px 14px;
+  border: 1px dashed var(--accent);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-family: var(--kalam);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.landing-hero__offer strong {
+  color: var(--ink);
+}
+
+.founding-offer {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.founding-offer h2 {
+  margin: 0;
+  font-family: var(--hand);
+  font-size: 1.625rem;
+  line-height: 1.15;
+}
+
+.founding-offer p {
+  margin: 0;
+  color: var(--ink-2);
+  font-family: var(--kalam);
+  font-size: 1.0625rem;
+}
+
+.founding-offer ul {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  color: var(--ink-2);
+  font-family: var(--kalam);
+  font-size: 1.0625rem;
+}
+
+/* The reason for the offer, said plainly. Quieter than the offer itself
+   because it is an admission rather than a pitch. */
+.founding-offer__why {
+  padding-top: 4px;
+  border-top: 1px dashed var(--line-2);
+  color: var(--ink-4) !important;
+  font-size: 0.9375rem !important;
+}
+
 .landing-hero__note {
   color: var(--ink-4);
   font-family: var(--mono);
@@ -2511,6 +2569,27 @@ p {
   font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* The allowance in the unit the buyer thinks in, sat directly under the price
+   so the two are read together. */
+.pricing-card__calls {
+  margin: -2px 0 0;
+  color: var(--ink-4);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+}
+
+.pricing-card__founding {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  color: var(--ink-2);
+  font-family: var(--kalam);
+  font-size: 0.9375rem;
+  line-height: 1.4;
 }
 
 .pricing-card__tagline {
